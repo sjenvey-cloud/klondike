@@ -5,7 +5,7 @@ import { shuffleDeck, saveDeck, saveDeal, markDeckSolved } from '../services/api
 export const useGameState = (user) => {
   const [gameState, setGameState] = useState(null);
   const [deckId, setDeckId] = useState(null);
-  const [cardOrder, setCardOrder] = useState([]);
+  const [, setCardOrder] = useState([]);
   const [moves, setMoves] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [gameWon, setGameWon] = useState(false);
