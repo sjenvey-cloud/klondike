@@ -11,3 +11,7 @@ application.properties
 
 # AWS key files
 *.pem
+
+# Environment variables
+.env.production
+.env.local
