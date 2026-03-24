@@ -3,3 +3,11 @@ target/
 *.log
 .DS_Store
 application.properties
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# AWS key files
+*.pem
