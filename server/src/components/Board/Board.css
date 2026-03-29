@@ -1,0 +1,55 @@
+.board {
+  padding: 16px;
+  min-height: 100vh;
+  background: #1a5c2a;
+}
+
+.board-top {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.stock-pile,
+.waste-pile,
+.foundation-pile {
+  width: 80px;
+  height: 112px;
+  position: relative;
+}
+
+.card-empty {
+  width: 80px;
+  height: 112px;
+  border-radius: 8px;
+  border: 2px dashed rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.4);
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.foundation-empty {
+  font-size: 2rem;
+}
+
+.board-tableau {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.tableau-pile {
+  width: 80px;
+  position: relative;
+  min-height: 112px;
+}
