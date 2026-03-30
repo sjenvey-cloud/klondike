@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: klondike
+Resources:
+  WebBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${EnvironmentName}-web-${AWS::AccountId}'
+      Tags:
+        - Key: Project
+          Value: !Ref EnvironmentName
+  OAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub '${EnvironmentName}-oac-v3'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        Comment: !Sub '${EnvironmentName} React frontend'
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt WebBucket.RegionalDomainName
+            OriginAccessControlId: !Ref OAC
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+Outputs:
+  BucketName:
+    Value: !Ref WebBucket
+    Export:
+      Name: !Sub '${EnvironmentName}-WebBucketName'
+  CloudFrontURL:
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
+    Export:
+      Name: !Sub '${EnvironmentName}-CloudFrontURL'
+  CloudFrontDistributionId:
+    Value: !Ref CloudFrontDistribution
+    Export:
+      Name: !Sub '${EnvironmentName}-CloudFrontDistributionId'
