@@ -12,11 +12,10 @@ function App() {
   });
 
   const {
-    gameState, moves, elapsed, gameWon, loading,
-    newGame, drawFromStock, moveToTableau, moveToFoundation,
+    gameState, moves, elapsed, gameWon, loading, canUndo, drawCount,
+    newGame, drawFromStock, moveToTableau, moveToFoundation, undo, abandonGame,
   } = useGameState(user);
 
-  // Persist user in localStorage
   const handleLogin = (u) => {
     localStorage.setItem('klondike_user', JSON.stringify(u));
     setUser(u);
@@ -48,7 +47,11 @@ function App() {
         moves={moves}
         elapsed={elapsed}
         gameWon={gameWon}
+        canUndo={canUndo}
+        drawCount={drawCount}
         onNewGame={newGame}
+        onUndo={undo}
+        onAbandon={abandonGame}
         onQuit={handleQuit}
       />
       {gameState && (

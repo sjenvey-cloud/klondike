@@ -5,7 +5,7 @@ const SUIT_SYMBOLS = { clubs: '♣', diamonds: '♦', hearts: '♥', spades: '�
 const SUITS = ['clubs', 'diamonds', 'hearts', 'spades'];
 
 const Board = ({ gameState, onDrawStock, onMoveToTableau, onMoveToFoundation }) => {
-  const { tableau, foundations, stock, waste } = gameState;
+  const { tableau, foundations, stock, waste, drawCount = 3 } = gameState;
 
   const handleDragStart = (e, card, location) => {
     e.dataTransfer.setData('card', JSON.stringify(card));
@@ -27,40 +27,50 @@ const Board = ({ gameState, onDrawStock, onMoveToTableau, onMoveToFoundation }) 
   };
 
   const handleWasteDoubleClick = (card) => {
-    // Try foundation first, then tableau
-    const suits = ['clubs', 'diamonds', 'hearts', 'spades'];
-    const fIdx = suits.indexOf(card.suit);
+    const fIdx = SUITS.indexOf(card.suit);
     onMoveToFoundation(card, { type: 'waste' }, fIdx);
   };
 
   const handleTableauDoubleClick = (card, col) => {
-    const suits = ['clubs', 'diamonds', 'hearts', 'spades'];
-    const fIdx = suits.indexOf(card.suit);
+    const fIdx = SUITS.indexOf(card.suit);
     onMoveToFoundation(card, { type: 'tableau', col }, fIdx);
   };
+
+  // For 3-card draw: show up to last 3 waste cards fanned, only top is playable
+  const visibleWaste = waste.slice(-drawCount);
+  const topWasteCard = waste.length > 0 ? waste[waste.length - 1] : null;
 
   return (
     <div className="board">
       {/* Top row: stock, waste, spacers, foundations */}
       <div className="board-top">
+
         {/* Stock */}
         <div className="stock-pile" onClick={onDrawStock}>
           {stock.length > 0
             ? <Card card={{ faceUp: false }} />
-            : <div className="card card-empty">↺</div>}
+            : <div className="card card-empty card-flip-hint">↺</div>}
         </div>
 
-        {/* Waste */}
-        <div className="waste-pile">
-          {waste.length > 0 ? (
-            <Card
-              card={waste[waste.length - 1]}
-              draggable
-              onDragStart={e => handleDragStart(e, waste[waste.length - 1], { type: 'waste' })}
-              onDoubleClick={() => handleWasteDoubleClick(waste[waste.length - 1])}
-            />
-          ) : (
+        {/* Waste — fanned for 3-card draw */}
+        <div className="waste-pile waste-fan">
+          {waste.length === 0 ? (
             <div className="card card-empty" />
+          ) : (
+            visibleWaste.map((card, i) => {
+              const isTop = card.id === topWasteCard.id;
+              const offset = i * 18; // fan offset in px
+              return (
+                <Card
+                  key={card.id}
+                  card={card}
+                  style={{ position: 'absolute', left: `${offset}px`, zIndex: i + 1 }}
+                  draggable={isTop}
+                  onDragStart={isTop ? e => handleDragStart(e, card, { type: 'waste' }) : undefined}
+                  onDoubleClick={isTop ? () => handleWasteDoubleClick(card) : undefined}
+                />
+              );
+            })
           )}
         </div>
 
