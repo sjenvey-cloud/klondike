@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Klondike ALB and ECS Fargate service
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: klondike
+
+  DesiredCount:
+    Type: Number
+    Default: 1
+    Description: Number of ECS tasks to run
+
+Resources:
+
+  # ---------- Application Load Balancer ----------
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${EnvironmentName}-alb'
+      Scheme: internet-facing
+      Type: application
+      Subnets:
+        - !ImportValue klondike-PublicSubnet1Id
+        - !ImportValue klondike-PublicSubnet2Id
+      SecurityGroups:
+        - !ImportValue klondike-ALBSecurityGroupId
+      Tags:
+        - Key: Project
+          Value: !Ref EnvironmentName
+
+  # ---------- Target Group ----------
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${EnvironmentName}-api-tg'
+      Port: 8080
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !ImportValue klondike-VPCId
+      HealthCheckPath: /actuator/health
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: '200'
+      Tags:
+        - Key: Project
+          Value: !Ref EnvironmentName
+
+  # ---------- ALB Listener ----------
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ALB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # ---------- ECS Service ----------
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListener
+    Properties:
+      ServiceName: !Sub '${EnvironmentName}-api-service'
+      Cluster: !ImportValue klondike-ClusterArn
+      TaskDefinition: !ImportValue klondike-TaskDefinitionArn
+      LaunchType: FARGATE
+      DesiredCount: !Ref DesiredCount
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !ImportValue klondike-PrivateSubnet1Id
+            - !ImportValue klondike-PrivateSubnet2Id
+          SecurityGroups:
+            - !ImportValue klondike-ECSSecurityGroupId
+      LoadBalancers:
+        - ContainerName: api
+          ContainerPort: 8080
+          TargetGroupArn: !Ref TargetGroup
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 50
+        MaximumPercent: 200
+      HealthCheckGracePeriodSeconds: 90
+
+Outputs:
+  ALBDNSName:
+    Description: ALB DNS name (public API endpoint)
+    Value: !GetAtt ALB.DNSName
+    Export:
+      Name: !Sub '${EnvironmentName}-ALBDNSName'
+
+  ALBArn:
+    Description: ALB ARN
+    Value: !Ref ALB
+    Export:
+      Name: !Sub '${EnvironmentName}-ALBArn'
+
+  TargetGroupArn:
+    Description: Target Group ARN
+    Value: !Ref TargetGroup
+    Export:
+      Name: !Sub '${EnvironmentName}-TargetGroupArn'
+
+  ECSServiceName:
+    Description: ECS Service name
+    Value: !GetAtt ECSService.Name
+    Export:
+      Name: !Sub '${EnvironmentName}-ECSServiceName'
