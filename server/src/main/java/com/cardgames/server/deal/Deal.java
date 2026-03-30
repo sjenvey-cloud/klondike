@@ -2,7 +2,7 @@ package com.cardgames.server.deal;
 
 import java.io.Serializable;
 import java.util.Date;
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 //class to manage a deal of a deck including tracking number of moves it takes to solve, turn by turn moves, time taken and when played
 @Entity

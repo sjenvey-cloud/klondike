@@ -1,6 +1,6 @@
 package com.cardgames.server.user;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import java.io.Serializable;
 import java.time.Instant;
