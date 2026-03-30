@@ -62,6 +62,18 @@ export const saveDeal = ({ moves, timeseconds, turns, deckid, userid, status }) 
 export const abandonDeal = ({ moves, timeseconds, turns, deckid, userid }) =>
   saveDeal({ moves, timeseconds, turns, deckid, userid, status: 'abandoned' });
 
+// DEV-59: server-side replay validation
+export const validateDeal = ({ deckid, turns, claimedWon }) =>
+  fetch(`${BASE_URL}/deal/validate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deckid: String(deckid),
+      turns,
+      claimedWon: String(claimedWon),
+    }),
+  }).then(r => r.json());
+
 export const getHighscoresByMoves = (deckid, limit = 10) =>
   fetch(`${BASE_URL}/deal/highscores/deck/moves`, {
     method: 'POST',

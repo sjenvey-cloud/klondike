@@ -8,7 +8,7 @@ import {
   cloneState,
   MOVE_TYPES,
 } from '../utils/gameEngine';
-import { shuffleDeck, saveDeck, saveDeal, markDeckSolved, abandonDeal } from '../services/api';
+import { shuffleDeck, saveDeck, saveDeal, markDeckSolved, abandonDeal, validateDeal } from '../services/api';
 
 const DRAW_COUNT = 3; // DEV-58: 3-card draw is the default mode
 
@@ -110,7 +110,7 @@ export const useGameState = (user) => {
       if (fromLocation.type === 'waste') {
         state.waste.pop();
         state.tableau[toCol].push({ ...card });
-        moveHistory.current.push(MOVE_TYPES.WASTE_TO_TABLEAU);
+        moveHistory.current.push(`${MOVE_TYPES.WASTE_TO_TABLEAU}:${toCol}`);
       } else if (fromLocation.type === 'tableau') {
         const srcPile = state.tableau[fromLocation.col];
         const cardIdx = srcPile.findIndex(c => c.id === card.id);
@@ -168,17 +168,24 @@ export const useGameState = (user) => {
     setCanUndo(stateHistory.current.length > 0);
   }, []);
 
-  // ── Abandon game (DEV-57) ─────────────────────────
+  // ── Abandon game (DEV-57, DEV-59) ─────────────────
   const abandonGame = useCallback(async () => {
     if (!user || !currentDeckId.current) return;
     clearInterval(timerRef.current);
     moveHistory.current.push(MOVE_TYPES.ABANDON);
+    const turns  = moveHistory.current.join(',');
+    const deckid = currentDeckId.current;
     try {
+      // Validate the move history even for abandoned games (DEV-59)
+      const validation = await validateDeal({ deckid, turns, claimedWon: false });
+      if (!validation.valid) {
+        console.warn('DEV-59 abandon replay validation failed:', validation.message);
+      }
       await saveDeal({
         moves,
         timeseconds: elapsed,
-        turns: moveHistory.current.join(','),
-        deckid: currentDeckId.current,
+        turns,
+        deckid,
         userid: user.id,
         status: 'abandoned',
       });
@@ -189,16 +196,24 @@ export const useGameState = (user) => {
     newGame();
   }, [user, moves, elapsed, newGame]);
 
-  // ── Save completed deal ────────────────────────────
+  // ── Save completed deal (DEV-59: validate replay first) ──
   const saveResult = useCallback(async () => {
     if (!user || !currentDeckId.current) return;
+    const turns  = moveHistory.current.join(',');
+    const deckid = currentDeckId.current;
     try {
-      await markDeckSolved(currentDeckId.current, `Solved in ${moves} moves`);
+      // Server-side replay validation (DEV-59)
+      const validation = await validateDeal({ deckid, turns, claimedWon: true });
+      if (!validation.valid) {
+        console.warn('DEV-59 replay validation failed:', validation.message);
+        return; // Do not persist a fraudulent win
+      }
+      await markDeckSolved(deckid, `Solved in ${moves} moves`);
       await saveDeal({
         moves,
         timeseconds: elapsed,
-        turns: moveHistory.current.join(','),
-        deckid: currentDeckId.current,
+        turns,
+        deckid,
         userid: user.id,
       });
     } catch (e) {
