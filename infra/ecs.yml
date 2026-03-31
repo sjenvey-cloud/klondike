@@ -44,7 +44,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
       Policies:
-        - PolicyName: ECRAccess
+        - PolicyName: ECRAndSecretsAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -57,6 +57,12 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/db/credentials*'
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -114,6 +120,11 @@ Resources:
               Value: '6379'
             - Name: SERVER_PORT
               Value: '8080'
+          Secrets:
+            - Name: KLONDIKE_JWT_PRIVATE_KEY
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:privateKey::'
+            - Name: KLONDIKE_JWT_PUBLIC_KEY
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:publicKey::'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -123,11 +134,11 @@ Resources:
           HealthCheck:
             Command:
               - CMD-SHELL
-              - 'curl -f http://localhost:8080/actuator/health || exit 1'
+              - 'wget -qO /dev/null http://localhost:8080/actuator/health || exit 1'
             Interval: 30
-            Timeout: 5
-            Retries: 3
-            StartPeriod: 60
+            Timeout: 10
+            Retries: 5
+            StartPeriod: 120
           Essential: true
 
 Outputs:
