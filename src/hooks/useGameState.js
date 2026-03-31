@@ -8,7 +8,7 @@ import {
   cloneState,
   MOVE_TYPES,
 } from '../utils/gameEngine';
-import { shuffleDeck, saveDeck, saveDeal, markDeckSolved, abandonDeal, validateDeal } from '../services/api';
+import { shuffleDeck, saveDeck, saveDeal, markDeckSolved, validateDeal } from '../services/api';
 
 const DRAW_COUNT = 3; // DEV-58: 3-card draw is the default mode
 
@@ -40,24 +40,6 @@ export const useGameState = (user) => {
     stateHistory.current.push(cloneState(state));
     setCanUndo(true);
   };
-
-  // ── Internal: apply state update and record move ───
-  const applyMove = useCallback((updater, moveLabel) => {
-    setGameState(prev => {
-      if (!prev) return prev;
-      pushHistory(prev);
-      const next = updater(cloneState(prev));
-      if (next === prev) {
-        // Move was rejected — pop the history we just pushed
-        stateHistory.current.pop();
-        setCanUndo(stateHistory.current.length > 0);
-        return prev;
-      }
-      moveHistory.current.push(moveLabel);
-      return next;
-    });
-    setMoves(m => m + 1);
-  }, []);
 
   // ── New Game ───────────────────────────────────────
   const newGame = useCallback(async () => {
