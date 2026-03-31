@@ -35,6 +35,11 @@ public class GameState {
 
     private int moveCount = 0;
 
+    // ── Build initial state from a shuffle seed (DEV-73) ──────────────────
+    public GameState(long seed) {
+        this(SeededShuffle.shuffle(seed));
+    }
+
     // ── Build initial state from 52 ordered card IDs ──────────────────────
     public GameState(int[] cardIds) {
         // Deal tableau: pile i has i+1 cards, last is face-up
