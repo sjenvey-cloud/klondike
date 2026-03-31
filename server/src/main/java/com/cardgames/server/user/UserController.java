@@ -23,16 +23,16 @@ public class UserController {
 
     @GetMapping("/users/{id}")
     public ResponseEntity<User> show(@PathVariable int id) {
-        User user = userRepository.findById(id);
-        if (user == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        return userRepository.findById(id)
+            .map(u -> new ResponseEntity<>(u, HttpStatus.OK))
+            .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @GetMapping("/users/username/{username}")
     public ResponseEntity<User> showByUsername(@PathVariable String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        return userRepository.findByUsername(username)
+            .map(u -> new ResponseEntity<>(u, HttpStatus.OK))
+            .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping("/users")
@@ -50,10 +50,10 @@ public class UserController {
     @PutMapping("/users/played")
     public ResponseEntity<User> played(@RequestBody Map<String, String> body) {
         int userId = Integer.parseInt(body.get("id"));
-        User user = userRepository.findById(userId);
-        if (user == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        user.setlasthand(new Date());
-        userRepository.save(user);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        return userRepository.findById(userId).map(user -> {
+            user.setlasthand(new Date());
+            userRepository.save(user);
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        }).orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 }
