@@ -1,0 +1,27 @@
+.game-screen {
+  padding: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.game-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+}
+
+.game-spinner {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  color: var(--color-accent);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

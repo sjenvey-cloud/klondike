@@ -15,8 +15,8 @@ public interface DealRepository extends JpaRepository<Deal, Integer> {
 	Deal findById(int id);
 	
 	@Query(value = "select e1.* FROM" +
-				   " (SELECT DISTINCT moves FROM solitaire_db.Deal where deckid = :deckid ORDER BY moves ASC LIMIT :num) s1" +
-				   " JOIN solitaire_db.Deal e1" +
+				   " (SELECT DISTINCT moves FROM deal where deckid = :deckid ORDER BY moves ASC LIMIT :num) s1" +
+				   " JOIN deal e1" +
 				   " ON e1.moves = s1.moves" +
 				   " ORDER BY e1.moves ASC", nativeQuery = true)
 	ArrayList<Deal> findTopMovesForADeck(@Param("deckid") int deckid,
@@ -24,24 +24,24 @@ public interface DealRepository extends JpaRepository<Deal, Integer> {
 	
 	
 	@Query(value = "select e1.* FROM" +
-			   " (SELECT DISTINCT timeseconds FROM solitaire_db.Deal where deckid = :deckid ORDER BY timeseconds ASC LIMIT :num) s1" +
-			   " JOIN solitaire_db.Deal e1" +
+			   " (SELECT DISTINCT timeseconds FROM deal where deckid = :deckid ORDER BY timeseconds ASC LIMIT :num) s1" +
+			   " JOIN deal e1" +
 			   " ON e1.timeseconds = s1.timeseconds" +
 			   " ORDER BY e1.timeseconds ASC", nativeQuery = true)
 	ArrayList<Deal> findTopTimesForADeck(@Param("deckid") int deckid,
 									     @Param("num")    int num);
 	
 	@Query(value = "select e1.* FROM" +
-			   " (SELECT DISTINCT moves FROM solitaire_db.Deal where userid = :userid ORDER BY moves ASC LIMIT :num) s1" +
-			   " JOIN solitaire_db.Deal e1" +
+			   " (SELECT DISTINCT moves FROM deal where userid = :userid ORDER BY moves ASC LIMIT :num) s1" +
+			   " JOIN deal e1" +
 			   " ON e1.moves = s1.moves" +
 			   " ORDER BY e1.moves ASC", nativeQuery = true)
 	ArrayList<Deal> findTopMovesForAUser(@Param("userid") int userid,
 									 	 @Param("num")    int num);
 	
 	@Query(value = "select e1.* FROM" +
-			   " (SELECT DISTINCT timeseconds FROM solitaire_db.Deal where userid = :userid ORDER BY timeseconds ASC LIMIT :num) s1" +
-			   " JOIN solitaire_db.Deal e1" +
+			   " (SELECT DISTINCT timeseconds FROM deal where userid = :userid ORDER BY timeseconds ASC LIMIT :num) s1" +
+			   " JOIN deal e1" +
 			   " ON e1.timeseconds = s1.timeseconds" +
 			   " ORDER BY e1.timeseconds ASC", nativeQuery = true)
 	ArrayList<Deal> findTopTimesForAUser(@Param("userid") int userid,

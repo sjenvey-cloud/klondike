@@ -1,0 +1,155 @@
+:root {
+  --card-w: 62px;
+  --card-h: 88px;
+  --tableau-offset: 20px;   /* overlap for face-down */
+  --tableau-offset-up: 28px; /* overlap for face-up */
+}
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 8px;
+  min-height: 100%;
+  box-sizing: border-box;
+  touch-action: manipulation;
+}
+
+/* ── Top row: stock + waste + gap + 4 foundations ── */
+.board-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.board-top-spacer {
+  flex: 1;
+}
+
+/* Stock pile */
+.stock-pile {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.stock-empty {
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Waste pile — show top 3 fanned */
+.waste-area {
+  position: relative;
+  width: calc(var(--card-w) + 24px);
+  height: var(--card-h);
+  flex-shrink: 0;
+}
+
+.waste-card {
+  position: absolute;
+  top: 0;
+}
+
+/* Foundation piles */
+.foundation-pile {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.foundation-empty {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-border);
+  font-size: 22px;
+}
+
+.foundation-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Tableau ── */
+.board-tableau {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.tableau-col {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.tableau-col-empty {
+  width: 100%;
+  height: var(--card-h);
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--color-border);
+  cursor: pointer;
+}
+
+.tableau-card {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tableau-card + .tableau-card {
+  margin-top: calc(-1 * var(--card-h) + var(--tableau-offset));
+}
+
+.tableau-card.face-up + .tableau-card {
+  margin-top: calc(-1 * var(--card-h) + var(--tableau-offset-up));
+}
+
+/* moves/timer bar */
+.board-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 2px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.board-stats span {
+  min-width: 60px;
+  text-align: center;
+}
+
+@media (min-width: 480px) {
+  :root {
+    --card-w: 70px;
+    --card-h: 98px;
+    --tableau-offset: 22px;
+    --tableau-offset-up: 32px;
+  }
+}

@@ -1,0 +1,109 @@
+.card-wrap {
+  position: relative;
+  width: var(--card-w, 62px);
+  height: var(--card-h, 88px);
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Face-up card ── */
+.card-face {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-card);
+  background: var(--color-card-face);
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3px 4px;
+  box-sizing: border-box;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-face.red  { color: var(--color-suit-red); }
+.card-face.black { color: var(--color-suit-black); }
+
+.card-face.selected {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-card);
+}
+
+.card-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.card-corner.bottom {
+  transform: rotate(180deg);
+  align-self: flex-end;
+}
+
+.card-rank {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card-suit-small {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.card-suit-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+/* ── Face-down card ── */
+.card-back {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-card);
+  background: var(--color-card-back);
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: calc(var(--radius-card) - 2px);
+  border: 1.5px solid var(--color-accent);
+  opacity: 0.4;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(201,168,76,0.06) 4px,
+    rgba(201,168,76,0.06) 8px
+  );
+}
+
+/* ── Empty slot ── */
+.card-slot {
+  width: var(--card-w, 62px);
+  height: var(--card-h, 88px);
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--color-border);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  cursor: pointer;
+}

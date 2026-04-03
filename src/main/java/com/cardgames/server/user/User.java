@@ -1,96 +1,85 @@
 package com.cardgames.server.user;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.*;
+import java.util.Date;
 
-//class to manage a deck of cards, defined in the Card object
 @Entity
+@Table(name = "users")
 public class User implements Serializable {
 
-	private static final long serialVersionUID = 7663960497705998476L;
+    private static final long serialVersionUID = 7663960497705998476L;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY )
-	private int id;
-	
-	private String username;
-	
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date   datecreated;
-	
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date   lasthand;
-	
-	public User() {
-		
-		this.id = 0;
-		this.username = "none";
-		this.datecreated = User.getDefaultTime();
-		this.lasthand = User.getDefaultTime();
-	}
-	
-	public User( int id, String username, Date datecreated, Date lasthand) {
-		
-		this.id = id;
-		this.username = username;
-		this.datecreated = datecreated;
-		this.lasthand = lasthand;
-	}
-	
-	public User( String username, Date datecreated, Date lasthand) {
-		
-		this.username = username;
-		this.datecreated = datecreated;
-		this.lasthand = lasthand;
-	}
-	
-	public int getId() {
-		
-		return this.id;
-	}
-	
-	public void setId(int id) {
-		this.id = id;
-	}
-	
-	public String getUsername() {
-		return this.username;
-	}
-	
-	public void setUsername(String username) {
-		this.username = username;
-	}
-	
-	public Date getdatecreated() {
-        return this.datecreated;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    private String username;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
+
+    @Column(name = "display_name")
+    private String displayName;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date datecreated;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date lasthand;
+
+    /** No-arg constructor — used by JPA and legacy code paths. */
+    public User() {
+        this.id          = 0;
+        this.username    = "none";
+        this.datecreated = User.getDefaultTime();
+        this.lasthand    = User.getDefaultTime();
     }
- 
-    public void setdatecreated(Date datecreated) {
+
+    /** Legacy constructor — retained for backward compatibility. */
+    public User(String username, Date datecreated, Date lasthand) {
+        this.username    = username;
         this.datecreated = datecreated;
+        this.lasthand    = lasthand;
     }
-    
-    public Date getlasthand() {
-        return this.lasthand;
+
+    /** Auth constructor — creates a user via email/password registration. */
+    public User(String email, String passwordHash, String displayName) {
+        this.email        = email;
+        this.passwordHash = passwordHash;
+        this.displayName  = displayName;
+        this.username     = displayName; // mirror displayName as username
+        this.datecreated  = new Date();
+        this.lasthand     = User.getDefaultTime();
     }
- 
-    public void setlasthand(Date lasthand) {
-        this.lasthand = lasthand;
-    }
-    
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", username:"+ username + ", datecreated:" + datecreated + ", lasthand:" + lasthand +
-                '}';
-    }
-    
+
+    public int    getId()          { return id; }
+    public void   setId(int id)    { this.id = id; }
+
+    public String getUsername()              { return username; }
+    public void   setUsername(String u)      { this.username = u; }
+
+    public String getEmail()                 { return email; }
+    public void   setEmail(String email)     { this.email = email; }
+
+    public String getPasswordHash()                    { return passwordHash; }
+    public void   setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public String getDisplayName()                   { return displayName; }
+    public void   setDisplayName(String displayName) { this.displayName = displayName; }
+
+    public Date getdatecreated()             { return datecreated; }
+    public void setdatecreated(Date d)       { this.datecreated = d; }
+
+    public Date getlasthand()                { return lasthand; }
+    public void setlasthand(Date d)          { this.lasthand = d; }
+
     static Date getDefaultTime() {
-    	
-    	Long epoch = Instant.EPOCH.toEpochMilli();
-    	return new Date(epoch * 1000);
+        return new Date(Instant.EPOCH.toEpochMilli());
     }
 }
