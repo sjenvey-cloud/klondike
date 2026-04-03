@@ -1,5 +1,19 @@
+node_modules/
+dist/
 target/
 *.class
 *.log
 .DS_Store
 application.properties
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# AWS key files
+*.pem
+
+# Environment variables
+.env.production
+.env.local

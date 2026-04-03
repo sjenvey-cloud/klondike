@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Klondike ElastiCache Redis single-node cluster in private subnets
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: klondike
+
+Resources:
+
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      CacheSubnetGroupName: !Sub '${EnvironmentName}-redis-subnet-group'
+      Description: Private subnets for Klondike Redis
+      SubnetIds:
+        - !ImportValue klondike-PrivateSubnet1Id
+        - !ImportValue klondike-PrivateSubnet2Id
+
+  RedisCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      ClusterName: !Sub '${EnvironmentName}-redis'
+      Engine: redis
+      EngineVersion: '7.1'
+      CacheNodeType: cache.t3.micro
+      NumCacheNodes: 1
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      VpcSecurityGroupIds:
+        - !ImportValue klondike-RedisSecurityGroupId
+      AutoMinorVersionUpgrade: true
+      Tags:
+        - Key: Project
+          Value: !Ref EnvironmentName
+
+Outputs:
+  RedisEndpoint:
+    Description: Redis primary endpoint
+    Value: !GetAtt RedisCluster.RedisEndpoint.Address
+    Export:
+      Name: !Sub '${EnvironmentName}-RedisEndpoint'
+
+  RedisPort:
+    Description: Redis port
+    Value: !GetAtt RedisCluster.RedisEndpoint.Port
+    Export:
+      Name: !Sub '${EnvironmentName}-RedisPort'

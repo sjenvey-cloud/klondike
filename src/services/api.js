@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // ── User ──────────────────────────────────────────────
 export const getUserByUsername = (username) =>
@@ -50,11 +50,28 @@ export const markDeckSolved = (id, description) =>
   }).then(r => r.json());
 
 // ── Deal ──────────────────────────────────────────────
-export const saveDeal = ({ moves, timeseconds, turns, deckid, userid }) =>
+// status is optional — omit for solved, pass 'abandoned' for DEV-57
+export const saveDeal = ({ moves, timeseconds, turns, deckid, userid, status }) =>
   fetch(`${BASE_URL}/deal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ moves, timeseconds, turns, deckid, userid }),
+    body: JSON.stringify({ moves, timeseconds, turns, deckid, userid, ...(status ? { status } : {}) }),
+  }).then(r => r.json());
+
+// DEV-57: explicit abandon endpoint (alias for saveDeal with status=abandoned)
+export const abandonDeal = ({ moves, timeseconds, turns, deckid, userid }) =>
+  saveDeal({ moves, timeseconds, turns, deckid, userid, status: 'abandoned' });
+
+// DEV-59: server-side replay validation
+export const validateDeal = ({ deckid, turns, claimedWon }) =>
+  fetch(`${BASE_URL}/deal/validate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deckid: String(deckid),
+      turns,
+      claimedWon: String(claimedWon),
+    }),
   }).then(r => r.json());
 
 export const getHighscoresByMoves = (deckid, limit = 10) =>

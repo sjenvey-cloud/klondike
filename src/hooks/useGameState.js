@@ -1,19 +1,33 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { buildGameState, canPlaceOnTableau, canPlaceOnFoundation, isGameWon } from '../utils/gameEngine';
-import { shuffleDeck, saveDeck, saveDeal, markDeckSolved } from '../services/api';
+import {
+  buildGameState,
+  canPlaceOnTableau,
+  canPlaceOnFoundation,
+  isGameWon,
+  applyDrawStock,
+  cloneState,
+  MOVE_TYPES,
+} from '../utils/gameEngine';
+import { shuffleDeck, saveDeck, saveDeal, markDeckSolved, validateDeal } from '../services/api';
+
+const DRAW_COUNT = 3; // DEV-58: 3-card draw is the default mode
 
 export const useGameState = (user) => {
-  const [gameState, setGameState] = useState(null);
-  const [deckId, setDeckId] = useState(null);
-  const [cardOrder, setCardOrder] = useState([]);
-  const [moves, setMoves] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
-  const [gameWon, setGameWon] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const moveHistory = useRef([]);
-  const timerRef = useRef(null);
+  const [gameState, setGameState]   = useState(null);
+  const [deckId, setDeckId]         = useState(null);
+  const [moves, setMoves]           = useState(0);
+  const [elapsed, setElapsed]       = useState(0);
+  const [gameWon, setGameWon]       = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [canUndo, setCanUndo]       = useState(false);
 
-  // ── Timer ─────────────────────────────────────────
+  // History stacks for undo (DEV-56) and move replay (DEV-59)
+  const stateHistory  = useRef([]); // stack of cloned game states
+  const moveHistory   = useRef([]); // serialised move labels for server replay
+  const timerRef      = useRef(null);
+  const currentDeckId = useRef(null);
+
+  // ── Timer ──────────────────────────────────────────
   useEffect(() => {
     if (gameState && !gameWon) {
       timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
@@ -21,94 +35,102 @@ export const useGameState = (user) => {
     return () => clearInterval(timerRef.current);
   }, [gameState, gameWon]);
 
-  // ── New Game ──────────────────────────────────────
+  // ── Internal: push a state snapshot before every move ──
+  const pushHistory = (state) => {
+    stateHistory.current.push(cloneState(state));
+    setCanUndo(true);
+  };
+
+  // ── New Game ───────────────────────────────────────
   const newGame = useCallback(async () => {
     setLoading(true);
+    clearInterval(timerRef.current);
     try {
       const data = await shuffleDeck();
-      // API returns { card1: n, card2: n, ... card52: n }
       const ids = Array.from({ length: 52 }, (_, i) => data[`card${i + 1}`]);
-      setCardOrder(ids);
 
       const saved = await saveDeck(ids);
-      setDeckId(saved.id);
+      const id = saved.id;
+      setDeckId(id);
+      currentDeckId.current = id;
 
-      setGameState(buildGameState(ids));
+      const initial = buildGameState(ids, DRAW_COUNT);
+      setGameState(initial);
       setMoves(0);
       setElapsed(0);
       setGameWon(false);
-      moveHistory.current = [];
+      setCanUndo(false);
+      stateHistory.current  = [];
+      moveHistory.current   = [];
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // ── Draw from stock ───────────────────────────────
+  // ── Draw from stock (DEV-15, DEV-58) ──────────────
   const drawFromStock = useCallback(() => {
     setGameState(prev => {
       if (!prev) return prev;
-      let { stock, waste } = prev;
-      if (stock.length === 0) {
-        // Flip waste back to stock
-        stock = [...waste].reverse().map(c => ({ ...c, faceUp: false }));
-        waste = [];
-      } else {
-        const [top, ...rest] = stock;
-        waste = [...waste, { ...top, faceUp: true }];
-        stock = rest;
-      }
-      return { ...prev, stock, waste };
+      pushHistory(prev);
+      const next = applyDrawStock(prev);
+      moveHistory.current.push(MOVE_TYPES.DRAW_STOCK);
+      return next;
     });
     setMoves(m => m + 1);
-    moveHistory.current.push('stock');
   }, []);
 
-  // ── Move card(s) to tableau ───────────────────────
+  // ── Move card(s) to tableau ────────────────────────
   const moveToTableau = useCallback((card, fromLocation, toCol) => {
     setGameState(prev => {
       if (!prev) return prev;
-      const state = JSON.parse(JSON.stringify(prev));
-      const targetPile = state.tableau[toCol];
+      const targetPile = prev.tableau[toCol];
       if (!canPlaceOnTableau(card, targetPile)) return prev;
 
-      // Remove from source
+      pushHistory(prev);
+      const state = cloneState(prev);
+
       if (fromLocation.type === 'waste') {
         state.waste.pop();
+        state.tableau[toCol].push({ ...card });
+        moveHistory.current.push(`${MOVE_TYPES.WASTE_TO_TABLEAU}:${toCol}`);
       } else if (fromLocation.type === 'tableau') {
         const srcPile = state.tableau[fromLocation.col];
         const cardIdx = srcPile.findIndex(c => c.id === card.id);
         const moving = srcPile.splice(cardIdx);
-        targetPile.push(...moving);
-        // Flip new top card of source pile
+        state.tableau[toCol].push(...moving);
         if (srcPile.length > 0) srcPile[srcPile.length - 1].faceUp = true;
-        return state;
+        moveHistory.current.push(
+          `${MOVE_TYPES.TABLEAU_TO_TABLEAU}:${fromLocation.col}:${toCol}`
+        );
       }
-      targetPile.push({ ...card });
       return state;
     });
     setMoves(m => m + 1);
-    moveHistory.current.push(`t${toCol}`);
   }, []);
 
-  // ── Move card to foundation ───────────────────────
+  // ── Move card to foundation ────────────────────────
   const moveToFoundation = useCallback((card, fromLocation) => {
     setGameState(prev => {
       if (!prev) return prev;
-      const state = JSON.parse(JSON.stringify(prev));
-      const suits = ['clubs', 'diamonds', 'hearts', 'spades'];
-      const fIdx = suits.indexOf(card.suit);
-      if (!canPlaceOnFoundation(card, state.foundations[fIdx])) return prev;
+      const fIdx = SUITS.indexOf(card.suit);
+      if (!canPlaceOnFoundation(card, prev.foundations[fIdx])) return prev;
+
+      pushHistory(prev);
+      const state = cloneState(prev);
 
       if (fromLocation.type === 'waste') {
         state.waste.pop();
+        moveHistory.current.push(MOVE_TYPES.WASTE_TO_FOUNDATION);
       } else if (fromLocation.type === 'tableau') {
         const srcPile = state.tableau[fromLocation.col];
         srcPile.pop();
         if (srcPile.length > 0) srcPile[srcPile.length - 1].faceUp = true;
+        moveHistory.current.push(
+          `${MOVE_TYPES.TABLEAU_TO_FOUNDATION}:${fromLocation.col}`
+        );
       }
       state.foundations[fIdx].push({ ...card, faceUp: true });
 
-      // Check win
       if (isGameWon(state.foundations)) {
         setGameWon(true);
         clearInterval(timerRef.current);
@@ -116,28 +138,92 @@ export const useGameState = (user) => {
       return state;
     });
     setMoves(m => m + 1);
-    moveHistory.current.push(`f`);
   }, []);
 
-  // ── Save completed deal ───────────────────────────
+  // ── Undo last move (DEV-56, unlimited) ────────────
+  const undo = useCallback(() => {
+    if (stateHistory.current.length === 0) return;
+    const prev = stateHistory.current.pop();
+    moveHistory.current.pop();
+    setGameState(prev);
+    setMoves(m => Math.max(0, m - 1));
+    setCanUndo(stateHistory.current.length > 0);
+  }, []);
+
+  // ── Abandon game (DEV-57, DEV-59) ─────────────────
+  const abandonGame = useCallback(async () => {
+    if (!user || !currentDeckId.current) return;
+    clearInterval(timerRef.current);
+    moveHistory.current.push(MOVE_TYPES.ABANDON);
+    const turns  = moveHistory.current.join(',');
+    const deckid = currentDeckId.current;
+    try {
+      // Validate the move history even for abandoned games (DEV-59)
+      const validation = await validateDeal({ deckid, turns, claimedWon: false });
+      if (!validation.valid) {
+        console.warn('DEV-59 abandon replay validation failed:', validation.message);
+      }
+      await saveDeal({
+        moves,
+        timeseconds: elapsed,
+        turns,
+        deckid,
+        userid: user.id,
+        status: 'abandoned',
+      });
+    } catch (e) {
+      console.warn('Failed to save abandoned deal:', e);
+    }
+    // Start a new game
+    newGame();
+  }, [user, moves, elapsed, newGame]);
+
+  // ── Save completed deal (DEV-59: validate replay first) ──
   const saveResult = useCallback(async () => {
-    if (!user || !deckId) return;
-    await markDeckSolved(deckId, `Solved in ${moves} moves`);
-    await saveDeal({
-      moves,
-      timeseconds: elapsed,
-      turns: moveHistory.current.join(','),
-      deckid: deckId,
-      userid: user.id,
-    });
-  }, [user, deckId, moves, elapsed]);
+    if (!user || !currentDeckId.current) return;
+    const turns  = moveHistory.current.join(',');
+    const deckid = currentDeckId.current;
+    try {
+      // Server-side replay validation (DEV-59)
+      const validation = await validateDeal({ deckid, turns, claimedWon: true });
+      if (!validation.valid) {
+        console.warn('DEV-59 replay validation failed:', validation.message);
+        return; // Do not persist a fraudulent win
+      }
+      await markDeckSolved(deckid, `Solved in ${moves} moves`);
+      await saveDeal({
+        moves,
+        timeseconds: elapsed,
+        turns,
+        deckid,
+        userid: user.id,
+      });
+    } catch (e) {
+      console.warn('Failed to save deal result:', e);
+    }
+  }, [user, moves, elapsed]);
 
   useEffect(() => {
     if (gameWon) saveResult();
   }, [gameWon]);
 
   return {
-    gameState, moves, elapsed, gameWon, loading, deckId,
-    newGame, drawFromStock, moveToTableau, moveToFoundation,
+    gameState,
+    moves,
+    elapsed,
+    gameWon,
+    loading,
+    canUndo,
+    deckId,
+    drawCount: DRAW_COUNT,
+    newGame,
+    drawFromStock,
+    moveToTableau,
+    moveToFoundation,
+    undo,
+    abandonGame,
   };
 };
+
+// Needed internally — re-export for convenience
+const SUITS = ['clubs', 'diamonds', 'hearts', 'spades'];
