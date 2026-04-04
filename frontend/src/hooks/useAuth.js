@@ -1,36 +1,58 @@
-import { useState, useCallback } from 'react';
-import { getUserByDisplayName, createUser } from '../services/api';
+import { useState, useCallback, useEffect } from 'react';
+import * as authService from '../services/auth';
 
-const STORAGE_KEY = 'klondike_user';
+const USER_KEY = 'klondike_user';
 
-function loadStored() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch { return null; }
+function loadStoredUser() {
+  try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch { return null; }
 }
 
 export function useAuth() {
-  const [user, setUser] = useState(loadStored);  // { id, displayName }
+  const [user, setUser]       = useState(loadStoredUser);
+  const [loading, setLoading] = useState(true); // checking refresh token on mount
 
-  const login = useCallback(async (displayName) => {
-    let found = await getUserByDisplayName(displayName);
-    if (!found) found = await createUser(displayName);
-    const u = { id: found.id, displayName: found.displayName };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-    setUser(u);
-    return u;
+  // On mount: attempt silent token refresh so the in-memory accessToken is valid
+  useEffect(() => {
+    const storedUser = loadStoredUser();
+    if (!storedUser) {
+      setLoading(false);
+      return;
+    }
+    authService.refresh()
+      .then(() => {
+        setUser(storedUser);
+      })
+      .catch(() => {
+        // Refresh failed — clear stale user
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const login = useCallback(async (email, password) => {
+    const data = await authService.login(email, password);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const register = useCallback(async (displayName, email, password) => {
+    const data = await authService.register(displayName, email, password);
+    setUser(data.user);
+    return data.user;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    authService.logout();
     setUser(null);
   }, []);
 
   const updateDisplayName = useCallback((displayName) => {
     setUser(prev => {
       const u = { ...prev, displayName };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+      localStorage.setItem(USER_KEY, JSON.stringify(u));
       return u;
     });
   }, []);
 
-  return { user, login, logout, updateDisplayName };
+  return { user, loading, login, register, logout, updateDisplayName };
 }

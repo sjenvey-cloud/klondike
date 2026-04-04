@@ -1,9 +1,39 @@
-import { useReducer, useState, useRef, useCallback } from 'react';
+import { useReducer, useState, useRef, useCallback, useEffect } from 'react';
 import {
   dealKlondike, canPlaceOnTableau, canPlaceOnFoundation,
-  isGameWon, foundationIndex,
+  isGameWon, foundationIndex, getRank,
 } from '../services/gameLogic';
 import { createHand, createSession, completeSession, abandonSession } from '../services/api';
+
+// ── DEV-66: Session persistence ────────────────────────────────────────────
+const SESSION_KEY = 'klondike_session';
+
+function saveSession(sessionId, gameState, moves, turns, startTime) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      sessionId,
+      gameState: {
+        tableau:     gameState.tableau,
+        stock:       gameState.stock,
+        waste:       gameState.waste,
+        foundations: gameState.foundations,
+      },
+      moves,
+      turns,
+      startTime,
+    }));
+  } catch { /* storage full — ignore */ }
+}
+
+function loadSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
+}
+
+export function clearSavedSession() {
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+// ── Reducer ────────────────────────────────────────────────────────────────
 
 const initial = {
   tableau: null, stock: null, waste: null, foundations: null,
@@ -16,11 +46,13 @@ function reducer(state, action) {
     case 'DEAL':
       return { ...initial, ...action.payload };
 
+    case 'RESTORE':
+      return { ...initial, ...action.payload };
+
     case 'DRAW': {
       let stock = [...state.stock];
       let waste = [...state.waste];
       if (stock.length === 0) {
-        // Flip waste back
         stock = [...waste].reverse().map(c => ({ card: c.card, faceUp: false }));
         waste = [];
       } else {
@@ -116,30 +148,143 @@ function reducer(state, action) {
       };
     }
 
+    // DEV-62: move one card to foundation
+    case 'AUTO_COMPLETE_STEP': {
+      const tableau = state.tableau.map(p => [...p]);
+      const foundations = state.foundations.map(p => [...p]);
+      let moved = false;
+
+      // Collect all face-up top cards from waste + tableau, pick lowest rank that can go to foundation
+      const candidates = [];
+      if (state.waste.length > 0) {
+        const c = state.waste[state.waste.length - 1];
+        const fi = foundationIndex(c.card);
+        if (canPlaceOnFoundation(c.card, foundations[fi])) {
+          candidates.push({ source: 'waste', rank: getRank(c.card) });
+        }
+      }
+      for (let col = 0; col < tableau.length; col++) {
+        const pile = tableau[col];
+        if (!pile.length) continue;
+        const top = pile[pile.length - 1];
+        if (!top.faceUp) continue;
+        const fi = foundationIndex(top.card);
+        if (canPlaceOnFoundation(top.card, foundations[fi])) {
+          candidates.push({ source: 'tableau', col, rank: getRank(top.card) });
+        }
+      }
+      if (candidates.length === 0) return state;
+
+      // Pick the candidate with the lowest rank (safest move)
+      candidates.sort((a, b) => a.rank - b.rank);
+      const pick = candidates[0];
+
+      let waste = state.waste;
+      let turns = [...state.turns, 'ac'];
+
+      if (pick.source === 'waste') {
+        const top = waste[waste.length - 1];
+        const fi = foundationIndex(top.card);
+        foundations[fi].push(top.card);
+        waste = waste.slice(0, -1);
+        moved = true;
+      } else {
+        const pile = tableau[pick.col];
+        const top = pile[pile.length - 1];
+        const fi = foundationIndex(top.card);
+        foundations[fi].push(top.card);
+        tableau[pick.col] = pile.slice(0, -1);
+        if (tableau[pick.col].length > 0) {
+          const last = tableau[pick.col].length - 1;
+          if (!tableau[pick.col][last].faceUp) {
+            tableau[pick.col][last] = { ...tableau[pick.col][last], faceUp: true };
+          }
+        }
+        moved = true;
+      }
+
+      if (!moved) return state;
+
+      return {
+        ...state,
+        tableau,
+        waste,
+        foundations,
+        isWon: isGameWon(foundations),
+        moves: state.moves + 1,
+        turns,
+      };
+    }
+
     default:
       return state;
   }
 }
 
+// ── canAutoComplete helper ─────────────────────────────────────────────────
+// True when stock+waste are empty and all tableau cards are face-up
+function checkCanAutoComplete(state) {
+  if (!state.tableau) return false;
+  if (state.stock && state.stock.length > 0) return false;
+  if (state.waste && state.waste.length > 0) return false;
+  return state.tableau.every(pile => pile.every(c => c.faceUp));
+}
+
+// ── Hook ──────────────────────────────────────────────────────────────────
+
 export function useGame(userId) {
-  const [state, dispatch] = useReducer(reducer, initial);
+  const [state, dispatch]   = useReducer(reducer, initial);
   const [sessionId, setSessionId] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]     = useState(false);
   const startTimeRef = useRef(null);
+
+  // Track previous state for session save
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
+  // DEV-66: save to sessionStorage after every move
+  useEffect(() => {
+    if (!state.tableau || !sessionId) return;
+    saveSession(sessionId, state, state.moves, state.turns, startTimeRef.current);
+  }, [state, sessionId]);
+
+  // DEV-62: canAutoComplete flag
+  const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
 
   const startGame = useCallback(async (handOverride = null) => {
     setLoading(true);
     try {
-      const hand = handOverride || await createHand();
+      const hand    = handOverride || await createHand();
       const session = await createSession(hand.id, userId);
-      const dealt = dealKlondike(hand.cards);
+      const dealt   = dealKlondike(hand.cards);
       setSessionId(session.id);
       startTimeRef.current = Date.now();
+      clearSavedSession();
       dispatch({ type: 'DEAL', payload: dealt });
     } finally {
       setLoading(false);
     }
   }, [userId]);
+
+  // DEV-66: resume from sessionStorage
+  const resumeGame = useCallback(() => {
+    const saved = loadSession();
+    if (!saved) return false;
+    setSessionId(saved.sessionId);
+    startTimeRef.current = saved.startTime || Date.now();
+    dispatch({
+      type: 'RESTORE',
+      payload: {
+        ...saved.gameState,
+        moves: saved.moves,
+        turns: saved.turns,
+        isWon: false,
+      },
+    });
+    return true;
+  }, []);
+
+  const hasSavedSession = useCallback(() => !!loadSession(), []);
 
   const draw               = useCallback(() => dispatch({ type: 'DRAW' }), []);
   const wasteToTableau     = useCallback((col)              => dispatch({ type: 'WASTE_TO_TABLEAU', col }), []);
@@ -148,14 +293,31 @@ export function useGame(userId) {
   const tableauToTableau   = useCallback((fromCol, fromIdx, toCol) =>
     dispatch({ type: 'TABLEAU_TO_TABLEAU', fromCol, fromIdx, toCol }), []);
 
+  // DEV-62: auto-complete — dispatch steps until won or no progress
+  const autoComplete = useCallback(() => {
+    let maxSteps = 52; // safety cap
+    const step = () => {
+      // peek at current state via ref
+      const s = stateRef.current;
+      if (s.isWon || maxSteps-- <= 0) return;
+      dispatch({ type: 'AUTO_COMPLETE_STEP' });
+      // schedule next step with a small delay for visual effect
+      setTimeout(step, 80);
+    };
+    step();
+  }, []);
+
   const finishGame = useCallback(async () => {
     const timeSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
-    return completeSession(sessionId, state.moves, timeSeconds, state.turns.join(','));
+    const result = await completeSession(sessionId, state.moves, timeSeconds, state.turns.join(','));
+    clearSavedSession();
+    return result;
   }, [sessionId, state.moves, state.turns]);
 
   const abandon = useCallback(async () => {
     if (!sessionId) return;
     const timeSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    clearSavedSession();
     return abandonSession(sessionId, state.moves, timeSeconds, state.turns.join(','));
   }, [sessionId, state.moves, state.turns]);
 
@@ -163,12 +325,16 @@ export function useGame(userId) {
     ...state,
     sessionId,
     loading,
+    canAutoComplete,
     startGame,
+    resumeGame,
+    hasSavedSession,
     draw,
     wasteToTableau,
     wasteToFoundation,
     tableauToTableau,
     tableauToFoundation,
+    autoComplete,
     finishGame,
     abandon,
   };

@@ -10,12 +10,24 @@ export function Game({ dailyHand = null }) {
   const { user } = useContext(AuthContext);
   const game = useGame(user?.id);
   const timer = useTimer(!!game.tableau && !game.isWon);
-  const [winResult, setWinResult] = useState(null);
-  const [finishing, setFinishing] = useState(false);
+  const [winResult, setWinResult]   = useState(null);
+  const [finishing, setFinishing]   = useState(false);
+  // DEV-66: resume prompt
+  const [resumePrompt, setResumePrompt] = useState(false);
 
-  // Auto-start on mount
+  // On mount: check for saved session
   useEffect(() => {
-    if (user) game.startGame(dailyHand);
+    if (!user) return;
+    if (dailyHand) {
+      // Daily games always start fresh
+      game.startGame(dailyHand);
+      return;
+    }
+    if (game.hasSavedSession()) {
+      setResumePrompt(true);
+    } else {
+      game.startGame(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -30,7 +42,13 @@ export function Game({ dailyHand = null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.isWon, finishing]);
 
+  const handleResume = useCallback(() => {
+    setResumePrompt(false);
+    game.resumeGame();
+  }, [game]);
+
   const handleNewGame = useCallback(() => {
+    setResumePrompt(false);
     setWinResult(null);
     setFinishing(false);
     timer.reset();
@@ -40,7 +58,22 @@ export function Game({ dailyHand = null }) {
   if (!user) {
     return (
       <div className="screen game-screen game-center">
-        <p>Sign in from the Profile tab to play.</p>
+        <p>Sign in to play.</p>
+      </div>
+    );
+  }
+
+  // DEV-66: Resume prompt
+  if (resumePrompt) {
+    return (
+      <div className="screen game-screen game-center">
+        <div className="resume-prompt">
+          <p className="resume-prompt-text">You have a game in progress.</p>
+          <div className="resume-prompt-buttons">
+            <button className="btn-primary" onClick={handleResume}>Resume</button>
+            <button className="btn-secondary" onClick={handleNewGame}>New Game</button>
+          </div>
+        </div>
       </div>
     );
   }

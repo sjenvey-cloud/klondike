@@ -1,8 +1,39 @@
+/* ── DEV-22: Responsive card sizes ── */
 :root {
-  --card-w: 62px;
-  --card-h: 88px;
-  --tableau-offset: 20px;   /* overlap for face-down */
-  --tableau-offset-up: 28px; /* overlap for face-up */
+  --card-w: 52px;
+  --card-h: 74px;
+  --tableau-offset: 18px;
+  --tableau-offset-up: 26px;
+}
+
+/* Very small screens */
+@media (max-width: 359px) {
+  :root {
+    --card-w: 44px;
+    --card-h: 62px;
+    --tableau-offset: 14px;
+    --tableau-offset-up: 20px;
+  }
+}
+
+/* Medium */
+@media (min-width: 480px) and (max-width: 599px) {
+  :root {
+    --card-w: 62px;
+    --card-h: 88px;
+    --tableau-offset: 20px;
+    --tableau-offset-up: 30px;
+  }
+}
+
+/* Large */
+@media (min-width: 600px) {
+  :root {
+    --card-w: 72px;
+    --card-h: 100px;
+    --tableau-offset: 22px;
+    --tableau-offset-up: 32px;
+  }
 }
 
 .board {
@@ -19,7 +50,7 @@
 .board-top {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: clamp(3px, 1.2vw, 8px);
 }
 
 .board-top-spacer {
@@ -95,7 +126,7 @@
 /* ── Tableau ── */
 .board-tableau {
   display: flex;
-  gap: 6px;
+  gap: clamp(3px, 1.2vw, 8px);
   align-items: flex-start;
   flex: 1;
 }
@@ -129,6 +160,25 @@
   margin-top: calc(-1 * var(--card-h) + var(--tableau-offset-up));
 }
 
+/* ── DEV-20: Drag ghost ── */
+.dragging {
+  opacity: 0.5;
+}
+
+/* The ghost clone is created via JS with inline styles;
+   these classes handle the source card while dragging */
+
+/* ── DEV-65: Shake animation ── */
+@keyframes shake {
+  0%,  100% { transform: translateX(0); }
+  25%        { transform: translateX(-4px); }
+  75%        { transform: translateX(4px); }
+}
+
+.shake {
+  animation: shake 0.4s ease;
+}
+
 /* moves/timer bar */
 .board-stats {
   display: flex;
@@ -145,11 +195,21 @@
   text-align: center;
 }
 
-@media (min-width: 480px) {
-  :root {
-    --card-w: 70px;
-    --card-h: 98px;
-    --tableau-offset: 22px;
-    --tableau-offset-up: 32px;
-  }
+/* ── DEV-62: Auto-complete button ── */
+.autocomplete-btn {
+  background: var(--color-accent);
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.autocomplete-btn:hover {
+  background: var(--color-accent-hover);
 }

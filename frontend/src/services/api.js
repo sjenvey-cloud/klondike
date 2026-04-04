@@ -1,25 +1,83 @@
+import { accessToken, refresh, setAccessToken } from './auth';
+
 const BASE = '/api/v1';
 
-const get = (path) =>
-  fetch(BASE + path).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+// ── Auth-aware fetch helpers ───────────────────────────────────────────────
 
-const post = (path, body) =>
-  fetch(BASE + path, {
+function authHeaders(extra = {}) {
+  const headers = { 'Content-Type': 'application/json', ...extra };
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  return headers;
+}
+
+async function handleResponse(r, retry) {
+  if (r.status === 401 && retry) {
+    // Try token refresh once
+    try {
+      await refresh();
+    } catch {
+      // refresh failed → redirect to login
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
+    return retry();
+  }
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+const get = (path) => {
+  const doFetch = () =>
+    fetch(BASE + path, { headers: authHeaders() })
+      .then(r => handleResponse(r, null));
+  return fetch(BASE + path, { headers: authHeaders() })
+    .then(r => handleResponse(r, doFetch));
+};
+
+const post = (path, body) => {
+  const doFetch = () =>
+    fetch(BASE + path, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }).then(r => handleResponse(r, null));
+  return fetch(BASE + path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify(body),
-  }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }).then(r => handleResponse(r, doFetch));
+};
 
-const patch = (path, body) =>
-  fetch(BASE + path, {
+const patch = (path, body) => {
+  const doFetch = () =>
+    fetch(BASE + path, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }).then(r => handleResponse(r, null));
+  return fetch(BASE + path, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify(body),
-  }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }).then(r => handleResponse(r, doFetch));
+};
 
-const del = (path) =>
-  fetch(BASE + path, { method: 'DELETE' })
-    .then(r => { if (!r.ok) throw new Error(r.status); return r.status === 204 ? null : r.json(); });
+const del = (path) => {
+  const doFetch = () =>
+    fetch(BASE + path, { method: 'DELETE', headers: authHeaders() })
+      .then(r => handleResponse(r, null));
+  return fetch(BASE + path, { method: 'DELETE', headers: authHeaders() })
+    .then(r => {
+      if (r.status === 401) {
+        return handleResponse(r, doFetch);
+      }
+      if (!r.ok) throw new Error(r.status);
+      return r.status === 204 ? null : r.json();
+    });
+};
+
+// keep setAccessToken importable from one place for convenience
+export { setAccessToken };
 
 // ── Hands ─────────────────────────────────────────────────────────────────
 // POST /api/v1/hands → { id, shuffleSeed, cards: number[] }
@@ -46,16 +104,16 @@ export const getDailyLeaderboard = (date, sort = 'moves') =>
   get(`/leaderboard/daily/${date}/${sort}`);
 
 export const getMyDailyRank = (date, userId, sort = 'moves') =>
-  get(`/leaderboard/daily/${date}/${sort}/rank/${userId}`);
+  get(`/leaderboard/daily/${date}/${userId}/${sort}`);
 
 // ── Profile ───────────────────────────────────────────────────────────────
-export const getProfile   = (userId)      => get(`/profile/${userId}`);
+export const getProfile   = (userId)       => get(`/profile/${userId}`);
 export const patchProfile = (userId, body) => patch(`/profile/${userId}`, body);
 
 // ── Friends ───────────────────────────────────────────────────────────────
-export const getFriends        = (userId)  => get(`/friends/${userId}`);
-export const createFriendInvite = (userId) => post(`/friends/invite`, { userId });
-export const acceptFriendInvite = (token)  => post(`/friends/accept/${token}`, {});
+export const getFriends         = (userId)           => get(`/friends/${userId}`);
+export const createFriendInvite = (userId)           => post(`/friends/invite`, { userId });
+export const acceptFriendInvite = (token)            => post(`/friends/accept/${token}`, {});
 export const removeFriend       = (userId, friendId) => del(`/friends/${userId}/${friendId}`);
 
 // ── Challenges ────────────────────────────────────────────────────────────
@@ -68,11 +126,13 @@ export const getLeague = (userId, period = 'week') =>
 
 // ── User (legacy path used for create/lookup) ─────────────────────────────
 export const getUserByDisplayName = (name) =>
-  fetch(`/user/displayname/${name}`).then(r => r.ok ? r.json() : null).catch(() => null);
+  fetch(`/user/displayname/${name}`, { headers: authHeaders() })
+    .then(r => r.ok ? r.json() : null)
+    .catch(() => null);
 
 export const createUser = (displayName) =>
   fetch('/user', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ displayName }),
   }).then(r => r.json());
