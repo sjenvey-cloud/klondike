@@ -24,27 +24,23 @@ public class HandController {
 
     /**
      * POST /api/v1/hands
+     * Body (optional): { "drawMode": "draw1" | "draw3" }
      *
-     * Generates a unique shuffle seed, verifies it has not been used before
-     * (UNIQUE constraint + retry), shuffles the deck server-side, persists
-     * the hand, and returns the seed + card order to the client.
-     *
-     * The client can reproduce the card order at any time using the seed
-     * and the seededShuffle() JS function (DEV-73).
-     *
-     * Seeds are drawn from [1, 2^32) — zero is excluded as it is a
-     * degenerate xorshift32 fixed point.
+     * DEV-110: draw_mode stored on the hand so replay validation uses the
+     * correct draw count. Defaults to "draw3".
      */
     @PostMapping("/hands")
-    public ResponseEntity<HandResponse> createHand() {
+    public ResponseEntity<HandResponse> createHand(
+            @RequestBody(required = false) CreateHandRequest body) {
+
+        String drawMode = (body != null && body.drawMode() != null) ? body.drawMode() : "draw3";
+
         Hand hand = null;
         int attempts = 0;
-
-        // Retry on the (astronomically unlikely) event of a seed collision.
         while (attempts < 5) {
             long seed = ThreadLocalRandom.current().nextLong(1L, 0x100000000L);
             try {
-                hand = handRepository.save(new Hand(seed));
+                hand = handRepository.save(new Hand(seed, drawMode));
                 break;
             } catch (DataIntegrityViolationException e) {
                 attempts++;
@@ -57,7 +53,7 @@ public class HandController {
 
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
         return new ResponseEntity<>(
-            new HandResponse(hand.getId(), hand.getShuffleSeed(), cards),
+            new HandResponse(hand.getId(), hand.getShuffleSeed(), cards, hand.getDrawMode()),
             HttpStatus.CREATED
         );
     }

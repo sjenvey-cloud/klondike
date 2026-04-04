@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { useGame } from '../hooks/useGame';
 import { useTimer } from '../hooks/useTimer';
@@ -8,6 +9,7 @@ import './Game.css';
 
 export function Game({ dailyHand = null }) {
   const { user } = useContext(AuthContext);
+  const location = useLocation();
   const game = useGame(user?.id);
   const timer = useTimer(!!game.tableau && !game.isWon);
   const [winResult, setWinResult]   = useState(null);
@@ -20,13 +22,15 @@ export function Game({ dailyHand = null }) {
     if (!user) return;
     if (dailyHand) {
       // Daily games always start fresh
-      game.startGame(dailyHand);
+      const drawMode = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
+      game.startGame(dailyHand, drawMode);
       return;
     }
     if (game.hasSavedSession()) {
       setResumePrompt(true);
     } else {
-      game.startGame(null);
+      const drawMode = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
+      game.startGame(null, drawMode);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -52,8 +56,9 @@ export function Game({ dailyHand = null }) {
     setWinResult(null);
     setFinishing(false);
     timer.reset();
-    game.startGame(null);
-  }, [game, timer]);
+    const drawMode = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
+    game.startGame(null, drawMode);
+  }, [game, timer, location.state]);
 
   if (!user) {
     return (

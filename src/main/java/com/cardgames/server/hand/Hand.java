@@ -19,20 +19,30 @@ public class Hand {
     @Column(name = "shuffle_seed", nullable = false, unique = true)
     private long shuffleSeed;
 
+    @Column(name = "draw_mode", nullable = false)
+    private String drawMode = "draw3";
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     public Hand() {}
 
     public Hand(long shuffleSeed) {
+        this(shuffleSeed, "draw3");
+    }
+
+    public Hand(long shuffleSeed, String drawMode) {
         this.shuffleSeed = shuffleSeed;
+        this.drawMode    = (drawMode != null) ? drawMode : "draw3";
         this.createdAt   = LocalDateTime.now();
     }
 
     public int           getId()          { return id; }
     public long          getShuffleSeed() { return shuffleSeed; }
+    public String        getDrawMode()    { return drawMode; }
     public LocalDateTime getCreatedAt()   { return createdAt; }
 
-    public void setShuffleSeed(long shuffleSeed) { this.shuffleSeed = shuffleSeed; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setShuffleSeed(long s)    { this.shuffleSeed = s; }
+    public void setDrawMode(String m)     { this.drawMode = m; }
+    public void setCreatedAt(LocalDateTime t) { this.createdAt = t; }
 }

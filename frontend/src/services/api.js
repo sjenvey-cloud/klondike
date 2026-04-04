@@ -81,11 +81,12 @@ export { setAccessToken };
 
 // ── Hands ─────────────────────────────────────────────────────────────────
 // POST /api/v1/hands → { id, shuffleSeed, cards: number[] }
-export const createHand = () => post('/hands', {});
+export const createHand = (drawMode = 'draw3') => post('/hands', { drawMode });
 
 // ── Sessions ──────────────────────────────────────────────────────────────
 // POST /api/v1/sessions → Session
-export const createSession = (handId, userId) => post('/sessions', { handId, userId });
+export const createSession = (handId, userId, isDaily = false, dailyDate = null) =>
+  post('/sessions', { handId, userId, isDaily, dailyDate });
 
 // POST /api/v1/sessions/{id}/complete → { valid, message, moveCount, session }
 export const completeSession = (id, moves, timeSeconds, turns) =>
@@ -96,15 +97,15 @@ export const abandonSession = (id, moves, timeSeconds, turns) =>
   post(`/sessions/${id}/abandon`, { moves, timeSeconds, turns });
 
 // ── Daily ─────────────────────────────────────────────────────────────────
-export const getDaily        = ()     => get('/daily');
+export const getDaily        = (drawMode = 'draw3') => get(`/daily?drawMode=${drawMode}`);
 export const getDailyByDate  = (date) => get(`/daily/${date}`);
 
 // ── Leaderboard ───────────────────────────────────────────────────────────
-export const getDailyLeaderboard = (date, sort = 'moves') =>
-  get(`/leaderboard/daily/${date}/${sort}`);
+export const getDailyLeaderboard = (date, sort = 'moves', drawMode = 'draw3') =>
+  get(`/leaderboard/daily/${date}/${sort}?drawMode=${drawMode}`);
 
-export const getMyDailyRank = (date, userId, sort = 'moves') =>
-  get(`/leaderboard/daily/${date}/${userId}/${sort}`);
+export const getMyDailyRank = (date, userId, sort = 'moves', drawMode = 'draw3') =>
+  get(`/leaderboard/daily/${date}/${userId}/${sort}?drawMode=${drawMode}`);
 
 // ── Profile ───────────────────────────────────────────────────────────────
 export const getProfile   = (userId)       => get(`/profile/${userId}`);
@@ -136,3 +137,13 @@ export const createUser = (displayName) =>
     headers: authHeaders(),
     body: JSON.stringify({ displayName }),
   }).then(r => r.json());
+
+// ── Preferences ───────────────────────────────────────────────────────────
+export const getPreferences  = ()       => get('/profile/preferences');
+export const patchPreferences = (body)  => patch('/profile/preferences', body);
+
+// ── Profile history / sessions ────────────────────────────────────────────
+export const getProfileHistory = (userId, days = 35) =>
+  get(`/profile/${userId}/history?days=${days}`);
+export const getSessionsByDate = (userId, date) =>
+  get(`/profile/${userId}/sessions?date=${date}`);

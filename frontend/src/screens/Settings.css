@@ -21,6 +21,7 @@
   margin: 0;
 }
 
+/* ── Theme ── */
 .theme-grid {
   display: flex;
   gap: 12px;
@@ -70,6 +71,188 @@
   font-weight: 700;
 }
 
+/* ── Pill toggle (draw mode default) ── */
+.pill-toggle {
+  display: flex;
+  gap: 0;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 3px;
+  align-self: flex-start;
+}
+
+.pill-btn {
+  padding: 7px 20px;
+  border-radius: 16px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.pill-btn--active {
+  background: var(--color-accent);
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.pill-btn:not(.pill-btn--active):hover {
+  color: var(--color-text-primary);
+}
+
+/* ── Card face design cards ── */
+.design-cards {
+  display: flex;
+  gap: 12px;
+}
+
+.design-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 10px 8px;
+  border-radius: 10px;
+  border: 2px solid var(--color-border);
+  background: var(--color-surface-raised);
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.design-card:hover { transform: translateY(-2px); }
+
+.design-card--active {
+  border-color: var(--color-accent);
+}
+
+.design-card-preview {
+  width: 40px;
+  height: 56px;
+  border-radius: 5px;
+  background: var(--color-card-face);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+}
+
+.design-card-suit {
+  font-size: 16px;
+  color: var(--color-suit-black);
+}
+
+.design-card-rank {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-suit-black);
+}
+
+.design-card-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* ── Colour swatches ── */
+.swatch-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  padding: 0;
+  outline: none;
+  transition: transform 0.12s, border-color 0.12s;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.swatch.active {
+  border-color: var(--color-accent);
+}
+
+/* ── Animations toggle ── */
+.toggle-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle-label {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  min-width: 24px;
+}
+
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  transition: background 0.2s;
+}
+
+.toggle-track::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.toggle input:checked + .toggle-track {
+  background: var(--color-accent-muted);
+  border-color: var(--color-accent);
+}
+
+.toggle input:checked + .toggle-track::before {
+  transform: translateX(20px);
+  background: var(--color-accent);
+}
+
+/* ── Draw mode info box ── */
 .draw-mode-box {
   background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
@@ -93,6 +276,7 @@
   line-height: 1.5;
 }
 
+/* ── About ── */
 .about-text {
   font-family: var(--font-ui);
   font-size: 13px;

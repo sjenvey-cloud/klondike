@@ -23,7 +23,8 @@ import java.util.List;
 public class GameState {
 
     private static final String[] SUIT_ORDER = { "clubs", "diamonds", "hearts", "spades" };
-    private static final int DRAW_COUNT = 3;
+
+    private final int drawCount;
 
     // Tableau: 7 piles
     private final List<List<Card>> tableau = new ArrayList<>();
@@ -37,11 +38,20 @@ public class GameState {
 
     // ── Build initial state from a shuffle seed (DEV-73) ──────────────────
     public GameState(long seed) {
-        this(SeededShuffle.shuffle(seed));
+        this(seed, "draw3");
+    }
+
+    public GameState(long seed, String drawMode) {
+        this(SeededShuffle.shuffle(seed), drawMode);
     }
 
     // ── Build initial state from 52 ordered card IDs ──────────────────────
     public GameState(int[] cardIds) {
+        this(cardIds, "draw3");
+    }
+
+    public GameState(int[] cardIds, String drawMode) {
+        this.drawCount = "draw1".equals(drawMode) ? 1 : 3;
         // Deal tableau: pile i has i+1 cards, last is face-up
         int idx = 0;
         for (int i = 0; i < 7; i++) {
@@ -108,7 +118,7 @@ public class GameState {
             }
             waste.clear();
         } else {
-            int count = Math.min(DRAW_COUNT, stock.size());
+            int count = Math.min(drawCount, stock.size());
             for (int i = 0; i < count; i++) {
                 Card c = stock.poll();
                 c.setFaceUp(true);

@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  DEV-130 — S3 versioned bucket for Klondike Pro card theme asset bundles.
+  Assets are served via CloudFront with long-lived cache headers.
+  Bucket versioning allows safe rollout and rollback of theme bundles.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [prod, staging]
+  CloudFrontOAIId:
+    Type: String
+    Description: Existing CloudFront Origin Access Identity ID
+
+Resources:
+
+  # ── S3 Bucket ──────────────────────────────────────────────────────────────
+  CardThemesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub klondike-card-themes-${Environment}
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-versions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 90
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - '*'
+            AllowedMethods: [GET, HEAD]
+            AllowedHeaders: ['*']
+            MaxAge: 86400
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: klondike
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── Bucket Policy — allow CloudFront OAI only ─────────────────────────────
+  CardThemesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CardThemesBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontOAI
+            Effect: Allow
+            Principal:
+              CanonicalUser: !Sub
+                - '${OAICanonicalUser}'
+                - OAICanonicalUser: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOAIId}'
+            Action: s3:GetObject
+            Resource: !Sub '${CardThemesBucket.Arn}/*'
+
+  # ── CloudFront Distribution ────────────────────────────────────────────────
+  CardThemesCDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub Klondike card theme assets (${Environment})
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt CardThemesBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${CloudFrontOAIId}
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized managed policy
+          ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03  # CORS-with-preflight
+          Compress: true
+        PriceClass: PriceClass_100  # US, Canada, Europe only
+      Tags:
+        - Key: Project
+          Value: klondike
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  BucketName:
+    Value: !Ref CardThemesBucket
+    Export:
+      Name: !Sub klondike-card-themes-bucket-${Environment}
+
+  BucketArn:
+    Value: !GetAtt CardThemesBucket.Arn
+    Export:
+      Name: !Sub klondike-card-themes-arn-${Environment}
+
+  CDNDomain:
+    Value: !GetAtt CardThemesCDN.DomainName
+    Description: CloudFront domain — set REACT_APP_THEMES_CDN_URL to this value
+    Export:
+      Name: !Sub klondike-card-themes-cdn-${Environment}

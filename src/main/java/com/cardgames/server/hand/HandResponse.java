@@ -7,4 +7,4 @@ package com.cardgames.server.hand;
  * locally for DEV-73), and the full card order so the client can build
  * the initial game state immediately without a second request.
  */
-public record HandResponse(int id, long shuffleSeed, int[] cards) {}
+public record HandResponse(int id, long shuffleSeed, int[] cards, String drawMode) {}

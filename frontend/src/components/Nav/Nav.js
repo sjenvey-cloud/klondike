@@ -6,11 +6,11 @@ const TABS = [
   { to: '/',        icon: '🏠', label: 'Home',    exact: true },
   { to: '/game',    icon: '🃏', label: 'Game'  },
   { to: '/daily',   icon: '🌅', label: 'Daily' },
-  { to: '/friends', icon: '👥', label: 'Social' },
+  { to: '/friends', icon: '👥', label: 'Social', badge: true },
   { to: '/profile', icon: '👤', label: 'Profile' },
 ];
 
-export function Nav() {
+export function Nav({ challengeBadge = 0 }) {
   return (
     <nav className="nav">
       {TABS.map(tab => (
@@ -21,7 +21,12 @@ export function Nav() {
           className="nav-tab"
           activeClassName="active"
         >
-          <span className="nav-tab-icon">{tab.icon}</span>
+          <span className="nav-tab-icon-wrap">
+            <span className="nav-tab-icon">{tab.icon}</span>
+            {tab.badge && challengeBadge > 0 && (
+              <span className="nav-badge">{challengeBadge > 99 ? '99+' : challengeBadge}</span>
+            )}
+          </span>
           <span>{tab.label}</span>
         </NavLink>
       ))}

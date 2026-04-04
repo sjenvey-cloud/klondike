@@ -37,7 +37,7 @@ export function clearSavedSession() {
 
 const initial = {
   tableau: null, stock: null, waste: null, foundations: null,
-  moves: 0, turns: [], isWon: false,
+  moves: 0, turns: [], isWon: false, drawMode: 'draw3',
 };
 
 function reducer(state, action) {
@@ -251,16 +251,16 @@ export function useGame(userId) {
   // DEV-62: canAutoComplete flag
   const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
 
-  const startGame = useCallback(async (handOverride = null) => {
+  const startGame = useCallback(async (handOverride = null, drawMode = 'draw3') => {
     setLoading(true);
     try {
-      const hand    = handOverride || await createHand();
+      const hand    = handOverride || await createHand(drawMode);
       const session = await createSession(hand.id, userId);
       const dealt   = dealKlondike(hand.cards);
       setSessionId(session.id);
       startTimeRef.current = Date.now();
       clearSavedSession();
-      dispatch({ type: 'DEAL', payload: dealt });
+      dispatch({ type: 'DEAL', payload: { ...dealt, drawMode } });
     } finally {
       setLoading(false);
     }

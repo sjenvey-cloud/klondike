@@ -1,6 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../App';
-import { getProfile, patchProfile } from '../services/api';
+import { PreferencesContext } from '../contexts/PreferencesContext';
+import { getProfile, patchProfile, getProfileHistory } from '../services/api';
+import { Calendar } from '../components/Calendar/Calendar';
+import { DayDetail } from '../components/DayDetail/DayDetail';
 import './Profile.css';
 
 function formatTime(s) {
@@ -12,14 +15,20 @@ function formatTime(s) {
 
 export function Profile() {
   const { user, login, updateDisplayName } = useContext(AuthContext);
+  const { preferences } = useContext(PreferencesContext);
   const [profile, setProfile] = useState(null);
   const [nameInput, setNameInput] = useState('');
   const [loginName, setLoginName] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [history, setHistory] = useState([]);
+  const [selectedDay, setSelectedDay] = useState(null);
 
   useEffect(() => {
     if (user) {
       getProfile(user.id).then(setProfile).catch(() => {});
+      getProfileHistory(user.id, 35).then(data => {
+        setHistory(Array.isArray(data) ? data : []);
+      }).catch(() => {});
       setNameInput(user.displayName);
     }
   }, [user]);
@@ -73,6 +82,7 @@ export function Profile() {
               ['Games Played', profile.gamesPlayed ?? 0],
               ['Games Won',   profile.gamesWon   ?? 0],
               ['Win Rate',    profile.gamesPlayed ? `${Math.round((profile.gamesWon / profile.gamesPlayed) * 100)}%` : '0%'],
+              ['Draw Mode',   preferences?.drawModeDefault === 'draw1' ? 'Draw 1' : 'Draw 3'],
               ['Best Moves',  profile.bestMoves   ?? '—'],
               ['Best Time',   formatTime(profile.bestTimeSeconds)],
               ['Avg Moves',   profile.avgMoves    ? Math.round(profile.avgMoves) : '—'],
@@ -89,6 +99,11 @@ export function Profile() {
       )}
 
       <div className="profile-section">
+        <h3 className="profile-section-title">Activity</h3>
+        <Calendar history={history} onDayClick={setSelectedDay} />
+      </div>
+
+      <div className="profile-section">
         <h3 className="profile-section-title">Display Name</h3>
         <div className="name-row">
           <input
@@ -99,6 +114,13 @@ export function Profile() {
           <button className="btn-primary" onClick={handleSaveName}>Save</button>
         </div>
       </div>
+
+      {selectedDay && (
+        <DayDetail
+          date={selectedDay}
+          onClose={() => setSelectedDay(null)}
+        />
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @CrossOrigin(origins = {
@@ -34,13 +35,31 @@ public class SessionController {
      * Called once when the player starts a new game.
      */
     @PostMapping("/sessions")
-    public ResponseEntity<Session> createSession(@RequestBody CreateSessionRequest body) {
+    public ResponseEntity<CreateSessionResponse> createSession(@RequestBody CreateSessionRequest body) {
         Hand hand = handRepository.findById(body.handId()).orElse(null);
-        if (hand == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        if (hand == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+        Session session = new Session(body.handId(), body.userId());
+        session.setDrawMode(hand.getDrawMode());
+
+        boolean isRanked = true;
+        if (body.isDaily() && body.dailyDate() != null) {
+            LocalDate date = LocalDate.parse(body.dailyDate());
+            session.setIsDaily(true);
+            session.setDailyDate(date);
+
+            boolean hasRanked = sessionRepository
+                .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
+                    body.userId(), date, hand.getDrawMode(),
+                    new String[]{ Session.STATUS_WON, Session.STATUS_ABANDONED });
+            if (hasRanked) {
+                isRanked = false;
+                session.setIsRanked(false);
+            }
         }
-        Session session = sessionRepository.save(new Session(body.handId(), body.userId()));
-        return new ResponseEntity<>(session, HttpStatus.CREATED);
+
+        sessionRepository.save(session);
+        return new ResponseEntity<>(new CreateSessionResponse(session, isRanked), HttpStatus.CREATED);
     }
 
     // ── DEV-71: Complete session (win) ────────────────────────────────────
@@ -69,8 +88,7 @@ public class SessionController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        // Reproduce card order from seed and replay moves
-        GameState    state  = new GameState(hand.getShuffleSeed());
+        GameState    state  = new GameState(hand.getShuffleSeed(), hand.getDrawMode());
         ReplayResult result = state.replay(body.turns());
 
         // Verify the replay reached a won state
