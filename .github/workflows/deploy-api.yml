@@ -4,8 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'server/**'
+      - 'src/**'
       - 'frontend/**'
+      - 'pom.xml'
+      - 'Dockerfile'
       - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 
@@ -53,7 +55,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: react-build
-          path: server/src/main/resources/static
+          path: src/main/resources/static
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -73,7 +75,7 @@ jobs:
           ECR_REPOSITORY: klondike-api
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./server
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
