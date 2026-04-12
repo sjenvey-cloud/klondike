@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  CloudFront distribution in front of the klondike ALB.
+  Provides HTTPS termination via the *.cloudfront.net wildcard certificate
+  (no custom domain required). All HTTP traffic is redirected to HTTPS.
+  The ALB origin is reached over HTTP within AWS — acceptable because
+  the public-internet leg is always encrypted by CloudFront.
+  Uses ForwardedValues (legacy style) for broad compatibility and
+  to ensure Authorization, cookies, and query strings all reach the ALB.
+
+Parameters:
+  ALBDnsName:
+    Type: String
+    Description: DNS name of the klondike Application Load Balancer
+    Default: klondike-alb-1358735018.eu-north-1.elb.amazonaws.com
+
+Resources:
+
+  KlondikeAPIDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Klondike — HTTPS termination in front of ALB (eu-north-1)
+        HttpVersion: http2
+        PriceClass: PriceClass_100   # US, Canada, Europe — lowest cost tier
+
+        Origins:
+          - Id: ALBOrigin
+            DomainName: !Ref ALBDnsName
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only   # CloudFront→ALB stays within AWS
+
+        DefaultCacheBehavior:
+          TargetOriginId: ALBOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - DELETE
+            - GET
+            - HEAD
+            - OPTIONS
+            - PATCH
+            - POST
+            - PUT
+          CachedMethods:
+            - GET
+            - HEAD
+          # ForwardedValues: forward everything needed for the API.
+          # Authorization header carries the JWT Bearer token.
+          # Cookies: all — required for the HttpOnly refresh_token cookie.
+          # Origin + Referer — required for CORS preflight responses.
+          ForwardedValues:
+            QueryString: true
+            Headers:
+              - Authorization
+              - Content-Type
+              - Origin
+              - Referer
+            Cookies:
+              Forward: all
+          # Zero TTL — all responses treated as non-cacheable.
+          # Spring Boot's own Cache-Control headers handle static asset caching.
+          DefaultTTL: 0
+          MinTTL: 0
+          MaxTTL: 0
+          Compress: true
+
+Outputs:
+  DistributionId:
+    Description: CloudFront Distribution ID
+    Value: !Ref KlondikeAPIDistribution
+    Export:
+      Name: klondike-api-cf-id
+
+  DistributionDomain:
+    Description: CloudFront domain name — use this as the new HTTPS base URL
+    Value: !GetAtt KlondikeAPIDistribution.DomainName
+    Export:
+      Name: klondike-api-cf-domain

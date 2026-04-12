@@ -56,7 +56,8 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://localhost:4200",
             "http://localhost:5173",
-            "https://dbk2b6k1kyjsy.cloudfront.net"
+            "https://dbk2b6k1kyjsy.cloudfront.net",
+            "https://d2fbehwb6bp7kq.cloudfront.net"   // API CloudFront — Sprint 9 HTTPS
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cookie"));
