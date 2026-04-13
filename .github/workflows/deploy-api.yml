@@ -26,11 +26,13 @@ jobs:
         run: |
           node --version
           npm --version
-          npm install
+          npm install --no-package-lock 2>&1 || { echo "npm install failed"; exit 1; }
 
       - name: Build React app
         working-directory: frontend
-        run: npx vite build
+        run: |
+          ls node_modules/.bin/vite && echo "vite binary found" || echo "vite binary MISSING"
+          npx --no-install vite build 2>&1
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
