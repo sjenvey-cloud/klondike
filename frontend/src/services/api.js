@@ -147,3 +147,7 @@ export const getProfileHistory = (userId, days = 35) =>
   get(`/profile/${userId}/history?days=${days}`);
 export const getSessionsByDate = (userId, date) =>
   get(`/profile/${userId}/sessions?date=${date}`);
+
+// ── Profile stats / records (DEV-150, DEV-151) ────────────────────────────
+export const getProfileStats   = () => get('/profile/stats');
+export const getProfileRecords = () => get('/profile/records');

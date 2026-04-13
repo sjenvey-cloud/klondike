@@ -32,4 +32,22 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
 
     // DEV-100: sessions for a specific calendar day
     List<Session> findByUserIdAndStartedAtBetween(int userId, LocalDateTime from, LocalDateTime to);
+
+    // DEV-150: stats grouped by draw_mode
+    @Query("SELECT s.drawMode, COUNT(s.id), " +
+           "SUM(CASE WHEN s.status = 'won' THEN 1 ELSE 0 END), " +
+           "AVG(CASE WHEN s.status = 'won' THEN CAST(s.moves AS double) ELSE NULL END), " +
+           "AVG(CASE WHEN s.status = 'won' THEN CAST(s.timeSeconds AS double) ELSE NULL END) " +
+           "FROM Session s WHERE s.userId = :userId GROUP BY s.drawMode")
+    List<Object[]> findStatsByDrawMode(@Param("userId") int userId);
+
+    // DEV-151: personal best by fewest moves (won sessions only)
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.status = 'won' " +
+           "ORDER BY s.moves ASC, s.timeSeconds ASC")
+    List<Session> findTopWinByMoves(@Param("userId") int userId, org.springframework.data.domain.Pageable pageable);
+
+    // DEV-151: personal best by fastest time (won sessions only)
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.status = 'won' " +
+           "ORDER BY s.timeSeconds ASC, s.moves ASC")
+    List<Session> findTopWinByTime(@Param("userId") int userId, org.springframework.data.domain.Pageable pageable);
 }

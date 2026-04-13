@@ -39,7 +39,10 @@ function AppInner() {
             setChallengeCount(count);
           }
         })
-        .catch(() => {});
+        .catch(err => {
+          // 404 is expected while the challenges backend is not yet deployed — ignore silently
+          if (err?.message !== '404') console.error('challengeInbox poll error', err);
+        });
     };
     fetch();
     const interval = setInterval(fetch, 60000);

@@ -1,22 +1,29 @@
 package com.cardgames.server.profile;
 
+import com.cardgames.server.session.SessionRepository;
+import com.cardgames.server.session.Session;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/profile")
 public class ProfileController {
 
-    private final UserRepository userRepository;
+    private final UserRepository    userRepository;
+    private final SessionRepository sessionRepository;
 
-    public ProfileController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public ProfileController(UserRepository userRepository, SessionRepository sessionRepository) {
+        this.userRepository    = userRepository;
+        this.sessionRepository = sessionRepository;
     }
 
     // ── DEV-81: GET /api/v1/profile ───────────────────────────────────────
@@ -41,12 +48,60 @@ public class ProfileController {
         return ResponseEntity.ok(toResponse(user));
     }
 
+    // ── DEV-150: GET /api/v1/profile/stats ───────────────────────────────
+
+    @GetMapping("/stats")
+    public ResponseEntity<StatsResponse> getStats(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+        List<Object[]> rows = sessionRepository.findStatsByDrawMode(userId);
+
+        StatsResponse.DrawModeStats draw1 = StatsResponse.EMPTY;
+        StatsResponse.DrawModeStats draw3 = StatsResponse.EMPTY;
+
+        for (Object[] row : rows) {
+            String mode     = (String) row[0];
+            long   played   = ((Number) row[1]).longValue();
+            long   wins     = ((Number) row[2]).longValue();
+            double avgMoves = row[3] != null ? ((Number) row[3]).doubleValue() : 0.0;
+            double avgTime  = row[4] != null ? ((Number) row[4]).doubleValue() : 0.0;
+            double winRate  = played > 0 ? (double) wins / played : 0.0;
+            StatsResponse.DrawModeStats s = new StatsResponse.DrawModeStats(
+                (int) played, (int) wins, winRate, avgMoves, avgTime);
+            if ("draw1".equals(mode)) draw1 = s;
+            else if ("draw3".equals(mode)) draw3 = s;
+        }
+
+        return ResponseEntity.ok(new StatsResponse(draw1, draw3));
+    }
+
+    // ── DEV-151: GET /api/v1/profile/records ─────────────────────────────
+
+    @GetMapping("/records")
+    public ResponseEntity<RecordsResponse> getRecords(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+        PageRequest one = PageRequest.of(0, 1);
+
+        List<Session> byMoves = sessionRepository.findTopWinByMoves(userId, one);
+        List<Session> byTime  = sessionRepository.findTopWinByTime(userId, one);
+
+        RecordsResponse.PersonalBest fewest = byMoves.isEmpty() ? null : toPersonalBest(byMoves.get(0));
+        RecordsResponse.PersonalBest fastest = byTime.isEmpty() ? null : toPersonalBest(byTime.get(0));
+
+        return ResponseEntity.ok(new RecordsResponse(fewest, fastest));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private User resolveUser(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
         return userRepository.findById(userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    private RecordsResponse.PersonalBest toPersonalBest(Session s) {
+        return new RecordsResponse.PersonalBest(
+            s.getId(), s.getHandId(), s.getDrawMode(),
+            s.getMoves(), s.getTimeSeconds(), s.getCompletedAt());
     }
 
     private ProfileResponse toResponse(User user) {

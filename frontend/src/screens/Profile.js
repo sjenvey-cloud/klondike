@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../App';
 import { PreferencesContext } from '../contexts/PreferencesContext';
-import { getProfile, patchProfile, getProfileHistory } from '../services/api';
+import { getProfile, patchProfile, getProfileHistory, getProfileStats, getProfileRecords } from '../services/api';
 import { Calendar } from '../components/Calendar/Calendar';
 import { DayDetail } from '../components/DayDetail/DayDetail';
 import './Profile.css';
@@ -22,6 +22,8 @@ export function Profile() {
   const [loginError, setLoginError] = useState('');
   const [history, setHistory] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [records, setRecords] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -29,6 +31,8 @@ export function Profile() {
       getProfileHistory(user.id, 35).then(data => {
         setHistory(Array.isArray(data) ? data : []);
       }).catch(() => {});
+      getProfileStats().then(setStats).catch(() => {});
+      getProfileRecords().then(setRecords).catch(() => {});
       setNameInput(user.displayName);
     }
   }, [user]);
@@ -75,33 +79,67 @@ export function Profile() {
     <div className="screen profile-screen">
       <h2 className="section-title">{user.displayName}</h2>
 
-      {profile && (
-        <>
-          <div className="stats-grid">
-            {[
-              ['Games Played', profile.gamesPlayed ?? 0],
-              ['Games Won',   profile.gamesWon   ?? 0],
-              ['Win Rate',    profile.gamesPlayed ? `${Math.round((profile.gamesWon / profile.gamesPlayed) * 100)}%` : '0%'],
-              ['Draw Mode',   preferences?.drawModeDefault === 'draw1' ? 'Draw 1' : 'Draw 3'],
-              ['Best Moves',  profile.bestMoves   ?? '—'],
-              ['Best Time',   formatTime(profile.bestTimeSeconds)],
-              ['Avg Moves',   profile.avgMoves    ? Math.round(profile.avgMoves) : '—'],
-              ['Streak',      profile.currentStreak ?? 0],
-              ['Best Streak', profile.bestStreak    ?? 0],
-            ].map(([label, value]) => (
-              <div key={label} className="stat-card">
-                <span className="stat-card-value">{value}</span>
-                <span className="stat-card-label">{label}</span>
+      {stats && (
+        <div className="profile-section">
+          <h3 className="profile-section-title">Stats</h3>
+          {['draw1', 'draw3'].map(mode => {
+            const s = stats[mode];
+            if (!s || s.gamesPlayed === 0) return null;
+            return (
+              <div key={mode} className="stats-mode-block">
+                <p className="stats-mode-label">{mode === 'draw1' ? 'Draw 1' : 'Draw 3'}</p>
+                <div className="stats-grid">
+                  {[
+                    ['Played',    s.gamesPlayed],
+                    ['Won',       s.wins],
+                    ['Win Rate',  `${Math.round(s.winRate * 100)}%`],
+                    ['Avg Moves', s.avgMoves  ? Math.round(s.avgMoves)  : '—'],
+                    ['Avg Time',  s.avgTimeSeconds ? formatTime(Math.round(s.avgTimeSeconds)) : '—'],
+                  ].map(([label, value]) => (
+                    <div key={label} className="stat-card">
+                      <span className="stat-card-value">{value}</span>
+                      <span className="stat-card-label">{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </>
+            );
+          })}
+        </div>
       )}
 
       <div className="profile-section">
         <h3 className="profile-section-title">Activity</h3>
         <Calendar history={history} onDayClick={setSelectedDay} />
       </div>
+
+      {records && (records.fewestMoves || records.fastestTime) && (
+        <div className="profile-section">
+          <h3 className="profile-section-title">Personal Bests</h3>
+          <div className="records-grid">
+            {records.fewestMoves && (
+              <div className="record-card">
+                <span className="record-card-value">{records.fewestMoves.moves}</span>
+                <span className="record-card-label">Fewest Moves</span>
+                <span className="record-card-meta">
+                  {records.fewestMoves.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'} ·{' '}
+                  {formatTime(records.fewestMoves.timeSeconds)}
+                </span>
+              </div>
+            )}
+            {records.fastestTime && (
+              <div className="record-card">
+                <span className="record-card-value">{formatTime(records.fastestTime.timeSeconds)}</span>
+                <span className="record-card-label">Fastest Time</span>
+                <span className="record-card-meta">
+                  {records.fastestTime.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'} ·{' '}
+                  {records.fastestTime.moves} moves
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="profile-section">
         <h3 className="profile-section-title">Display Name</h3>
