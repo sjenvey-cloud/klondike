@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
 import { usePreferences } from './hooks/usePreferences';
@@ -52,29 +52,29 @@ function AppInner() {
   return (
     <PreferencesContext.Provider value={prefsHook}>
       <Router>
-        <Switch>
+        <Routes>
           {/* Public route — no AuthGuard, no Nav */}
-          <Route path="/login" component={Login} />
+          <Route path="/login" element={<Login />} />
 
           {/* All other routes require auth */}
-          <Route>
+          <Route path="/*" element={
             <AuthGuard>
               <div className="app-shell">
                 <main className="app-main">
-                  <Switch>
-                    <Route exact path="/"        component={Home}     />
-                    <Route       path="/game"     component={Game}     />
-                    <Route       path="/daily"    component={Daily}    />
-                    <Route       path="/friends"  component={Friends}  />
-                    <Route       path="/profile"  component={Profile}  />
-                    <Route       path="/settings" component={Settings} />
-                  </Switch>
+                  <Routes>
+                    <Route path="/"        element={<Home />}     />
+                    <Route path="/game"    element={<Game />}     />
+                    <Route path="/daily"   element={<Daily />}    />
+                    <Route path="/friends" element={<Friends />}  />
+                    <Route path="/profile" element={<Profile />}  />
+                    <Route path="/settings" element={<Settings />} />
+                  </Routes>
                 </main>
                 <Nav challengeBadge={challengeCount} />
               </div>
             </AuthGuard>
-          </Route>
-        </Switch>
+          } />
+        </Routes>
       </Router>
     </PreferencesContext.Provider>
   );

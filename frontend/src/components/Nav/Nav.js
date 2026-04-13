@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import './Nav.css';
 
 const TABS = [
-  { to: '/',        icon: '🏠', label: 'Home',    exact: true },
+  { to: '/',        icon: '🏠', label: 'Home',   end: true },
   { to: '/game',    icon: '🃏', label: 'Game'  },
   { to: '/daily',   icon: '🌅', label: 'Daily' },
   { to: '/friends', icon: '👥', label: 'Social', badge: true },
@@ -17,9 +17,8 @@ export function Nav({ challengeBadge = 0 }) {
         <NavLink
           key={tab.to}
           to={tab.to}
-          exact={tab.exact}
-          className="nav-tab"
-          activeClassName="active"
+          end={tab.end}
+          className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}
         >
           <span className="nav-tab-icon-wrap">
             <span className="nav-tab-icon">{tab.icon}</span>

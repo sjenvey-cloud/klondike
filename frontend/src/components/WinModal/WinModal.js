@@ -1,10 +1,10 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Confetti } from './Confetti';
 import './WinModal.css';
 
 export function WinModal({ moves, timeFormatted, result, onNewGame }) {
-  const history = useHistory();
+  const navigate = useNavigate();
   const rank = result?.rank || null;
 
   return (
@@ -36,10 +36,10 @@ export function WinModal({ moves, timeFormatted, result, onNewGame }) {
             <button className="btn-primary" onClick={onNewGame}>
               New Game
             </button>
-            <button className="btn-secondary" onClick={() => history.push('/daily')}>
+            <button className="btn-secondary" onClick={() => navigate('/daily')}>
               Leaderboard
             </button>
-            <button className="btn-secondary" onClick={() => history.push('/profile')}>
+            <button className="btn-secondary" onClick={() => navigate('/profile')}>
               My Stats
             </button>
           </div>

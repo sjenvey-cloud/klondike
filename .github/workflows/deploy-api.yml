@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: react-build
-          path: frontend/build
+          path: frontend/dist
           retention-days: 1
 
   build-and-deploy:

@@ -1,11 +1,11 @@
 import React, { useState, useContext } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import './Login.css';
 
 export function Login() {
   const { login, register } = useContext(AuthContext);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [tab, setTab]           = useState('signin'); // 'signin' | 'register'
   const [displayName, setDisplayName] = useState('');
@@ -24,7 +24,7 @@ export function Login() {
       } else {
         await register(displayName, email, password);
       }
-      history.replace('/');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {

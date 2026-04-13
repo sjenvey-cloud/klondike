@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Redirect } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../../App';
 
 export function AuthGuard({ children }) {
@@ -23,7 +23,7 @@ export function AuthGuard({ children }) {
   }
 
   if (!user) {
-    return <Redirect to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;

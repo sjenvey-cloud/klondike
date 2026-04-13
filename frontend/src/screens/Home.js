@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { getProfile } from '../services/api';
 import './Home.css';
@@ -8,7 +8,7 @@ const DRAW_MODE_KEY = 'klondike_draw_mode';
 
 export function Home() {
   const { user } = useContext(AuthContext);
-  const history = useHistory();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [drawMode, setDrawModeState] = useState(
     () => localStorage.getItem(DRAW_MODE_KEY) || 'draw3'
@@ -62,7 +62,7 @@ export function Home() {
       )}
 
       <div className="home-actions">
-        <button className="btn-primary btn-large" onClick={() => history.push('/game', { drawMode })}>
+        <button className="btn-primary btn-large" onClick={() => navigate('/game', { drawMode })}>
           🃏 New Game
         </button>
 
@@ -82,10 +82,10 @@ export function Home() {
           </button>
         </div>
 
-        <button className="btn-secondary btn-large" onClick={() => history.push('/daily')}>
+        <button className="btn-secondary btn-large" onClick={() => navigate('/daily')}>
           🌅 Daily Challenge
         </button>
-        <button className="btn-secondary btn-large" onClick={() => history.push('/friends')}>
+        <button className="btn-secondary btn-large" onClick={() => navigate('/friends')}>
           👥 Social & League
         </button>
       </div>

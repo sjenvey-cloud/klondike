@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../App';
 import { getSessionsByDate } from '../../services/api';
 import './DayDetail.css';
@@ -30,7 +30,7 @@ const STATUS_LABELS = {
 
 export function DayDetail({ date, onClose }) {
   const { user } = useContext(AuthContext);
-  const history = useHistory();
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,8 +49,8 @@ export function DayDetail({ date, onClose }) {
 
   const handlePlayAgain = useCallback((seed) => {
     onClose();
-    history.push(`/game?seed=${seed}`);
-  }, [onClose, history]);
+    navigate(`/game?seed=${seed}`);
+  }, [onClose, navigate]);
 
   if (!date) return null;
 
