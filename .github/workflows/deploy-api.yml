@@ -26,13 +26,11 @@ jobs:
         run: |
           node --version
           npm --version
-          npm install --no-package-lock 2>&1 || { echo "npm install failed"; exit 1; }
+          npm install
 
       - name: Build React app
         working-directory: frontend
-        run: |
-          ls node_modules/.bin/vite && echo "vite binary found" || echo "vite binary MISSING"
-          npx --no-install vite build 2>&1
+        run: npx vite build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -48,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download React build
         uses: actions/download-artifact@v4
@@ -87,8 +85,18 @@ jobs:
             --service klondike-api-service \
             --force-new-deployment \
             --region eu-north-1
+          echo "Waiting for service to stabilise..."
           aws ecs wait services-stable \
             --cluster klondike-cluster \
             --services klondike-api-service \
-            --region eu-north-1
+            --region eu-north-1 || {
+            echo "=== ECS service did not stabilise — dumping recent events ==="
+            aws ecs describe-services \
+              --cluster klondike-cluster \
+              --services klondike-api-service \
+              --region eu-north-1 \
+              --query 'services[0].events[:10]' \
+              --output table
+            exit 1
+          }
           echo "ECS deployment complete"
