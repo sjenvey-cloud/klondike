@@ -1,5 +1,9 @@
 # DEV-165/166: Redis + cache settings (application.properties is gitignored)
 spring:
+  main:
+    lazy-initialization: true
+  jpa:
+    open-in-view: false
   cache:
     type: redis
     redis:
