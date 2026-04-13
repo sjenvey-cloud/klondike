@@ -32,7 +32,7 @@ function AppInner() {
     if (!user) return;
     let cancelled = false;
     const fetch = () => {
-      getChallengeInbox(user.id)
+      getChallengeInbox()
         .then(data => {
           if (!cancelled) {
             const count = Array.isArray(data) ? data.length : (data?.count ?? 0);

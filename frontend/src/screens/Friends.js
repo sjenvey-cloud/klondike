@@ -20,7 +20,7 @@ export function Friends() {
   useEffect(() => {
     if (!user) return;
     getFriends().then(setFriends).catch(() => {});
-    getChallengeInbox(user.id).then(setInbox).catch(() => {});
+    getChallengeInbox().then(setInbox).catch(() => {});
   }, [user]);
 
   useEffect(() => {

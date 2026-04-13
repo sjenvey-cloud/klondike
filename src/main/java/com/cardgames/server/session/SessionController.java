@@ -1,5 +1,7 @@
 package com.cardgames.server.session;
 
+import com.cardgames.server.challenges.Challenge;
+import com.cardgames.server.challenges.ChallengeRepository;
 import com.cardgames.server.game.GameState;
 import com.cardgames.server.game.ReplayResult;
 import com.cardgames.server.hand.Hand;
@@ -22,8 +24,9 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/v1")
 public class SessionController {
 
-    @Autowired SessionRepository sessionRepository;
-    @Autowired HandRepository     handRepository;
+    @Autowired SessionRepository   sessionRepository;
+    @Autowired HandRepository      handRepository;
+    @Autowired ChallengeRepository challengeRepository;
 
     // ── DEV-69: Create session ────────────────────────────────────────────
 
@@ -111,6 +114,9 @@ public class SessionController {
         session.setCompletedAt(LocalDateTime.now());
         sessionRepository.save(session);
 
+        // DEV-163: auto-complete any challenge this session is the challenged side of
+        settleChallengeIfPresent(session);
+
         return new ResponseEntity<>(
             new CompleteSessionResponse(true, "OK", result.getMoveCount(), session),
             HttpStatus.OK
@@ -148,6 +154,21 @@ public class SessionController {
         session.setCompletedAt(LocalDateTime.now());
         sessionRepository.save(session);
 
+        // DEV-163: auto-complete any challenge this session is the challenged side of
+        settleChallengeIfPresent(session);
+
         return new ResponseEntity<>(session, HttpStatus.OK);
+    }
+
+    // ── DEV-163: helper ───────────────────────────────────────────────────
+
+    private void settleChallengeIfPresent(Session session) {
+        challengeRepository.findByChallengedSessionId(session.getId()).ifPresent(c -> {
+            if (Challenge.STATUS_ACCEPTED.equals(c.getStatus())) {
+                c.setStatus(Challenge.STATUS_COMPLETED);
+                c.setCompletedAt(session.getCompletedAt());
+                challengeRepository.save(c);
+            }
+        });
     }
 }

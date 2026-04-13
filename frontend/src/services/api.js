@@ -118,8 +118,9 @@ export const acceptFriendInvite = (token)      => post(`/friends/invite/${token}
 export const removeFriend       = (friendId)   => del(`/friends/${friendId}`);
 
 // ── Challenges ────────────────────────────────────────────────────────────
-export const getChallengeInbox  = (userId)                => get(`/challenges/inbox/${userId}`);
+export const getChallengeInbox  = ()                      => get('/challenges/inbox');
 export const createChallenge    = (sessionId, challenged) => post('/challenges', { sessionId, challengedUserId: challenged });
+export const playChallenge      = (challengeId)           => post(`/challenges/${challengeId}/play`, {});
 
 // ── League ────────────────────────────────────────────────────────────────
 export const getLeague = (userId, period = 'week') =>
