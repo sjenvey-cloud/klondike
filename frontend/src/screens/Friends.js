@@ -19,7 +19,7 @@ export function Friends() {
 
   useEffect(() => {
     if (!user) return;
-    getFriends(user.id).then(setFriends).catch(() => {});
+    getFriends().then(setFriends).catch(() => {});
     getChallengeInbox(user.id).then(setInbox).catch(() => {});
   }, [user]);
 
@@ -29,14 +29,13 @@ export function Friends() {
   }, [user, period]);
 
   const handleInvite = async () => {
-    const res = await createFriendInvite(user.id);
-    const url = `${window.location.origin}/friends/accept/${res.token}`;
-    setInviteLink(url);
+    const res = await createFriendInvite();
+    setInviteLink(res.inviteUrl);
   };
 
   const handleRemove = async (friendId) => {
-    await removeFriend(user.id, friendId);
-    setFriends(prev => prev.filter(f => f.id !== friendId));
+    await removeFriend(friendId);
+    setFriends(prev => prev.filter(f => f.userId !== friendId));
   };
 
   if (!user) {
@@ -76,14 +75,14 @@ export function Friends() {
               <p className="empty-state">No friends yet. Invite someone to get started!</p>
             )}
             {friends.map(f => (
-              <div key={f.id} className="friend-row">
+              <div key={f.userId} className="friend-row">
                 <div className="friend-info">
                   <span className="friend-name">{f.displayName}</span>
-                  {f.gamesWon != null && (
-                    <span className="friend-stat">{f.gamesWon} wins</span>
+                  {f.gamesCompletedToday > 0 && (
+                    <span className="friend-stat">{f.gamesCompletedToday} won today</span>
                   )}
                 </div>
-                <button className="btn-danger-sm" onClick={() => handleRemove(f.id)}>Remove</button>
+                <button className="btn-danger-sm" onClick={() => handleRemove(f.userId)}>Remove</button>
               </div>
             ))}
           </div>

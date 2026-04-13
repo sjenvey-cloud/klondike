@@ -112,10 +112,10 @@ export const getProfile   = (userId)       => get(`/profile/${userId}`);
 export const patchProfile = (userId, body) => patch(`/profile/${userId}`, body);
 
 // ── Friends ───────────────────────────────────────────────────────────────
-export const getFriends         = (userId)           => get(`/friends/${userId}`);
-export const createFriendInvite = (userId)           => post(`/friends/invite`, { userId });
-export const acceptFriendInvite = (token)            => post(`/friends/accept/${token}`, {});
-export const removeFriend       = (userId, friendId) => del(`/friends/${userId}/${friendId}`);
+export const getFriends         = ()           => get('/friends');
+export const createFriendInvite = ()           => post('/friends/invite', {});
+export const acceptFriendInvite = (token)      => post(`/friends/invite/${token}/accept`, {});
+export const removeFriend       = (friendId)   => del(`/friends/${friendId}`);
 
 // ── Challenges ────────────────────────────────────────────────────────────
 export const getChallengeInbox  = (userId)                => get(`/challenges/inbox/${userId}`);
