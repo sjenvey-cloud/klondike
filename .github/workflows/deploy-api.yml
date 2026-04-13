@@ -27,7 +27,7 @@ jobs:
 
       - name: Build React app
         working-directory: frontend
-        run: node node_modules/.bin/vite build
+        run: npx vite build
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
