@@ -1,0 +1,13 @@
+# DEV-165/166: Redis + cache settings (application.properties is gitignored)
+spring:
+  cache:
+    type: redis
+    redis:
+      time-to-live: 60000
+
+# Exclude Redis from the ECS health check so a Redis blip never kills the container.
+# The /actuator/health endpoint is used by the ALB target group health check.
+management:
+  health:
+    redis:
+      enabled: false
