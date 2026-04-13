@@ -24,13 +24,18 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: |
-          node --version
-          npm --version
-          npm install
+          echo "=== Node version ===" && node --version
+          echo "=== npm version ===" && npm --version
+          echo "=== package.json ===" && cat package.json
+          echo "=== Running npm install ===" && npm install --verbose
+          echo "=== Install done ==="
 
       - name: Build React app
         working-directory: frontend
-        run: npx vite build
+        run: |
+          echo "=== Starting vite build ==="
+          node node_modules/.bin/vite build
+          echo "=== Build done ==="
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
