@@ -4,15 +4,31 @@ spring:
     type: redis
     redis:
       time-to-live: 60000
+  data:
+    redis:
+      connect-timeout: 2000
+      timeout: 2000
+      lettuce:
+        pool:
+          enabled: false
+        shutdown-timeout: 100ms
 
-# Exclude Redis and cache health indicators from the ALB health check.
-# A Redis blip must never cause ECS to consider the container unhealthy.
+# Exclude ALL health indicators except the basic liveness check.
+# Redis / cache blips must never cause ECS to kill the container.
 management:
   health:
     redis:
       enabled: false
     cache:
       enabled: false
+    db:
+      enabled: false
+    defaults:
+      enabled: true
   endpoint:
     health:
       show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: health
