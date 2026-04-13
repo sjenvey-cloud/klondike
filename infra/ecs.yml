@@ -118,6 +118,14 @@ Resources:
               Value: !ImportValue klondike-RedisEndpoint
             - Name: SPRING_REDIS_PORT
               Value: '6379'
+            - Name: SPRING_DATA_REDIS_HOST
+              Value: !ImportValue klondike-RedisEndpoint
+            - Name: SPRING_DATA_REDIS_PORT
+              Value: '6379'
+            - Name: SPRING_CACHE_TYPE
+              Value: redis
+            - Name: SPRING_CACHE_REDIS_TIME_TO_LIVE
+              Value: '60000'
             - Name: SERVER_PORT
               Value: '8080'
           Secrets:

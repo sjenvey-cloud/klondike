@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../App';
 import {
   getFriends, getLeague, getChallengeInbox,
-  createFriendInvite, removeFriend,
+  createFriendInvite, removeFriend, playChallenge,
 } from '../services/api';
 import './Friends.css';
 
@@ -25,7 +25,7 @@ export function Friends() {
 
   useEffect(() => {
     if (!user) return;
-    getLeague(user.id, period).then(setLeague).catch(() => {});
+    getLeague(period).then(setLeague).catch(() => {});
   }, [user, period]);
 
   const handleInvite = async () => {
@@ -125,14 +125,20 @@ export function Friends() {
             <p className="empty-state">No challenges yet.</p>
           )}
           {inbox.map(c => (
-            <div key={c.id} className="challenge-row">
+            <div key={c.challengeId} className="challenge-row">
               <div>
                 <span className="friend-name">{c.challengerDisplayName}</span> challenged you!
                 <div className="challenge-stat">
                   {c.moves} moves · {c.timeSeconds ? `${Math.floor(c.timeSeconds / 60)}:${String(c.timeSeconds % 60).padStart(2,'0')}` : '—'}
                 </div>
               </div>
-              <button className="btn-primary" style={{ fontSize: 13, padding: '6px 12px' }}>
+              <button
+                className="btn-primary"
+                style={{ fontSize: 13, padding: '6px 12px' }}
+                onClick={() => playChallenge(c.challengeId)
+                  .then(res => { window.location.href = `/game?challengeSession=${res.sessionId}`; })
+                  .catch(() => {})}
+              >
                 Accept
               </button>
             </div>

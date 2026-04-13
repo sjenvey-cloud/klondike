@@ -123,8 +123,8 @@ export const createChallenge    = (sessionId, challenged) => post('/challenges',
 export const playChallenge      = (challengeId)           => post(`/challenges/${challengeId}/play`, {});
 
 // ── League ────────────────────────────────────────────────────────────────
-export const getLeague = (userId, period = 'week') =>
-  get(`/league/${userId}?period=${period}`);
+export const getLeague = (period = 'weekly') =>
+  get(`/leagues?period=${period}`);
 
 // ── User (legacy path used for create/lookup) ─────────────────────────────
 export const getUserByDisplayName = (name) =>

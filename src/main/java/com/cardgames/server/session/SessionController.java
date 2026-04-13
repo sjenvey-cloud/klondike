@@ -7,6 +7,7 @@ import com.cardgames.server.game.ReplayResult;
 import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -114,6 +115,11 @@ public class SessionController {
         session.setCompletedAt(LocalDateTime.now());
         sessionRepository.save(session);
 
+        // DEV-166: evict leaderboard cache when a ranked daily win is recorded
+        if (session.isDaily() && session.isRanked() && session.getDailyDate() != null) {
+            evictLeaderboard(session.getDailyDate().toString(), session.getDrawMode());
+        }
+
         // DEV-163: auto-complete any challenge this session is the challenged side of
         settleChallengeIfPresent(session);
 
@@ -158,6 +164,13 @@ public class SessionController {
         settleChallengeIfPresent(session);
 
         return new ResponseEntity<>(session, HttpStatus.OK);
+    }
+
+    // ── DEV-166: cache eviction helper ───────────────────────────────────
+
+    @CacheEvict(cacheNames = "leaderboard", key = "#date + ':moves:' + #drawMode")
+    public void evictLeaderboard(String date, String drawMode) {
+        // evicts moves-sort entry; time-sort entry will expire naturally within 60s TTL
     }
 
     // ── DEV-163: helper ───────────────────────────────────────────────────

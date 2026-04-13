@@ -8,6 +8,7 @@ import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -77,6 +78,7 @@ public class DailyController {
      * GET /api/v1/leaderboard/daily/{date}/{sort}
      * Top 50 ranked wins for the given daily date and draw mode.
      */
+    @Cacheable(cacheNames = "leaderboard", key = "#date + ':' + #sort + ':' + #drawMode")
     @GetMapping("/leaderboard/daily/{date}/{sort}")
     public ResponseEntity<List<LeaderboardEntry>> getDailyLeaderboard(
             @PathVariable String date,
