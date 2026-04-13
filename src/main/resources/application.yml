@@ -5,9 +5,14 @@ spring:
     redis:
       time-to-live: 60000
 
-# Exclude Redis from the ECS health check so a Redis blip never kills the container.
-# The /actuator/health endpoint is used by the ALB target group health check.
+# Exclude Redis and cache health indicators from the ALB health check.
+# A Redis blip must never cause ECS to consider the container unhealthy.
 management:
   health:
     redis:
       enabled: false
+    cache:
+      enabled: false
+  endpoint:
+    health:
+      show-details: never
