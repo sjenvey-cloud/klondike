@@ -4,6 +4,7 @@ import { getPreferences, patchPreferences } from '../services/api';
 
 const DEFAULTS = {
   cardBackColour:   '#1c2333',
+  cardBackPattern:  null,
   feltColour:       '#0d1117',
   animationsEnabled: true,
   cardFaceDesign:   'standard',
@@ -16,6 +17,12 @@ function applyPreferences(prefs) {
   }
   if (prefs.cardBackColour) {
     html.style.setProperty('--color-card-back', prefs.cardBackColour);
+  }
+  if (prefs.cardBackPattern) {
+    // cardBackPattern is a URL string (truthy); empty string or null/undefined means flat colour
+    html.style.setProperty('--card-back-image', `url("${prefs.cardBackPattern}")`);
+  } else {
+    html.style.removeProperty('--card-back-image');
   }
   if (prefs.animationsEnabled === false) {
     html.classList.add('animations-off');

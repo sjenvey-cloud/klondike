@@ -56,9 +56,10 @@ export function Card({ card, faceUp, selected, onClick, design: designProp }) {
   const design = designProp || preferences.cardFaceDesign || 'standard';
 
   if (!faceUp) {
+    const hasPattern = Boolean(preferences?.cardBackPattern);
     return (
       <div className="card-wrap" onClick={onClick}>
-        <div className="card-back" />
+        <div className={`card-back${hasPattern ? ' has-pattern' : ''}`} />
       </div>
     );
   }

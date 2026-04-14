@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+  <rect width="40" height="40" fill="#1c2333"/>
+  <pattern id="diamond" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+    <polygon points="10,2 18,10 10,18 2,10" fill="none" stroke="#253047" stroke-width="1.5"/>
+    <polygon points="10,5 15,10 10,15 5,10" fill="none" stroke="#c9a84c" stroke-width="0.4" opacity="0.6"/>
+  </pattern>
+  <rect width="40" height="40" fill="url(#diamond)"/>
+  <rect width="40" height="40" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+</svg>

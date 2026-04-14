@@ -12,6 +12,13 @@ const THEME_PREVIEWS = {
 const CARD_BACK_COLOURS = ['#1c2333', '#2d1b4e', '#1a3a2e', '#3a1a1a', '#1a2a3a', '#2a2a2a'];
 const FELT_COLOURS      = ['#0d1117', '#1a5c2e', '#e8eaed', '#1a1a2e', '#2d1a0e', '#0e1a2d'];
 
+const CDN = import.meta.env.VITE_THEMES_CDN_URL || '';
+const CARD_BACK_PATTERNS = [
+  { key: 'dark-premium', label: 'Dark Premium', url: `${CDN}/patterns/card-back-dark-premium.svg`, accent: '#c9a84c' },
+  { key: 'classic',      label: 'Classic',       url: `${CDN}/patterns/card-back-classic.svg`,      accent: '#f5f0e8' },
+  { key: 'modern',       label: 'Modern',        url: `${CDN}/patterns/card-back-modern.svg`,       accent: '#93c5fd' },
+];
+
 const CARD_DESIGNS = [
   { key: 'standard', label: 'Standard' },
   { key: 'classic',  label: 'Classic'  },
@@ -24,9 +31,19 @@ export function Settings() {
 
   const drawMode        = preferences?.drawModeDefault   ?? 'draw3';
   const cardBackColour  = preferences?.cardBackColour    ?? '#1c2333';
+  const cardBackPattern = preferences?.cardBackPattern   ?? null;
   const feltColour      = preferences?.feltColour        ?? '#0d1117';
   const animEnabled     = preferences?.animationsEnabled !== false;
   const cardFaceDesign  = preferences?.cardFaceDesign    ?? 'standard';
+
+  function selectPattern(url) {
+    updatePreference('cardBackPattern', url);
+  }
+
+  function selectColour(colour) {
+    updatePreference('cardBackPattern', '');   // empty string clears server-side; falsy locally
+    updatePreference('cardBackColour', colour);
+  }
 
   return (
     <div className="screen settings-screen">
@@ -94,17 +111,43 @@ export function Settings() {
         </div>
       </div>
 
-      {/* ── Card Back Colour ── */}
+      {/* ── Card Back ── */}
       <div className="settings-section">
-        <h3 className="settings-section-title">Card Back Colour</h3>
+        <h3 className="settings-section-title">Card Back</h3>
+
+        {/* Pattern tiles */}
+        <div className="pattern-grid">
+          {CARD_BACK_PATTERNS.map(p => (
+            <button
+              key={p.key}
+              className={`pattern-tile${cardBackPattern === p.url ? ' pattern-tile--active' : ''}`}
+              style={{
+                backgroundImage: `url("${p.url}")`,
+                backgroundSize: '40px 40px',
+                borderColor: cardBackPattern === p.url ? p.accent : 'transparent',
+              }}
+              aria-label={p.label}
+              onClick={() => selectPattern(p.url)}
+              title={p.label}
+            >
+              {cardBackPattern === p.url && (
+                <span className="pattern-tile-check" style={{ color: p.accent }}>✓</span>
+              )}
+              <span className="pattern-tile-label">{p.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Flat colour swatches */}
+        <p className="settings-subsection-label">Flat colour</p>
         <div className="swatch-row">
           {CARD_BACK_COLOURS.map(colour => (
             <button
               key={colour}
-              className={`swatch${cardBackColour === colour ? ' active' : ''}`}
+              className={`swatch${!cardBackPattern && cardBackColour === colour ? ' active' : ''}`}
               style={{ background: colour }}
               aria-label={colour}
-              onClick={() => updatePreference('cardBackColour', colour)}
+              onClick={() => selectColour(colour)}
             />
           ))}
         </div>

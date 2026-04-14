@@ -4,6 +4,7 @@ public record PatchPreferencesRequest(
     String  drawModeDefault,
     String  cardFaceDesign,
     String  cardBackColour,
+    String  cardBackPattern,
     String  feltColour,
     Boolean animationsEnabled
 ) {}

@@ -164,6 +164,66 @@
   text-align: center;
 }
 
+/* ── Card back pattern grid ── */
+.pattern-grid {
+  display: flex;
+  gap: 12px;
+}
+
+.pattern-tile {
+  flex: 1;
+  position: relative;
+  height: 80px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  transition: border-color 0.15s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  background-color: #1c2333; /* fallback while SVG loads */
+}
+
+.pattern-tile:hover {
+  transform: translateY(-2px);
+}
+
+.pattern-tile--active {
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.pattern-tile-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.pattern-tile-label {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  padding: 4px 0 5px;
+  background: rgba(0,0,0,0.35);
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.settings-subsection-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin: 4px 0 0;
+}
+
 /* ── Colour swatches ── */
 .swatch-row {
   display: flex;
