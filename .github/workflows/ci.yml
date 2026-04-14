@@ -1,5 +1,8 @@
 name: CI
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   pull_request:
   push:
@@ -10,24 +13,24 @@ jobs:
     name: Frontend build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      - uses: actions/checkout@v5
+
+      - name: Install dependencies
         working-directory: frontend
-      - run: npm run build
+        run: |
+          node --version
+          npm --version
+          npm install
+
+      - name: Build React app
         working-directory: frontend
-        env:
-          CI: false
+        run: npx vite build
 
   backend:
     name: Backend build & test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -35,4 +38,3 @@ jobs:
           cache: maven
       - name: Build and test
         run: mvn verify -q
-        working-directory: server

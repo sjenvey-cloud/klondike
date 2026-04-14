@@ -16,10 +16,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @CrossOrigin(origins = {
-    "http://localhost:3000",
     "http://localhost:4200",
     "http://localhost:5173",
-    "https://dbk2b6k1kyjsy.cloudfront.net"
+    "https://dbk2b6k1kyjsy.cloudfront.net",
+    "https://d2fbehwb6bp7kq.cloudfront.net",
+    "https://klondikepro.app",
+    "https://www.klondikepro.app"
 })
 @RestController
 @RequestMapping("/api/v1")
