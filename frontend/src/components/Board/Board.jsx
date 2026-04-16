@@ -143,49 +143,54 @@ export function Board({ game, timer }) {
   }, []);
 
   const handleCardPointerDown = useCallback((e, source, col, idx) => {
-    // Only on face-up cards with primary button
-    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    // Skip non-primary mouse buttons; touch/pen always allowed
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     const pile = source === 'waste'
       ? (waste.length > 0 ? [waste[waste.length - 1]] : [])
       : (tableau[col] || []);
     const card = source === 'waste' ? pile[0] : pile[idx];
     if (!card || !card.faceUp) return;
-
-    // Only top-of-pile for waste; any face-up for tableau
     if (source === 'waste' && waste.length === 0) return;
 
-    e.currentTarget.setPointerCapture(e.pointerId);
-
-    const { ghost, offsetX, offsetY } = createGhost(e.currentTarget, e.clientX, e.clientY);
-
+    // Store intent — do NOT call setPointerCapture (blocks click on iOS)
+    // Ghost is created lazily on first significant movement
     dragRef.current = {
       source, col, idx,
-      ghost, offsetX, offsetY,
+      cardEl: e.currentTarget,
+      ghost: null, offsetX: 0, offsetY: 0,
       startX: e.clientX, startY: e.clientY,
       moved: false,
       pointerId: e.pointerId,
     };
-  }, [waste, tableau, createGhost]);
+  }, [waste, tableau]);
 
   const handleCardPointerMove = useCallback((e) => {
     const drag = dragRef.current;
-    if (!drag) return;
+    if (!drag || drag.pointerId !== e.pointerId) return;
     const dx = e.clientX - drag.startX;
     const dy = e.clientY - drag.startY;
-    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
-    drag.moved = true;
+    if (!drag.moved && Math.hypot(dx, dy) < 8) return;
+
+    if (!drag.moved) {
+      // First movement past threshold — create ghost now
+      drag.moved = true;
+      const { ghost, offsetX, offsetY } = createGhost(drag.cardEl, drag.startX, drag.startY);
+      drag.ghost = ghost;
+      drag.offsetX = offsetX;
+      drag.offsetY = offsetY;
+    }
     drag.ghost.style.left = `${e.clientX - drag.offsetX}px`;
     drag.ghost.style.top  = `${e.clientY - drag.offsetY}px`;
-  }, []);
+  }, [createGhost]);
 
   const handleCardPointerUp = useCallback((e) => {
     const drag = dragRef.current;
-    if (!drag) return;
+    if (!drag || drag.pointerId !== e.pointerId) return;
 
-    drag.ghost.remove();
+    if (drag.ghost) drag.ghost.remove();
     dragRef.current = null;
 
-    if (!drag.moved) return; // treat as click — let onClick handle it
+    if (!drag.moved) return; // tap — onClick fires normally, no action needed here
 
     // Find what element is under the pointer (ghost has pointer-events:none)
     const el = document.elementFromPoint(e.clientX, e.clientY);
@@ -213,15 +218,22 @@ export function Board({ game, timer }) {
     }
   }, [wasteToTableau, tableauToTableau, wasteToFoundation, tableauToFoundation]);
 
-  // Attach global pointermove/pointerup while dragging
+  // Attach global pointer handlers — also handle pointercancel (iOS system interrupts)
   useEffect(() => {
-    const onMove = (e) => handleCardPointerMove(e);
-    const onUp   = (e) => handleCardPointerUp(e);
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup',   onUp);
+    const onMove   = (e) => handleCardPointerMove(e);
+    const onUp     = (e) => handleCardPointerUp(e);
+    const onCancel = () => {
+      const drag = dragRef.current;
+      if (drag?.ghost) drag.ghost.remove();
+      dragRef.current = null;
+    };
+    window.addEventListener('pointermove',   onMove);
+    window.addEventListener('pointerup',     onUp);
+    window.addEventListener('pointercancel', onCancel);
     return () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup',   onUp);
+      window.removeEventListener('pointermove',   onMove);
+      window.removeEventListener('pointerup',     onUp);
+      window.removeEventListener('pointercancel', onCancel);
     };
   }, [handleCardPointerMove, handleCardPointerUp]);
 

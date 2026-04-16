@@ -43,7 +43,15 @@
   padding: 10px 8px;
   min-height: 100%;
   box-sizing: border-box;
-  touch-action: manipulation;
+  /* none: prevent browser scroll/zoom from intercepting card drags on iOS */
+  touch-action: none;
+}
+
+/* Draggable cards — tell iOS not to handle the touch gesture */
+.tableau-card,
+.waste-card,
+.stock-pile {
+  touch-action: none;
 }
 
 /* ── Top row: stock + waste + gap + 4 foundations ── */
