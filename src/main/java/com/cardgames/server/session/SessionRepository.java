@@ -1,6 +1,7 @@
 package com.cardgames.server.session;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -22,6 +23,12 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "ORDER BY s.moves ASC, s.timeSeconds ASC")
     List<Session> findDailyLeaderboard(
         @Param("date") LocalDate date, @Param("drawMode") String drawMode);
+
+    // Retroactively mark all won sessions for a hand as daily when it is selected as today's challenge
+    @Modifying
+    @Query("UPDATE Session s SET s.isDaily = true, s.dailyDate = :date " +
+           "WHERE s.handId = :handId AND s.status = 'won'")
+    int markWonSessionsAsDaily(@Param("handId") int handId, @Param("date") LocalDate date);
 
     // DEV-99: history grouped by day
     @Query("SELECT CAST(s.startedAt AS date) as day, COUNT(s.id), " +

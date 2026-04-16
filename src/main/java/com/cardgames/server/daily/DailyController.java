@@ -11,12 +11,12 @@ import com.cardgames.server.user.UserRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @CrossOrigin(origins = {
     "http://localhost:4200",
@@ -30,46 +30,76 @@ import java.util.List;
 @RequestMapping("/api/v1")
 public class DailyController {
 
-    private final HandRepository    handRepo;
-    private final SessionRepository sessionRepo;
-    private final UserRepository    userRepo;
+    private final HandRepository           handRepo;
+    private final SessionRepository        sessionRepo;
+    private final UserRepository           userRepo;
+    private final DailyChallengeRepository dailyChallengeRepo;
 
     public DailyController(HandRepository handRepo,
                            SessionRepository sessionRepo,
-                           UserRepository userRepo) {
-        this.handRepo    = handRepo;
-        this.sessionRepo = sessionRepo;
-        this.userRepo    = userRepo;
+                           UserRepository userRepo,
+                           DailyChallengeRepository dailyChallengeRepo) {
+        this.handRepo           = handRepo;
+        this.sessionRepo        = sessionRepo;
+        this.userRepo           = userRepo;
+        this.dailyChallengeRepo = dailyChallengeRepo;
     }
 
     /**
      * GET /api/v1/daily?drawMode=draw3
-     * DEV-112: Returns today's daily hand for the given draw mode.
-     * Seed is derived deterministically from the date and draw mode.
+     *
+     * Returns today's daily hand. Selection priority:
+     *  1. Already recorded in daily_challenges for today → use that hand.
+     *  2. A previously-played (won) hand not yet used as a daily → promote it,
+     *     retroactively marking its won sessions so the leaderboard is pre-populated.
+     *  3. Fallback: deterministic seed derived from date + draw mode.
+     *
+     * Every user receives the same hand for the same UTC date and draw mode.
      */
+    @Transactional
     @GetMapping("/daily")
     public ResponseEntity<DailyHandResponse> getDaily(
             @RequestParam(defaultValue = "draw3") String drawMode,
             Authentication auth) {
 
-        long seed = dailySeed(LocalDate.now(), drawMode);
+        LocalDate today = LocalDate.now();
 
-        // Find or create the daily hand for this seed
-        Hand hand = handRepo.findByShuffleSeed(seed).orElseGet(() -> {
-            Hand h = new Hand(seed, drawMode);
-            return handRepo.save(h);
-        });
+        // 1. Already selected for today?
+        Hand hand = dailyChallengeRepo.findByDateAndMode(today, drawMode)
+            .map(dc -> handRepo.findById(dc.getHandId()).orElse(null))
+            .orElse(null);
 
-        int[] cards = SeededShuffle.shuffle(seed);
-        HandResponse handResponse = new HandResponse(hand.getId(), seed, cards, drawMode);
+        // 2. Promote a previously-solved hand that hasn't been a daily yet
+        if (hand == null) {
+            List<Hand> eligible = handRepo.findEligibleDailyHands(drawMode);
+            if (!eligible.isEmpty()) {
+                hand = eligible.get(0); // already ORDER BY RANDOM()
+                dailyChallengeRepo.save(new DailyChallenge(today, drawMode, hand.getId()));
+                // Pre-populate leaderboard with prior wins on this hand
+                sessionRepo.markWonSessionsAsDaily(hand.getId(), today);
+            }
+        }
 
-        // Check if authenticated user has used their ranked attempt
+        // 3. Fallback: deterministic seed
+        if (hand == null) {
+            long seed = deterministicSeed(today, drawMode);
+            hand = handRepo.findByShuffleSeed(seed).orElseGet(() -> {
+                Hand h = new Hand(seed, drawMode);
+                return handRepo.save(h);
+            });
+            dailyChallengeRepo.save(new DailyChallenge(today, drawMode, hand.getId()));
+        }
+
+        int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
+        HandResponse handResponse = new HandResponse(hand.getId(), hand.getShuffleSeed(), cards, drawMode);
+
+        // Check if authenticated user has used their ranked attempt today
         boolean userHasRankedAttempt = false;
         if (auth != null) {
             int userId = (Integer) auth.getPrincipal();
             userHasRankedAttempt = sessionRepo
                 .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
-                    userId, LocalDate.now(), drawMode,
+                    userId, today, drawMode,
                     new String[]{ Session.STATUS_WON, Session.STATUS_ABANDONED });
         }
 
@@ -79,6 +109,7 @@ public class DailyController {
     /**
      * GET /api/v1/leaderboard/daily/{date}/{sort}
      * Top 50 ranked wins for the given daily date and draw mode.
+     * Deduplicated to one entry per user (their best score).
      */
     @Cacheable(cacheNames = "leaderboard", key = "#date + ':' + #sort + ':' + #drawMode")
     @GetMapping("/leaderboard/daily/{date}/{sort}")
@@ -90,19 +121,27 @@ public class DailyController {
         LocalDate localDate = LocalDate.parse(date);
         List<Session> sessions = sessionRepo.findDailyLeaderboard(localDate, drawMode);
 
-        // Sort: moves ASC is default; time ASC if requested
+        // Sort preference
         if ("time".equals(sort)) {
             sessions = sessions.stream()
-                .sorted((a, b) -> Integer.compare(a.getTimeSeconds(), b.getTimeSeconds()))
+                .sorted(Comparator.comparingInt(Session::getTimeSeconds)
+                                  .thenComparingInt(Session::getMoves))
                 .toList();
         }
 
+        // Deduplicate: keep only best session per user (list is already ordered best-first)
+        Map<Integer, Session> bestByUser = new LinkedHashMap<>();
+        for (Session s : sessions) {
+            bestByUser.putIfAbsent(s.getUserId(), s);
+        }
+
         List<LeaderboardEntry> board = new ArrayList<>();
-        for (int i = 0; i < sessions.size(); i++) {
-            Session s = sessions.get(i);
+        int rank = 1;
+        for (Session s : bestByUser.values()) {
             User user = userRepo.findById(s.getUserId()).orElse(null);
             String name = (user != null) ? user.getDisplayName() : "Unknown";
-            board.add(new LeaderboardEntry(i + 1, s.getUserId(), name, s.getMoves(), s.getTimeSeconds()));
+            board.add(new LeaderboardEntry(rank++, s.getUserId(), name, s.getMoves(), s.getTimeSeconds()));
+            if (board.size() == 50) break;
         }
         return ResponseEntity.ok(board);
     }
@@ -123,25 +162,27 @@ public class DailyController {
 
         if ("time".equals(sort)) {
             sessions = sessions.stream()
-                .sorted((a, b) -> Integer.compare(a.getTimeSeconds(), b.getTimeSeconds()))
+                .sorted(Comparator.comparingInt(Session::getTimeSeconds)
+                                  .thenComparingInt(Session::getMoves))
                 .toList();
         }
 
-        for (int i = 0; i < sessions.size(); i++) {
-            if (sessions.get(i).getUserId() == userId) {
-                Session s = sessions.get(i);
-                User user = userRepo.findById(userId).orElse(null);
-                String name = (user != null) ? user.getDisplayName() : "Unknown";
-                return ResponseEntity.ok(
-                    new LeaderboardEntry(i + 1, userId, name, s.getMoves(), s.getTimeSeconds()));
-            }
-        }
-        return ResponseEntity.notFound().build();
+        // Deduplicate same as leaderboard
+        Map<Integer, Session> bestByUser = new LinkedHashMap<>();
+        for (Session s : sessions) bestByUser.putIfAbsent(s.getUserId(), s);
+
+        List<Integer> ranked = new ArrayList<>(bestByUser.keySet());
+        int idx = ranked.indexOf(userId);
+        if (idx < 0) return ResponseEntity.notFound().build();
+
+        Session s = bestByUser.get(userId);
+        User user = userRepo.findById(userId).orElse(null);
+        String name = (user != null) ? user.getDisplayName() : "Unknown";
+        return ResponseEntity.ok(new LeaderboardEntry(idx + 1, userId, name, s.getMoves(), s.getTimeSeconds()));
     }
 
     /**
      * GET /api/v1/profile/{userId}/history?days=35
-     * DEV-99: Activity history grouped by day.
      */
     @GetMapping("/profile/{userId}/history")
     public ResponseEntity<List<DayHistory>> getProfileHistory(
@@ -153,9 +194,9 @@ public class DailyController {
 
         List<DayHistory> result = new ArrayList<>();
         for (Object[] row : rows) {
-            String day     = row[0].toString().substring(0, 10);
-            int played     = ((Number) row[1]).intValue();
-            int won        = ((Number) row[2]).intValue();
+            String day = row[0].toString().substring(0, 10);
+            int played = ((Number) row[1]).intValue();
+            int won    = ((Number) row[2]).intValue();
             result.add(new DayHistory(day, played, won));
         }
         return ResponseEntity.ok(result);
@@ -163,7 +204,6 @@ public class DailyController {
 
     /**
      * GET /api/v1/profile/{userId}/sessions?date=2026-04-01
-     * DEV-100: Sessions for a specific calendar day.
      */
     @GetMapping("/profile/{userId}/sessions")
     public ResponseEntity<List<Session>> getSessionsByDate(
@@ -173,16 +213,16 @@ public class DailyController {
         LocalDate localDate = LocalDate.parse(date);
         LocalDateTime from = localDate.atStartOfDay();
         LocalDateTime to   = localDate.plusDays(1).atStartOfDay();
-        List<Session> sessions = sessionRepo.findByUserIdAndStartedAtBetween(userId, from, to);
-        return ResponseEntity.ok(sessions);
+        return ResponseEntity.ok(
+            sessionRepo.findByUserIdAndStartedAtBetween(userId, from, to));
     }
 
-    // ── Daily seed derivation ─────────────────────────────────────────────
+    // ── Fallback seed derivation (used only when no pre-played hand exists) ──
 
-    private long dailySeed(LocalDate date, String drawMode) {
+    private long deterministicSeed(LocalDate date, String drawMode) {
         long dateSeed     = date.toEpochDay();
         long drawModeSeed = "draw1".equals(drawMode) ? 1_000_000_007L : 999_999_937L;
         long raw = Math.abs((dateSeed * 6_364_136_223_846_793_005L + drawModeSeed) % 0x1_0000_0000L);
-        return Math.max(1L, raw); // exclude 0 (xorshift degenerate point)
+        return Math.max(1L, raw);
     }
 }
