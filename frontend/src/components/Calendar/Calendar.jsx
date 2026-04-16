@@ -1,34 +1,39 @@
 import React, { useMemo, useState } from 'react';
 import './Calendar.css';
 
-const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+];
 
-function isoDate(d) {
-  return d.toISOString().slice(0, 10);
+function isoDate(y, m, d) {
+  return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
 
-function buildGrid() {
-  // 35 cells ending today, aligned to Sun–Sat columns
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Find the Sunday on or before (today - 34 days)
-  const startAnchor = new Date(today);
-  startAnchor.setDate(today.getDate() - 34);
-  const dayOfWeek = startAnchor.getDay(); // 0=Sun
-  startAnchor.setDate(startAnchor.getDate() - dayOfWeek);
-
+/**
+ * Build a 6-row grid for the given year/month.
+ * Cells before the 1st and after the last day are null (greyed out padding).
+ */
+function buildMonthGrid(year, month) {
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells = [];
-  for (let i = 0; i < 35; i++) {
-    const d = new Date(startAnchor);
-    d.setDate(startAnchor.getDate() + i);
-    cells.push(d);
-  }
+
+  // Leading empty cells
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  // Trailing empty cells to fill last row
+  while (cells.length % 7 !== 0) cells.push(null);
+
   return cells;
 }
 
-export function Calendar({ history = [], onDayClick }) {
-  const [tooltip, setTooltip] = useState(null); // { date, sessionsPlayed, sessionsWon, x, y }
+export function Calendar({ history = [], onDayClick, onMonthChange }) {
+  const today = new Date();
+  const [year,  setYear]  = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
 
   const historyMap = useMemo(() => {
     const map = {};
@@ -36,68 +41,109 @@ export function Calendar({ history = [], onDayClick }) {
     return map;
   }, [history]);
 
-  const cells = useMemo(() => buildGrid(), []);
+  const cells = useMemo(() => buildMonthGrid(year, month), [year, month]);
 
-  // Track month label shown per row
-  const monthShown = {};
+  const navigate = (deltaMonth) => {
+    let m = month + deltaMonth;
+    let y = year;
+    if (m > 11) { m = 0; y++; }
+    if (m < 0)  { m = 11; y--; }
+    setMonth(m);
+    setYear(y);
+    if (onMonthChange) onMonthChange(y, m);
+  };
+
+  const navigateYear = (deltaYear) => {
+    const y = year + deltaYear;
+    setYear(y);
+    if (onMonthChange) onMonthChange(y, month);
+  };
+
+  const todayKey = isoDate(today.getFullYear(), today.getMonth(), today.getDate());
+  const isFutureCell = (d) => {
+    if (d === null) return false;
+    return isoDate(year, month, d) > todayKey;
+  };
+
+  const rows = [];
+  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
 
   return (
     <div className="calendar">
-      {/* Day-of-week headers */}
+      {/* ── Navigation header ──────────────────────────────────────────── */}
+      <div className="calendar-nav">
+        <div className="calendar-nav-side">
+          <button className="cal-nav-btn" onClick={() => navigateYear(-1)} title="Previous year">«</button>
+          <button className="cal-nav-btn" onClick={() => navigate(-1)}     title="Previous month">‹</button>
+        </div>
+        <div className="calendar-nav-title">
+          {MONTH_NAMES[month]} {year}
+        </div>
+        <div className="calendar-nav-side">
+          <button
+            className="cal-nav-btn"
+            onClick={() => navigate(1)}
+            disabled={year === today.getFullYear() && month === today.getMonth()}
+            title="Next month"
+          >›</button>
+          <button
+            className="cal-nav-btn"
+            onClick={() => navigateYear(1)}
+            disabled={year >= today.getFullYear()}
+            title="Next year"
+          >»</button>
+        </div>
+      </div>
+
+      {/* ── Day-of-week headers ─────────────────────────────────────────── */}
       <div className="calendar-row calendar-header-row">
-        {DAY_LABELS.map((l, i) => (
-          <div key={i} className="calendar-header-cell">{l}</div>
+        {DAY_LABELS.map(l => (
+          <div key={l} className="calendar-header-cell">{l}</div>
         ))}
       </div>
 
-      {/* 5 weeks */}
-      {[0, 1, 2, 3, 4].map(week => (
-        <div key={week} className="calendar-row">
-          {[0, 1, 2, 3, 4, 5, 6].map(dow => {
-            const cellIdx = week * 7 + dow;
-            const date = cells[cellIdx];
-            const key = isoDate(date);
+      {/* ── Weeks ──────────────────────────────────────────────────────── */}
+      {rows.map((row, wi) => (
+        <div key={wi} className="calendar-row">
+          {row.map((day, di) => {
+            if (day === null) {
+              return <div key={di} className="calendar-cell calendar-cell--empty" />;
+            }
+
+            const key = isoDate(year, month, day);
             const entry = historyMap[key] || { sessionsPlayed: 0, sessionsWon: 0 };
             const { sessionsPlayed, sessionsWon } = entry;
+            const isToday   = key === todayKey;
+            const isFuture  = isFutureCell(day);
+            const hasWin    = sessionsWon > 0;
+            const hasPlayed = sessionsPlayed > 0;
 
-            // Month label on first cell of a new month
-            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-            const showMonth = !monthShown[monthKey];
-            if (showMonth) monthShown[monthKey] = true;
-
-            // Opacity based on sessions
             let opacity = 0;
-            if (sessionsPlayed === 1) opacity = 0.3;
-            else if (sessionsPlayed === 2) opacity = 0.6;
+            if (sessionsPlayed === 1) opacity = 0.35;
+            else if (sessionsPlayed === 2) opacity = 0.65;
             else if (sessionsPlayed >= 3) opacity = 1;
 
-            const hasWin = sessionsWon > 0;
-            const isFuture = date > new Date();
+            const classes = [
+              'calendar-cell',
+              hasPlayed && !isFuture ? 'calendar-cell--played' : '',
+              hasWin && !isFuture    ? 'calendar-cell--won'    : '',
+              isToday                ? 'calendar-cell--today'  : '',
+              isFuture               ? 'calendar-cell--future' : '',
+            ].filter(Boolean).join(' ');
 
             return (
               <div
-                key={dow}
-                className={`calendar-cell${hasWin && sessionsPlayed > 0 ? ' calendar-cell--won' : ''}${isFuture ? ' calendar-cell--future' : ''}`}
+                key={di}
+                className={classes}
                 style={opacity > 0 ? { '--cell-opacity': opacity } : undefined}
-                data-active={opacity > 0 ? 'true' : undefined}
-                onMouseEnter={e => {
-                  if (isFuture) return;
-                  setTooltip({
-                    date: key,
-                    sessionsPlayed,
-                    sessionsWon,
-                    x: e.currentTarget.getBoundingClientRect().left,
-                    y: e.currentTarget.getBoundingClientRect().top,
-                  });
-                }}
-                onMouseLeave={() => setTooltip(null)}
-                onClick={() => {
-                  if (!isFuture && onDayClick) onDayClick(key);
-                }}
+                onClick={() => !isFuture && onDayClick && onDayClick(key)}
+                title={hasPlayed ? `${sessionsPlayed} played · ${sessionsWon} won` : undefined}
               >
-                {showMonth && (
-                  <span className="calendar-month-label">
-                    {date.toLocaleString('default', { month: 'short' })}
+                <span className="calendar-day-num">{day}</span>
+                {hasPlayed && !isFuture && (
+                  <span className="calendar-dot-row">
+                    {sessionsWon > 0 && <span className="calendar-dot calendar-dot--win" />}
+                    {sessionsPlayed - sessionsWon > 0 && <span className="calendar-dot calendar-dot--play" />}
                   </span>
                 )}
               </div>
@@ -105,14 +151,6 @@ export function Calendar({ history = [], onDayClick }) {
           })}
         </div>
       ))}
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div className="calendar-tooltip" style={{ '--tip-x': `${tooltip.x}px`, '--tip-y': `${tooltip.y}px` }}>
-          <div className="calendar-tooltip-date">{tooltip.date}</div>
-          <div className="calendar-tooltip-line">{tooltip.sessionsPlayed} played · {tooltip.sessionsWon} won</div>
-        </div>
-      )}
     </div>
   );
 }

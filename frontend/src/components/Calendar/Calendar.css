@@ -1,14 +1,66 @@
 .calendar {
   width: 100%;
-  position: relative;
   user-select: none;
 }
+
+/* ── Navigation header ──────────────────────────────────────────────────── */
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendar-nav-title {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: 0.01em;
+  min-width: 140px;
+  text-align: center;
+}
+
+.calendar-nav-side {
+  display: flex;
+  gap: 2px;
+}
+
+.cal-nav-btn {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  font-size: 16px;
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, opacity 0.12s;
+  padding: 0;
+}
+
+.cal-nav-btn:hover:not(:disabled) {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.cal-nav-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* ── Column headers ─────────────────────────────────────────────────────── */
 
 .calendar-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  margin-bottom: 3px;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 
 .calendar-header-row {
@@ -21,90 +73,103 @@
   color: var(--color-text-secondary);
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  padding: 2px 0;
 }
+
+/* ── Day cells ──────────────────────────────────────────────────────────── */
 
 .calendar-cell {
   aspect-ratio: 1;
-  border-radius: 3px;
+  border-radius: 6px;
   background: var(--color-surface-raised);
+  border: 1px solid transparent;
   cursor: pointer;
   position: relative;
-  transition: transform 0.1s;
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: background 0.1s, transform 0.1s;
 }
 
-.calendar-cell[data-active='true'] {
-  background: color-mix(in srgb, var(--color-accent) calc(var(--cell-opacity, 0) * 100%), var(--color-surface-raised));
+.calendar-cell--empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+  pointer-events: none;
 }
 
-/* Fallback for browsers without color-mix: use rgba with opacity layers */
+.calendar-cell--played {
+  background: color-mix(in srgb, var(--color-accent) calc(var(--cell-opacity, 0.35) * 100%), var(--color-surface-raised));
+}
+
+/* Fallback for browsers without color-mix */
 @supports not (background: color-mix(in srgb, red 30%, blue)) {
-  .calendar-cell[data-active='true'] {
+  .calendar-cell--played {
     background: var(--color-surface-raised);
-    position: relative;
   }
-  .calendar-cell[data-active='true']::after {
+  .calendar-cell--played::before {
     content: '';
     position: absolute;
     inset: 0;
-    border-radius: 3px;
+    border-radius: 6px;
     background: var(--color-accent);
-    opacity: var(--cell-opacity, 0);
+    opacity: var(--cell-opacity, 0.35);
     pointer-events: none;
   }
 }
 
 .calendar-cell--won {
-  box-shadow: 0 0 0 1.5px #c9a84c;
+  border-color: var(--color-accent);
+}
+
+.calendar-cell--today .calendar-day-num {
+  color: var(--color-accent);
+  font-weight: 700;
 }
 
 .calendar-cell--future {
-  opacity: 0.25;
+  opacity: 0.3;
   cursor: default;
 }
 
-.calendar-cell:not(.calendar-cell--future):hover {
-  transform: scale(1.15);
+.calendar-cell:not(.calendar-cell--future):not(.calendar-cell--empty):hover {
+  transform: scale(1.08);
   z-index: 2;
+  background: var(--color-accent-muted);
 }
 
-.calendar-month-label {
-  position: absolute;
-  top: -14px;
-  left: 0;
+/* ── Day number ─────────────────────────────────────────────────────────── */
+
+.calendar-day-num {
   font-family: var(--font-ui);
-  font-size: 9px;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-/* Tooltip — positioned fixed so it escapes overflow clips */
-.calendar-tooltip {
-  position: fixed;
-  left: var(--tip-x, 0);
-  top: calc(var(--tip-y, 0) - 56px);
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  pointer-events: none;
-  z-index: 9999;
-  box-shadow: var(--shadow-surface);
-  min-width: 120px;
-}
-
-.calendar-tooltip-date {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--color-text-primary);
-  margin-bottom: 3px;
+  line-height: 1;
 }
 
-.calendar-tooltip-line {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  color: var(--color-text-secondary);
+/* ── Activity dots ──────────────────────────────────────────────────────── */
+
+.calendar-dot-row {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.calendar-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.calendar-dot--win {
+  background: var(--color-accent);
+}
+
+.calendar-dot--play {
+  background: var(--color-text-secondary);
+  opacity: 0.6;
 }

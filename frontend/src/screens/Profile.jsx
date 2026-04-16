@@ -22,20 +22,32 @@ export function Profile() {
   const [loginError, setLoginError] = useState('');
   const [history, setHistory] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [calYear,  setCalYear]  = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [stats, setStats] = useState(null);
   const [records, setRecords] = useState(null);
+
+  // Fetch history whenever the calendar month changes
+  const fetchHistory = (y, m) => {
+    if (!user) return;
+    const today = new Date();
+    const monthStart = new Date(y, m, 1);
+    // Days from start of viewed month to today (minimum 31 to cover the full month)
+    const diffDays = Math.max(31, Math.ceil((today - monthStart) / 86400000) + 1);
+    getProfileHistory(user.id, diffDays).then(data => {
+      setHistory(Array.isArray(data) ? data : []);
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     if (user) {
       getProfile(user.id).then(setProfile).catch(() => {});
-      getProfileHistory(user.id, 35).then(data => {
-        setHistory(Array.isArray(data) ? data : []);
-      }).catch(() => {});
+      fetchHistory(calYear, calMonth);
       getProfileStats().then(setStats).catch(() => {});
       getProfileRecords().then(setRecords).catch(() => {});
       setNameInput(user.displayName);
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -110,7 +122,15 @@ export function Profile() {
 
       <div className="profile-section">
         <h3 className="profile-section-title">Activity</h3>
-        <Calendar history={history} onDayClick={setSelectedDay} />
+        <Calendar
+          history={history}
+          onDayClick={setSelectedDay}
+          onMonthChange={(y, m) => {
+            setCalYear(y);
+            setCalMonth(m);
+            fetchHistory(y, m);
+          }}
+        />
       </div>
 
       {records && (records.fewestMoves || records.fastestTime) && (
