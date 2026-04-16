@@ -14,6 +14,7 @@ function formatTime(s) {
 export function Daily() {
   const { user } = useContext(AuthContext);
   const [daily, setDaily] = useState(null);
+  const [dailyError, setDailyError] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
   const [myRank, setMyRank] = useState(null);
   const [sort, setSort] = useState('moves');
@@ -21,7 +22,9 @@ export function Daily() {
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
-    getDaily().then(setDaily).catch(() => {});
+    getDaily()
+      .then(data => { setDaily(data); setDailyError(false); })
+      .catch(() => setDailyError(true));
   }, []);
 
   useEffect(() => {
@@ -51,7 +54,34 @@ export function Daily() {
         </div>
       </div>
 
-      {view === 'board' && daily && <Game dailyHand={daily} />}
+      {view === 'board' && dailyError && (
+        <div className="daily-unavailable">
+          <div className="daily-unavailable-box">
+            <div className="daily-unavailable-icon">🃏</div>
+            <h3 className="daily-unavailable-title">No Daily Challenge Available</h3>
+            <p className="daily-unavailable-body">
+              We couldn't load today's challenge. Please check your connection and try again.
+            </p>
+            <button
+              className="daily-unavailable-btn"
+              onClick={() => {
+                setDailyError(false);
+                getDaily()
+                  .then(data => { setDaily(data); setDailyError(false); })
+                  .catch(() => setDailyError(true));
+              }}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {view === 'board' && !dailyError && !daily && (
+        <div className="daily-loading">Loading today's challenge…</div>
+      )}
+
+      {view === 'board' && !dailyError && daily && <Game dailyHand={daily} />}
 
       {view === 'leaderboard' && (
         <div className="leaderboard">
