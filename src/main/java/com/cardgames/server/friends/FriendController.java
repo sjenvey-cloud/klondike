@@ -9,7 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -19,6 +19,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/friends")
 public class FriendController {
+
+    @Value("${app.base-url}")
+    private String appBaseUrl;
 
     private final FriendRepository       friendRepository;
     private final FriendInviteRepository inviteRepository;
@@ -38,18 +41,14 @@ public class FriendController {
     // ── DEV-155: POST /api/v1/friends/invite ─────────────────────────────
 
     @PostMapping("/invite")
-    public ResponseEntity<InviteResponse> createInvite(
-            Authentication auth, HttpServletRequest request) {
+    public ResponseEntity<InviteResponse> createInvite(Authentication auth) {
 
         int userId = (Integer) auth.getPrincipal();
         String token = UUID.randomUUID().toString();
         FriendInvite invite = new FriendInvite(token, userId);
         inviteRepository.save(invite);
 
-        String baseUrl = request.getScheme() + "://" + request.getServerName()
-            + (request.getServerPort() == 80 || request.getServerPort() == 443
-                ? "" : ":" + request.getServerPort());
-        String inviteUrl = baseUrl + "/friends/accept?token=" + token;
+        String inviteUrl = appBaseUrl + "/friends/accept?token=" + token;
 
         return ResponseEntity.ok(new InviteResponse(token, inviteUrl, invite.getExpiresAt()));
     }

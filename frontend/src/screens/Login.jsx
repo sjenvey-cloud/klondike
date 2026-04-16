@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
+import { acceptPendingInvite } from './AcceptInvite';
 import './Login.css';
 
 export function Login() {
@@ -24,7 +25,9 @@ export function Login() {
       } else {
         await register(displayName, email, password);
       }
-      navigate('/');
+      // If user arrived via an invite link, accept it now then go to friends
+      const hadPendingInvite = await acceptPendingInvite();
+      navigate(hadPendingInvite ? '/friends' : '/');
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {

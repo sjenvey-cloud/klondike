@@ -12,6 +12,7 @@ import { Friends } from './screens/Friends';
 import { Profile } from './screens/Profile';
 import { Settings } from './screens/Settings';
 import { Login } from './screens/Login';
+import { AcceptInvite } from './screens/AcceptInvite';
 import { PreferencesContext } from './contexts/PreferencesContext';
 import { getChallengeInbox } from './services/api';
 import './styles/tokens.css';
@@ -53,8 +54,9 @@ function AppInner() {
     <PreferencesContext.Provider value={prefsHook}>
       <Router>
         <Routes>
-          {/* Public route — no AuthGuard, no Nav */}
-          <Route path="/login" element={<Login />} />
+          {/* Public routes — no AuthGuard, no Nav */}
+          <Route path="/login"          element={<Login />} />
+          <Route path="/friends/accept" element={<AcceptInvite />} />
 
           {/* All other routes require auth */}
           <Route path="/*" element={
