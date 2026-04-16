@@ -29,7 +29,7 @@ public class AuthController {
 
         AuthTokenPair pair = authService.register(body);
         response.addHeader(HttpHeaders.SET_COOKIE, pair.refreshCookie().toString());
-        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(pair.accessToken()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(pair.accessToken(), pair.user()));
     }
 
     // ── DEV-76: Login ─────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ public class AuthController {
 
         AuthTokenPair pair = authService.login(body);
         response.addHeader(HttpHeaders.SET_COOKIE, pair.refreshCookie().toString());
-        return ResponseEntity.ok(new AuthResponse(pair.accessToken()));
+        return ResponseEntity.ok(new AuthResponse(pair.accessToken(), pair.user()));
     }
 
     // ── DEV-77: Refresh ───────────────────────────────────────────────────
@@ -56,7 +56,7 @@ public class AuthController {
         }
         AuthTokenPair pair = authService.refresh(rawToken);
         response.addHeader(HttpHeaders.SET_COOKIE, pair.refreshCookie().toString());
-        return ResponseEntity.ok(new AuthResponse(pair.accessToken()));
+        return ResponseEntity.ok(new AuthResponse(pair.accessToken(), pair.user()));
     }
 
     // ── DEV-78: Logout ────────────────────────────────────────────────────

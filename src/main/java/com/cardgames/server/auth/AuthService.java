@@ -115,7 +115,9 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(
             user.getId(), user.getEmail(), user.getDisplayName());
 
-        return new AuthTokenPair(accessToken, buildRefreshCookie(rawToken));
+        AuthResponse.UserDto userDto = new AuthResponse.UserDto(
+            (long) user.getId(), user.getEmail(), user.getDisplayName());
+        return new AuthTokenPair(accessToken, buildRefreshCookie(rawToken), userDto);
     }
 
     private ResponseCookie buildRefreshCookie(String rawToken) {
