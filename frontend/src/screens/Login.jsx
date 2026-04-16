@@ -68,7 +68,7 @@ export function Login() {
                 id="displayName"
                 className="login-input"
                 type="text"
-                autoComplete="username"
+                autoComplete="name"
                 placeholder="Your name"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
@@ -84,7 +84,7 @@ export function Login() {
               id="email"
               className="login-input"
               type="email"
-              autoComplete="email"
+              autoComplete="username"
               placeholder="you@example.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
