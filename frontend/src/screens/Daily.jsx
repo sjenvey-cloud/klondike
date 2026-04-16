@@ -81,7 +81,9 @@ export function Daily() {
         <div className="daily-loading">Loading today's challenge…</div>
       )}
 
-      {view === 'board' && !dailyError && daily && <Game dailyHand={daily} />}
+      {view === 'board' && !dailyError && daily && (
+        <Game dailyHand={daily.hand} isRanked={!daily.userHasRankedAttempt} />
+      )}
 
       {view === 'leaderboard' && (
         <div className="leaderboard">

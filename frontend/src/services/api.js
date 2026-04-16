@@ -85,8 +85,8 @@ export const createHand = (drawMode = 'draw3') => post('/hands', { drawMode });
 
 // ── Sessions ──────────────────────────────────────────────────────────────
 // POST /api/v1/sessions → Session
-export const createSession = (handId, userId, isDaily = false, dailyDate = null) =>
-  post('/sessions', { handId, userId, isDaily, dailyDate });
+export const createSession = (handId, userId, isDaily = false, dailyDate = null, isRanked = true) =>
+  post('/sessions', { handId, userId, isDaily, dailyDate, isRanked });
 
 // POST /api/v1/sessions/{id}/complete → { valid, message, moveCount, session }
 export const completeSession = (id, moves, timeSeconds, turns) =>

@@ -7,7 +7,7 @@ import { Board } from '../components/Board/Board';
 import { WinModal } from '../components/WinModal/WinModal';
 import './Game.css';
 
-export function Game({ dailyHand = null }) {
+export function Game({ dailyHand = null, isRanked = true }) {
   const { user } = useContext(AuthContext);
   const location = useLocation();
   const game = useGame(user?.id);
@@ -23,7 +23,8 @@ export function Game({ dailyHand = null }) {
     if (dailyHand) {
       // Daily games always start fresh
       const drawMode = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
-      game.startGame(dailyHand, drawMode);
+      const today = new Date().toISOString().slice(0, 10);
+      game.startGame(dailyHand, drawMode, { isDaily: true, dailyDate: today, isRanked });
       return;
     }
     if (game.hasSavedSession()) {

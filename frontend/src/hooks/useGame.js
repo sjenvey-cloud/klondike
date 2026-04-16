@@ -180,13 +180,14 @@ function reducer(state, action) {
       const pick = candidates[0];
 
       let waste = state.waste;
-      let turns = [...state.turns, 'ac'];
+      let turns = [...state.turns];
 
       if (pick.source === 'waste') {
         const top = waste[waste.length - 1];
         const fi = foundationIndex(top.card);
         foundations[fi].push(top.card);
         waste = waste.slice(0, -1);
+        turns.push('wf');
         moved = true;
       } else {
         const pile = tableau[pick.col];
@@ -200,6 +201,7 @@ function reducer(state, action) {
             tableau[pick.col][last] = { ...tableau[pick.col][last], faceUp: true };
           }
         }
+        turns.push(`tf:${pick.col}`);
         moved = true;
       }
 
@@ -251,11 +253,16 @@ export function useGame(userId) {
   // DEV-62: canAutoComplete flag
   const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
 
-  const startGame = useCallback(async (handOverride = null, drawMode = 'draw3') => {
+  const startGame = useCallback(async (handOverride = null, drawMode = 'draw3', opts = {}) => {
     setLoading(true);
     try {
       const hand    = handOverride || await createHand(drawMode);
-      const session = await createSession(hand.id, userId);
+      const session = await createSession(
+        hand.id, userId,
+        opts.isDaily   || false,
+        opts.dailyDate || null,
+        opts.isRanked  !== undefined ? opts.isRanked : true,
+      );
       const dealt   = dealKlondike(hand.cards);
       setSessionId(session.id);
       startTimeRef.current = Date.now();
