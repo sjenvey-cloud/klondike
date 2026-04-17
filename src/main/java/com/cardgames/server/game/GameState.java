@@ -100,7 +100,18 @@ public class GameState {
             case "draw": return applyDraw();
             case "wt":   return parts.length >= 2 && applyWasteToTableau(Integer.parseInt(parts[1]));
             case "wf":   return applyWasteToFoundation();
-            case "tt":   return parts.length >= 3 && applyTableauToTableau(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+            case "tt":
+                // Legacy: tt:from:to  (server infers first face-up card)
+                // Current: tt:from:fromIdx:to  (explicit stack start index)
+                if (parts.length == 4) {
+                    return applyTableauToTableau(
+                        Integer.parseInt(parts[1]),
+                        Integer.parseInt(parts[2]),
+                        Integer.parseInt(parts[3]));
+                }
+                return parts.length >= 3 && applyTableauToTableau(
+                    Integer.parseInt(parts[1]),
+                    Integer.parseInt(parts[2]));
             case "tf":   return parts.length >= 2 && applyTableauToFoundation(Integer.parseInt(parts[1]));
             default:
                 return false;
@@ -156,26 +167,34 @@ public class GameState {
         return true;
     }
 
-    // ── Tableau → Tableau (moves entire face-up stack) ────────────────────
+    // ── Tableau → Tableau ────────────────────────────────────────────────
+    // Legacy path: infer start of moving stack as the first face-up card.
     private boolean applyTableauToTableau(int from, int to) {
-        if (from < 0 || from >= 7 || to < 0 || to >= 7 || from == to) return false;
-        List<Card> srcPile  = tableau.get(from);
-        List<Card> destPile = tableau.get(to);
-
-        // Find the first face-up card (bottom of the moving stack)
+        List<Card> srcPile = tableau.get(from);
         int splitIdx = -1;
         for (int i = 0; i < srcPile.size(); i++) {
             if (srcPile.get(i).isFaceUp()) { splitIdx = i; break; }
         }
         if (splitIdx < 0) return false;
+        return applyTableauToTableau(from, splitIdx, to);
+    }
 
-        Card bottomOfStack = srcPile.get(splitIdx);
+    // Current path: explicit fromIdx supplied by the client.
+    private boolean applyTableauToTableau(int from, int fromIdx, int to) {
+        if (from < 0 || from >= 7 || to < 0 || to >= 7 || from == to) return false;
+        List<Card> srcPile  = tableau.get(from);
+        List<Card> destPile = tableau.get(to);
+
+        if (fromIdx < 0 || fromIdx >= srcPile.size()) return false;
+        if (!srcPile.get(fromIdx).isFaceUp()) return false;
+
+        Card bottomOfStack = srcPile.get(fromIdx);
         if (!canPlaceOnTableau(bottomOfStack, destPile)) return false;
 
-        List<Card> moving = new ArrayList<>(srcPile.subList(splitIdx, srcPile.size()));
-        srcPile.subList(splitIdx, srcPile.size()).clear();
+        List<Card> moving = new ArrayList<>(srcPile.subList(fromIdx, srcPile.size()));
+        srcPile.subList(fromIdx, srcPile.size()).clear();
 
-        // Flip new top of source pile
+        // Flip new top of source pile if it was face-down
         if (!srcPile.isEmpty()) srcPile.get(srcPile.size() - 1).setFaceUp(true);
 
         destPile.addAll(moving);

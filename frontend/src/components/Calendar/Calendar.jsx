@@ -111,8 +111,8 @@ export function Calendar({ history = [], onDayClick, onMonthChange }) {
             }
 
             const key = isoDate(year, month, day);
-            const entry = historyMap[key] || { sessionsPlayed: 0, sessionsWon: 0 };
-            const { sessionsPlayed, sessionsWon } = entry;
+            const entry = historyMap[key] || { played: 0, won: 0 };
+            const { played: sessionsPlayed, won: sessionsWon } = entry;
             const isToday   = key === todayKey;
             const isFuture  = isFutureCell(day);
             const hasWin    = sessionsWon > 0;

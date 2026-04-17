@@ -37,8 +37,10 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "GROUP BY CAST(s.startedAt AS date) ORDER BY CAST(s.startedAt AS date) ASC")
     List<Object[]> findDailyHistory(@Param("userId") int userId, @Param("since") LocalDateTime since);
 
-    // DEV-100: sessions for a specific calendar day
-    List<Session> findByUserIdAndStartedAtBetween(int userId, LocalDateTime from, LocalDateTime to);
+    // DEV-100: sessions for a specific calendar day, most recent first
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.startedAt >= :from AND s.startedAt < :to ORDER BY s.startedAt DESC")
+    List<Session> findByUserIdAndStartedAtBetween(
+        @Param("userId") int userId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     // DEV-150: stats grouped by draw_mode
     @Query("SELECT s.drawMode, COUNT(s.id), " +

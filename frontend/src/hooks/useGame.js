@@ -147,7 +147,7 @@ function reducer(state, action) {
         ...state,
         tableau,
         moves: state.moves + 1,
-        turns: [...state.turns, `tt:${fromCol}:${toCol}`],
+        turns: [...state.turns, `tt:${fromCol}:${fromIdx}:${toCol}`],
       };
     }
 
