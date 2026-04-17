@@ -69,15 +69,61 @@
 .invite-label {
   font-size: 12px;
   color: var(--color-text-secondary);
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-family: var(--font-ui);
 }
 
+.invite-link-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
 .invite-link {
+  flex: 1;
   font-size: 11px;
   color: var(--color-accent);
   word-break: break-all;
   font-family: monospace;
+  line-height: 1.5;
+}
+
+.invite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.invite-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.invite-action-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.invite-action-btn.copied {
+  color: #4caf7d;
+  border-color: #4caf7d;
+}
+
+.invite-action-label {
+  font-size: 12px;
 }
 
 .friends-list {

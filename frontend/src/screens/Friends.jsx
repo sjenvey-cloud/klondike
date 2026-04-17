@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { AuthContext } from '../App';
 import {
   getFriends, getLeague, getChallengeInbox,
@@ -16,6 +16,7 @@ export function Friends() {
   const [inbox, setInbox] = useState([]);
   const [period, setPeriod] = useState('week');
   const [inviteLink, setInviteLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -31,7 +32,15 @@ export function Friends() {
   const handleInvite = async () => {
     const res = await createFriendInvite();
     setInviteLink(res.inviteUrl);
+    setCopied(false);
   };
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [inviteLink]);
 
   const handleRemove = async (friendId) => {
     await removeFriend(friendId);
@@ -66,8 +75,44 @@ export function Friends() {
           </button>
           {inviteLink && (
             <div className="invite-link-box">
-              <p className="invite-label">Share this link:</p>
-              <code className="invite-link">{inviteLink}</code>
+              <p className="invite-label">Share this invite link:</p>
+              <div className="invite-link-row">
+                <code className="invite-link">{inviteLink}</code>
+                <div className="invite-actions">
+                  <button
+                    className={`invite-action-btn${copied ? ' copied' : ''}`}
+                    onClick={handleCopy}
+                    title="Copy link"
+                    aria-label="Copy invite link"
+                  >
+                    {copied ? (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v7A1.5 1.5 0 0 0 3.5 12H5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    )}
+                    <span className="invite-action-label">{copied ? 'Copied!' : 'Copy'}</span>
+                  </button>
+                  <a
+                    className="invite-action-btn"
+                    href={`sms:?body=${encodeURIComponent('Join me on Klondike Pro! Accept my friend invite: ' + inviteLink)}`}
+                    title="Send via text message"
+                    aria-label="Send invite via text message"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M13 1H3a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2l1.5 2.5a.5.5 0 0 0 .866 0L9 12h4a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                      <circle cx="5.5" cy="6.5" r="1" fill="currentColor"/>
+                      <circle cx="8" cy="6.5" r="1" fill="currentColor"/>
+                      <circle cx="10.5" cy="6.5" r="1" fill="currentColor"/>
+                    </svg>
+                    <span className="invite-action-label">Text</span>
+                  </a>
+                </div>
+              </div>
             </div>
           )}
           <div className="friends-list">
