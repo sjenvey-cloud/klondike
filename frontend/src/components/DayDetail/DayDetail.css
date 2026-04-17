@@ -19,11 +19,14 @@
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* ensures the flex body is capped and can scroll */
+  overflow: hidden;
 }
 
-/* Detail panel: taller so the leaderboard has room */
+/* Detail panel: use a fixed height so flex children get a definite
+   pixel value — max-height alone is not enough for overflow-y: auto
+   to kick in on the body in some mobile browsers. */
 .day-detail-drawer--detail {
+  height: 92vh;
   max-height: 92vh;
 }
 
