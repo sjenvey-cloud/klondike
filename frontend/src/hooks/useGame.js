@@ -268,7 +268,7 @@ export function useGame(userId) {
         opts.isRanked  !== undefined ? opts.isRanked : true,
       );
       const dealt   = dealKlondike(hand.cards);
-      setSessionId(session.id);
+      setSessionId(session?.session?.id ?? session?.id);
       setHandId(hand.id);
       startTimeRef.current = Date.now();
       clearSavedSession();

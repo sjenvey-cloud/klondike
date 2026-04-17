@@ -87,25 +87,27 @@ deploy_api() {
 deploy_frontend() {
   info "=== Deploying Frontend to S3/CloudFront ==="
 
+  FRONTEND_ROOT="${REPO_ROOT}/frontend"
+
   # 1. Build React app
   info "Installing dependencies..."
-  (cd "$REPO_ROOT" && npm ci --silent)
+  (cd "$FRONTEND_ROOT" && npm ci --silent)
 
   info "Building React app..."
-  (cd "$REPO_ROOT" && npm run build)
+  (cd "$FRONTEND_ROOT" && npm run build)
   success "React build complete"
 
   # 2. Sync to S3
   info "Uploading assets to S3..."
   # Long cache for hashed assets
-  aws s3 sync "${REPO_ROOT}/dist/" "s3://${S3_BUCKET}/" \
+  aws s3 sync "${FRONTEND_ROOT}/dist/" "s3://${S3_BUCKET}/" \
     --delete \
     --cache-control "max-age=31536000,immutable" \
     --exclude "index.html" \
     --region "$AWS_REGION"
 
   # No cache for index.html (entry point)
-  aws s3 cp "${REPO_ROOT}/dist/index.html" "s3://${S3_BUCKET}/" \
+  aws s3 cp "${FRONTEND_ROOT}/dist/index.html" "s3://${S3_BUCKET}/" \
     --cache-control "no-cache,no-store,must-revalidate" \
     --region "$AWS_REGION"
 
