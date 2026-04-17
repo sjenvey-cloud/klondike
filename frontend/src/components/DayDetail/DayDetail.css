@@ -16,14 +16,15 @@
   border-top: 1px solid var(--color-border);
   padding: 0 0 env(safe-area-inset-bottom, 0);
   animation: drawerSlideUp 0.25s ease-out;
-  max-height: 75vh;
+  max-height: 80vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* ensures the flex body is capped and can scroll */
 }
 
-/* Detail panel gets a bit more height so the leaderboard is comfortable */
+/* Detail panel: taller so the leaderboard has room */
 .day-detail-drawer--detail {
-  max-height: 82vh;
+  max-height: 92vh;
 }
 
 @keyframes drawerSlideUp {
@@ -93,6 +94,7 @@
   min-height: 0;          /* lets flex child shrink below its content height */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 12px 20px 28px;  /* extra bottom so last item clears the edge */
   display: flex;
   flex-direction: column;
