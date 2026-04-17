@@ -30,16 +30,24 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "WHERE s.handId = :handId AND s.status = 'won'")
     int markWonSessionsAsDaily(@Param("handId") int handId, @Param("date") LocalDate date);
 
-    // DEV-99: history grouped by day in the user's local timezone
+    // DEV-99: history grouped by day in the user's local timezone — unique hands only.
+    // Each hand_id counts once, attributed to the day it was last played.
     // tzOffset = minutes east of UTC (added to stored UTC times before grouping)
     @Query(value =
-        "SELECT CAST(s.started_at + :tzOffset * INTERVAL '1 minute' AS date) AS day, " +
-        "COUNT(s.id), " +
-        "SUM(CASE WHEN s.status = 'won' THEN 1 ELSE 0 END) " +
-        "FROM sessions s " +
-        "WHERE s.user_id = :userId AND s.started_at >= :since " +
-        "GROUP BY CAST(s.started_at + :tzOffset * INTERVAL '1 minute' AS date) " +
-        "ORDER BY CAST(s.started_at + :tzOffset * INTERVAL '1 minute' AS date) ASC",
+        "SELECT CAST(last_played + :tzOffset * INTERVAL '1 minute' AS date) AS day, " +
+        "COUNT(*) AS played, " +
+        "SUM(CASE WHEN has_won = 1 THEN 1 ELSE 0 END) AS won " +
+        "FROM (" +
+        "  SELECT hand_id, " +
+        "    MAX(started_at) AS last_played, " +
+        "    MAX(CASE WHEN status = 'won' THEN 1 ELSE 0 END) AS has_won " +
+        "  FROM sessions " +
+        "  WHERE user_id = :userId " +
+        "  GROUP BY hand_id" +
+        ") t " +
+        "WHERE last_played >= :since " +
+        "GROUP BY CAST(last_played + :tzOffset * INTERVAL '1 minute' AS date) " +
+        "ORDER BY CAST(last_played + :tzOffset * INTERVAL '1 minute' AS date) ASC",
         nativeQuery = true)
     List<Object[]> findDailyHistory(
         @Param("userId") int userId,
@@ -51,12 +59,22 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     List<Session> findByUserIdAndStartedAtBetween(
         @Param("userId") int userId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    // DEV-150: stats grouped by draw_mode
-    @Query("SELECT s.drawMode, COUNT(s.id), " +
-           "SUM(CASE WHEN s.status = 'won' THEN 1 ELSE 0 END), " +
-           "AVG(CASE WHEN s.status = 'won' THEN CAST(s.moves AS double) ELSE NULL END), " +
-           "AVG(CASE WHEN s.status = 'won' THEN CAST(s.timeSeconds AS double) ELSE NULL END) " +
-           "FROM Session s WHERE s.userId = :userId GROUP BY s.drawMode")
+    // DEV-150: stats grouped by draw_mode — unique hands only.
+    // Each hand_id counts once; wins/averages reflect the best won attempt per hand.
+    @Query(value =
+        "SELECT draw_mode, " +
+        "COUNT(*) AS played, " +
+        "SUM(CASE WHEN has_won = 1 THEN 1 ELSE 0 END) AS won, " +
+        "AVG(CASE WHEN best_moves IS NOT NULL THEN CAST(best_moves AS double precision) END) AS avg_moves, " +
+        "AVG(CASE WHEN best_time IS NOT NULL  THEN CAST(best_time  AS double precision) END) AS avg_time " +
+        "FROM (" +
+        "  SELECT hand_id, draw_mode, " +
+        "    MAX(CASE WHEN status = 'won' THEN 1 ELSE 0 END) AS has_won, " +
+        "    MIN(CASE WHEN status = 'won' THEN moves        END) AS best_moves, " +
+        "    MIN(CASE WHEN status = 'won' THEN time_seconds END) AS best_time " +
+        "  FROM sessions WHERE user_id = :userId GROUP BY hand_id, draw_mode" +
+        ") t GROUP BY draw_mode",
+        nativeQuery = true)
     List<Object[]> findStatsByDrawMode(@Param("userId") int userId);
 
     // DEV-151: personal best by fewest moves (won sessions only)

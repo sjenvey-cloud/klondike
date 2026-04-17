@@ -220,8 +220,14 @@ public class DailyController {
         // Shift midnight boundaries from user's local time into UTC
         LocalDateTime from = localDate.atStartOfDay().minusMinutes(tzOffset);
         LocalDateTime to   = localDate.plusDays(1).atStartOfDay().minusMinutes(tzOffset);
-        return ResponseEntity.ok(
-            sessionRepo.findByUserIdAndStartedAtBetween(userId, from, to));
+
+        // Deduplicate by hand: keep the most recent session per hand (list is DESC by startedAt)
+        List<Session> all = sessionRepo.findByUserIdAndStartedAtBetween(userId, from, to);
+        Map<Integer, Session> byHand = new LinkedHashMap<>();
+        for (Session s : all) {
+            byHand.putIfAbsent(s.getHandId(), s);
+        }
+        return ResponseEntity.ok(new ArrayList<>(byHand.values()));
     }
 
     // ── Fallback seed derivation (used only when no pre-played hand exists) ──
