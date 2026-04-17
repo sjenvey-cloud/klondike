@@ -155,7 +155,6 @@ function reducer(state, action) {
     case 'AUTO_COMPLETE_STEP': {
       const tableau = state.tableau.map(p => [...p]);
       const foundations = state.foundations.map(p => [...p]);
-      let moved = false;
 
       // Collect all face-up top cards from waste + tableau, pick lowest rank that can go to foundation
       const candidates = [];
@@ -176,7 +175,28 @@ function reducer(state, action) {
           candidates.push({ source: 'tableau', col, rank: getRank(top.card) });
         }
       }
-      if (candidates.length === 0) return state;
+
+      // No direct foundation move — draw from stock/waste to advance
+      if (candidates.length === 0) {
+        const stockEmpty = state.stock.length === 0;
+        const wasteEmpty = state.waste.length === 0;
+        if (stockEmpty && wasteEmpty) return state;
+
+        let stock = [...state.stock];
+        let waste = [...state.waste];
+        if (stock.length === 0) {
+          // Flip waste back to stock (same order as DRAW action)
+          stock = waste.map(c => ({ card: c.card, faceUp: false }));
+          waste = [];
+        } else {
+          const drawCount = Math.min(state.drawMode === 'draw1' ? 1 : 3, stock.length);
+          for (let i = 0; i < drawCount; i++) {
+            const c = stock.shift();
+            waste.push({ card: c.card, faceUp: true });
+          }
+        }
+        return { ...state, stock, waste, moves: state.moves + 1, turns: [...state.turns, 'draw'] };
+      }
 
       // Pick the candidate with the lowest rank (safest move)
       candidates.sort((a, b) => a.rank - b.rank);
@@ -191,7 +211,6 @@ function reducer(state, action) {
         foundations[fi].push(top.card);
         waste = waste.slice(0, -1);
         turns.push('wf');
-        moved = true;
       } else {
         const pile = tableau[pick.col];
         const top = pile[pile.length - 1];
@@ -205,10 +224,7 @@ function reducer(state, action) {
           }
         }
         turns.push(`tf:${pick.col}`);
-        moved = true;
       }
-
-      if (!moved) return state;
 
       return {
         ...state,
@@ -246,11 +262,10 @@ function reducer(state, action) {
 }
 
 // ── canAutoComplete helper ─────────────────────────────────────────────────
-// True when stock+waste are empty and all tableau cards are face-up
+// True when all tableau cards are face-up (stock/waste are drained by the
+// auto-complete stepper itself, so they don't need to be empty first).
 function checkCanAutoComplete(state) {
   if (!state.tableau) return false;
-  if (state.stock && state.stock.length > 0) return false;
-  if (state.waste && state.waste.length > 0) return false;
   return state.tableau.every(pile => pile.every(c => c.faceUp));
 }
 
