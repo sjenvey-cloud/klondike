@@ -82,7 +82,11 @@ export function Daily() {
       )}
 
       {view === 'board' && !dailyError && daily && (
-        <Game dailyHand={daily.hand} isRanked={!daily.userHasRankedAttempt} />
+        <Game
+          dailyHand={daily.hand}
+          isRanked={!daily.userHasRankedAttempt}
+          onShowLeaderboard={() => setView('leaderboard')}
+        />
       )}
 
       {view === 'leaderboard' && (

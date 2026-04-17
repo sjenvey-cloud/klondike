@@ -53,7 +53,9 @@ function reducer(state, action) {
       let stock = [...state.stock];
       let waste = [...state.waste];
       if (stock.length === 0) {
-        stock = [...waste].reverse().map(c => ({ card: c.card, faceUp: false }));
+        // Flip waste pile back to stock — bottom of waste becomes top of new stock,
+        // preserving the same draw order as the previous pass through the deck.
+        stock = [...waste].map(c => ({ card: c.card, faceUp: false }));
         waste = [];
       } else {
         const count = Math.min(3, stock.length);

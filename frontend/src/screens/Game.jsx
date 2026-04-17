@@ -7,7 +7,7 @@ import { Board } from '../components/Board/Board';
 import { WinModal } from '../components/WinModal/WinModal';
 import './Game.css';
 
-export function Game({ dailyHand = null, isRanked = true }) {
+export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null }) {
   const { user } = useContext(AuthContext);
   const location = useLocation();
   const game = useGame(user?.id);
@@ -101,6 +101,7 @@ export function Game({ dailyHand = null, isRanked = true }) {
           timeFormatted={timer.formatted}
           result={winResult}
           onNewGame={handleNewGame}
+          onShowLeaderboard={onShowLeaderboard}
         />
       )}
     </div>

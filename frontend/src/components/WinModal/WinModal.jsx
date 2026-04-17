@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Confetti } from './Confetti';
 import './WinModal.css';
 
-export function WinModal({ moves, timeFormatted, result, onNewGame }) {
+export function WinModal({ moves, timeFormatted, result, onNewGame, onShowLeaderboard }) {
   const navigate = useNavigate();
   const rank = result?.rank || null;
 
@@ -36,9 +36,15 @@ export function WinModal({ moves, timeFormatted, result, onNewGame }) {
             <button className="btn-primary" onClick={onNewGame}>
               New Game
             </button>
-            <button className="btn-secondary" onClick={() => navigate('/daily')}>
-              Leaderboard
-            </button>
+            {onShowLeaderboard ? (
+              <button className="btn-secondary" onClick={onShowLeaderboard}>
+                Leaderboard
+              </button>
+            ) : (
+              <button className="btn-secondary" onClick={() => navigate('/daily')}>
+                Daily
+              </button>
+            )}
             <button className="btn-secondary" onClick={() => navigate('/profile')}>
               My Stats
             </button>
