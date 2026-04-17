@@ -5,6 +5,7 @@ import { useGame } from '../hooks/useGame';
 import { useTimer } from '../hooks/useTimer';
 import { Board } from '../components/Board/Board';
 import { WinModal } from '../components/WinModal/WinModal';
+import { getHand } from '../services/api';
 import './Game.css';
 
 export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null }) {
@@ -17,9 +18,10 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
   // DEV-66: resume prompt
   const [resumePrompt, setResumePrompt] = useState(false);
 
-  // On mount: check for saved session
+  // On mount: check for saved session or replay request
   useEffect(() => {
     if (!user) return;
+
     if (dailyHand) {
       // Daily games always start fresh
       const drawMode = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
@@ -27,6 +29,17 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
       game.startGame(dailyHand, drawMode, { isDaily: true, dailyDate: today, isRanked });
       return;
     }
+
+    const replayHandId  = location.state?.replayHandId;
+    const replayDrawMode = location.state?.replayDrawMode;
+    if (replayHandId) {
+      // Replay a specific historical hand
+      getHand(replayHandId)
+        .then(hand => game.startGame(hand, replayDrawMode || hand.drawMode || 'draw3'))
+        .catch(() => game.startGame(null, replayDrawMode || 'draw3'));
+      return;
+    }
+
     if (game.hasSavedSession()) {
       setResumePrompt(true);
     } else {

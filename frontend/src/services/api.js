@@ -82,6 +82,10 @@ export { setAccessToken };
 // ── Hands ─────────────────────────────────────────────────────────────────
 // POST /api/v1/hands → { id, shuffleSeed, cards: number[] }
 export const createHand = (drawMode = 'draw3') => post('/hands', { drawMode });
+// GET /api/v1/hands/{id} → { id, shuffleSeed, cards: number[], drawMode }
+export const getHand = (handId) => get(`/hands/${handId}`);
+// GET /api/v1/hands/{id}/leaderboard → LeaderboardEntry[]
+export const getHandLeaderboard = (handId) => get(`/hands/${handId}/leaderboard`);
 
 // ── Sessions ──────────────────────────────────────────────────────────────
 // POST /api/v1/sessions → Session

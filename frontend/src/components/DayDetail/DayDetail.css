@@ -16,9 +16,14 @@
   border-top: 1px solid var(--color-border);
   padding: 0 0 env(safe-area-inset-bottom, 0);
   animation: drawerSlideUp 0.25s ease-out;
-  max-height: 70vh;
+  max-height: 75vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Detail panel gets a bit more height so the leaderboard is comfortable */
+.day-detail-drawer--detail {
+  max-height: 82vh;
 }
 
 @keyframes drawerSlideUp {
@@ -26,6 +31,7 @@
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+/* ── Header ── */
 .day-detail-header {
   display: flex;
   align-items: center;
@@ -33,6 +39,7 @@
   padding: 16px 20px 12px;
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
+  gap: 8px;
 }
 
 .day-detail-title {
@@ -40,6 +47,16 @@
   font-size: 18px;
   color: var(--color-accent);
   margin: 0;
+  flex: 1;
+}
+
+.day-detail-mode-title {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  flex: 1;
+  text-align: center;
 }
 
 .day-detail-close {
@@ -59,6 +76,18 @@
   background: var(--color-surface-raised);
 }
 
+.day-detail-back {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 0;
+  white-space: nowrap;
+}
+
+/* ── Body ── */
 .day-detail-body {
   overflow-y: auto;
   padding: 12px 20px 20px;
@@ -75,6 +104,7 @@
   padding: 8px 0;
 }
 
+/* ── Session cards (list panel) ── */
 .day-detail-session {
   background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
@@ -85,6 +115,20 @@
   gap: 6px;
 }
 
+/* Make the session card a button for tap/click */
+.day-detail-session--btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.day-detail-session--btn:hover,
+.day-detail-session--btn:focus-visible {
+  border-color: var(--color-accent);
+  outline: none;
+}
+
 .day-detail-session--won {
   border-color: rgba(201, 168, 76, 0.35);
 }
@@ -93,6 +137,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+.day-detail-session-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-detail-session-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .day-detail-session-meta {
@@ -108,6 +165,20 @@
   color: var(--color-text-primary);
 }
 
+.day-detail-mode-badge {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ── Status badges ── */
 .day-detail-status {
   font-family: var(--font-ui);
   font-size: 11px;
@@ -134,9 +205,116 @@
   background: rgba(59, 130, 246, 0.12);
 }
 
-.day-detail-play-again {
-  align-self: flex-start;
+/* ── "N players solved" badge ── */
+.day-detail-solved-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 2px 7px 2px 5px;
+}
+
+.day-detail-solved-icon {
+  color: var(--color-text-secondary);
+}
+
+/* ── Chevron ── */
+.day-detail-chevron {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── Detail panel specific ── */
+.day-detail-replay-btn {
+  width: 100%;
+  padding: 13px;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.day-detail-your-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.day-detail-your-label {
+  color: var(--color-text-secondary);
   font-size: 12px;
-  padding: 6px 12px;
-  margin-top: 2px;
+  margin-right: 4px;
+}
+
+.day-detail-your-stat {
+  color: var(--color-text-primary);
+}
+
+.day-detail-your-sep {
+  color: var(--color-text-secondary);
+}
+
+.day-detail-your-rank {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--color-accent);
+  font-size: 15px;
+}
+
+/* ── Leaderboard ── */
+.day-detail-lb-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.day-detail-lb-trophy {
+  color: var(--color-accent);
+}
+
+.day-detail-lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.day-detail-lb-table th {
+  text-align: left;
+  padding: 5px 8px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.day-detail-lb-table td {
+  padding: 9px 8px;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.day-detail-lb-table tr.day-detail-lb-me td {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-weight: 600;
 }

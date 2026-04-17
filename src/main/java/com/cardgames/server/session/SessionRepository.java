@@ -58,6 +58,11 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "ORDER BY s.timeSeconds ASC, s.moves ASC")
     List<Session> findTopWinByTime(@Param("userId") int userId, org.springframework.data.domain.Pageable pageable);
 
+    // Hand leaderboard — all won sessions for a specific hand, best per user
+    @Query("SELECT s FROM Session s WHERE s.handId = :handId AND s.status = 'won' " +
+           "ORDER BY s.moves ASC, s.timeSeconds ASC")
+    List<Session> findWonSessionsByHandId(@Param("handId") int handId);
+
     // DEV-164: league — wins + best moves for a set of userIds within a time window
     @Query("SELECT s.userId, COUNT(s.id), MIN(CASE WHEN s.status = 'won' THEN s.moves ELSE NULL END) " +
            "FROM Session s WHERE s.userId IN :userIds AND s.status = 'won' " +
