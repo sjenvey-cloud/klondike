@@ -9,7 +9,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
   const {
     tableau, stock, waste, foundations, draw,
     wasteToTableau, wasteToFoundation,
-    tableauToTableau, tableauToFoundation,
+    tableauToTableau, tableauToFoundation, foundationToTableau,
     canAutoComplete, autoComplete,
   } = game;
 
@@ -46,25 +46,35 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
     }
   }, [waste, selected]);
 
-  const handleFoundationClick = useCallback((fi) => { // eslint-disable-line no-unused-vars
-    if (!selected) return;
+  const handleFoundationClick = useCallback((fi) => {
+    if (!selected) {
+      // Select the top foundation card for moving back to tableau
+      if (foundations[fi].length > 0) setSelected({ source: 'foundation', fi });
+      return;
+    }
+    if (selected.source === 'foundation' && selected.fi === fi) {
+      clearSelected();
+      return;
+    }
     if (selected.source === 'waste') {
       wasteToFoundation();
     } else if (selected.source === 'tableau') {
       tableauToFoundation(selected.col);
     }
+    // foundation→foundation: ignore
     clearSelected();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, wasteToFoundation, tableauToFoundation]);
+  }, [selected, foundations, wasteToFoundation, tableauToFoundation]);
 
   const handleTableauClick = useCallback((col, idx) => {
     const pile = tableau[col];
 
-    // Clicking an empty col
+    // Clicking an empty col or the top-of-pile area
     if (idx === -1) {
       if (!selected) return;
       if (selected.source === 'waste') wasteToTableau(col);
       else if (selected.source === 'tableau') tableauToTableau(selected.col, selected.idx, col);
+      else if (selected.source === 'foundation') foundationToTableau(selected.fi, col);
       clearSelected();
       return;
     }
@@ -91,13 +101,22 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
         clearSelected();
         return;
       }
+    } else if (selected.source === 'foundation') {
+      const fi = selected.fi;
+      const topCard = foundations[fi][foundations[fi].length - 1];
+      if (canPlaceOnTableau(topCard, pile.slice(0, idx + 1))) {
+        foundationToTableau(fi, col);
+        clearSelected();
+        return;
+      }
     }
 
     // Invalid target — shake and reselect
     triggerShake(col);
-    setSelected({ source: 'tableau', col, idx });
+    if (selected.source !== 'foundation') setSelected({ source: 'tableau', col, idx });
+    else clearSelected();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableau, waste, selected, wasteToTableau, tableauToTableau, triggerShake]);
+  }, [tableau, waste, foundations, selected, wasteToTableau, tableauToTableau, foundationToTableau, triggerShake]);
 
   // ── DEV-21: Double-click to foundation ───────────────────────────────────
 
@@ -142,27 +161,30 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
     };
   }, []);
 
-  const handleCardPointerDown = useCallback((e, source, col, idx) => {
+  const handleCardPointerDown = useCallback((e, source, col, idx, fi) => {
     // Skip non-primary mouse buttons; touch/pen always allowed
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const pile = source === 'waste'
-      ? (waste.length > 0 ? [waste[waste.length - 1]] : [])
-      : (tableau[col] || []);
-    const card = source === 'waste' ? pile[0] : pile[idx];
-    if (!card || !card.faceUp) return;
-    if (source === 'waste' && waste.length === 0) return;
 
-    // Store intent — do NOT call setPointerCapture (blocks click on iOS)
-    // Ghost is created lazily on first significant movement
+    if (source === 'foundation') {
+      if (!foundations[fi] || foundations[fi].length === 0) return;
+    } else {
+      const pile = source === 'waste'
+        ? (waste.length > 0 ? [waste[waste.length - 1]] : [])
+        : (tableau[col] || []);
+      const card = source === 'waste' ? pile[0] : pile[idx];
+      if (!card || !card.faceUp) return;
+      if (source === 'waste' && waste.length === 0) return;
+    }
+
     dragRef.current = {
-      source, col, idx,
+      source, col, idx, fi,
       cardEl: e.currentTarget,
       ghost: null, offsetX: 0, offsetY: 0,
       startX: e.clientX, startY: e.clientY,
       moved: false,
       pointerId: e.pointerId,
     };
-  }, [waste, tableau]);
+  }, [waste, tableau, foundations]);
 
   const handleCardPointerMove = useCallback((e) => {
     const drag = dragRef.current;
@@ -208,6 +230,8 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
         wasteToTableau(dropCol);
       } else if (drag.source === 'tableau') {
         tableauToTableau(drag.col, drag.idx, dropCol);
+      } else if (drag.source === 'foundation') {
+        foundationToTableau(drag.fi, dropCol);
       }
     } else if (dropType === 'foundation') {
       if (drag.source === 'waste') {
@@ -215,8 +239,9 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
       } else if (drag.source === 'tableau') {
         tableauToFoundation(drag.col);
       }
+      // foundation→foundation: no-op
     }
-  }, [wasteToTableau, tableauToTableau, wasteToFoundation, tableauToFoundation]);
+  }, [wasteToTableau, tableauToTableau, wasteToFoundation, tableauToFoundation, foundationToTableau]);
 
   // Attach global pointer handlers — also handle pointercancel (iOS system interrupts)
   useEffect(() => {
@@ -339,7 +364,16 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
           >
             {pile.length === 0
               ? <div className="foundation-empty">{SUIT_SYMBOLS[fi]}</div>
-              : <Card card={pile[pile.length - 1]} faceUp={true} />
+              : <div
+                  onPointerDown={(e) => handleCardPointerDown(e, 'foundation', null, null, fi)}
+                  style={{ lineHeight: 0 }}
+                >
+                  <Card
+                    card={pile[pile.length - 1]}
+                    faceUp={true}
+                    selected={selected?.source === 'foundation' && selected.fi === fi}
+                  />
+                </div>
             }
           </div>
         ))}

@@ -16,8 +16,9 @@ import java.util.List;
  *   draw          - draw up to drawCount cards from stock (or flip waste)
  *   wt:col        - top waste card → tableau column col (0-based)
  *   wf            - top waste card → foundation (suit determines pile)
- *   tt:from:to    - card stack from tableau col → tableau col
+ *   tt:from:fromIdx:to - card stack from tableau col (from fromIdx) → tableau col
  *   tf:from       - top of tableau col → foundation
+ *   ft:fi:col     - top of foundation pile fi → tableau column col
  *   abandon       - game abandoned (no further validation)
  */
 public class GameState {
@@ -113,6 +114,7 @@ public class GameState {
                     Integer.parseInt(parts[1]),
                     Integer.parseInt(parts[2]));
             case "tf":   return parts.length >= 2 && applyTableauToFoundation(Integer.parseInt(parts[1]));
+            case "ft":   return parts.length >= 3 && applyFoundationToTableau(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
             default:
                 return false;
         }
@@ -233,6 +235,20 @@ public class GameState {
         if (foundation.isEmpty()) return card.getRank() == 1; // Ace only
         Card top = foundation.get(foundation.size() - 1);
         return top.getSuit().equals(card.getSuit()) && top.getRank() == card.getRank() - 1;
+    }
+
+    // ── Foundation → Tableau ─────────────────────────────────────────────
+    private boolean applyFoundationToTableau(int fi, int col) {
+        if (fi < 0 || fi >= 4 || col < 0 || col >= 7) return false;
+        List<Card> foundation = foundations.get(fi);
+        if (foundation.isEmpty()) return false;
+        Card card = foundation.get(foundation.size() - 1);
+        List<Card> destPile = tableau.get(col);
+        if (!canPlaceOnTableau(card, destPile)) return false;
+        foundation.remove(foundation.size() - 1);
+        destPile.add(card);
+        moveCount++;
+        return true;
     }
 
     // ── Win check ─────────────────────────────────────────────────────────

@@ -221,6 +221,25 @@ function reducer(state, action) {
       };
     }
 
+    case 'FOUNDATION_TO_TABLEAU': {
+      const { fi, toCol } = action;
+      const foundations = state.foundations.map(p => [...p]);
+      if (foundations[fi].length === 0) return state;
+      const card = foundations[fi][foundations[fi].length - 1];
+      const tableau = state.tableau.map(p => [...p]);
+      if (!canPlaceOnTableau(card, tableau[toCol])) return state;
+      foundations[fi].pop();
+      tableau[toCol].push({ card, faceUp: true });
+      return {
+        ...state,
+        foundations,
+        tableau,
+        moves: state.moves + 1,
+        turns: [...state.turns, `ft:${fi}:${toCol}`],
+        isWon: isGameWon(foundations),
+      };
+    }
+
     default:
       return state;
   }
@@ -305,6 +324,7 @@ export function useGame(userId) {
   const tableauToFoundation = useCallback((fromCol)         => dispatch({ type: 'TABLEAU_TO_FOUNDATION', fromCol }), []);
   const tableauToTableau   = useCallback((fromCol, fromIdx, toCol) =>
     dispatch({ type: 'TABLEAU_TO_TABLEAU', fromCol, fromIdx, toCol }), []);
+  const foundationToTableau = useCallback((fi, toCol)       => dispatch({ type: 'FOUNDATION_TO_TABLEAU', fi, toCol }), []);
 
   // DEV-62: auto-complete — dispatch steps until won or no progress
   const autoComplete = useCallback(() => {
@@ -348,6 +368,7 @@ export function useGame(userId) {
     wasteToFoundation,
     tableauToTableau,
     tableauToFoundation,
+    foundationToTableau,
     autoComplete,
     finishGame,
     abandon,
