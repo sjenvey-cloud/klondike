@@ -7,7 +7,8 @@ import com.cardgames.server.game.ReplayResult;
 import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,7 @@ public class SessionController {
     @Autowired SessionRepository   sessionRepository;
     @Autowired HandRepository      handRepository;
     @Autowired ChallengeRepository challengeRepository;
+    @Autowired CacheManager        cacheManager;
 
     // ── DEV-69: Create session ────────────────────────────────────────────
 
@@ -168,17 +170,16 @@ public class SessionController {
         return new ResponseEntity<>(session, HttpStatus.OK);
     }
 
-    // ── DEV-166: cache eviction helpers ──────────────────────────────────
-
-    @CacheEvict(cacheNames = "leaderboard", key = "#date + ':moves:' + #drawMode")
-    public void evictLeaderboardMoves(String date, String drawMode) {}
-
-    @CacheEvict(cacheNames = "leaderboard", key = "#date + ':time:' + #drawMode")
-    public void evictLeaderboardTime(String date, String drawMode) {}
+    // ── DEV-166: cache eviction ───────────────────────────────────────────
+    // NOTE: @CacheEvict cannot be used here because Spring AOP proxying is
+    // bypassed on self-invocation (calling a method from within the same bean).
+    // Instead we evict programmatically via CacheManager.
 
     private void evictLeaderboard(String date, String drawMode) {
-        evictLeaderboardMoves(date, drawMode);
-        evictLeaderboardTime(date, drawMode);
+        Cache cache = cacheManager.getCache("leaderboard");
+        if (cache == null) return;
+        cache.evict(date + ":moves:" + drawMode);
+        cache.evict(date + ":time:"  + drawMode);
     }
 
     // ── DEV-163: helper ───────────────────────────────────────────────────
