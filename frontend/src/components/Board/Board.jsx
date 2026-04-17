@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card } from '../Card/Card';
-import { canPlaceOnTableau } from '../../services/gameLogic';
+import { canPlaceOnTableau, canPlaceOnFoundation } from '../../services/gameLogic';
 import './Board.css';
 
 const SUIT_SYMBOLS = ['♣', '♦', '♥', '♠'];
@@ -22,6 +22,14 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
   // DEV-20: drag state
   const dragRef = useRef(null);
   // dragRef.current: { source, col?, idx?, ghost, startX, startY }
+
+  // Drop-target tracking: updated on every pointermove, consumed on pointerup
+  const [dragTarget, setDragTarget] = useState(null); // { type, col, fi } | null
+  const dragTargetRef = useRef(null);
+
+  // Current game state accessible in stable pointer callbacks
+  const gameStateRef = useRef({ waste, tableau, foundations });
+  useEffect(() => { gameStateRef.current = { waste, tableau, foundations }; }, [waste, tableau, foundations]);
 
   const triggerShake = useCallback((target) => {
     setShaking(target);
@@ -137,6 +145,45 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
 
   // ── DEV-20: Pointer-based drag & drop ────────────────────────────────────
 
+  // Resolve which drop zone (if any) is under a screen coordinate
+  const resolveDropTarget = useCallback((clientX, clientY) => {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return null;
+    const node = el.closest('[data-drop]');
+    if (!node) return null;
+    return {
+      type: node.dataset.drop,
+      col:  node.dataset.col !== undefined ? Number(node.dataset.col) : null,
+      fi:   node.dataset.fi  !== undefined ? Number(node.dataset.fi)  : null,
+    };
+  }, []);
+
+  // Get the card currently being dragged (reads from stable refs)
+  const getDragCard = useCallback(() => {
+    const drag = dragRef.current;
+    if (!drag) return null;
+    const { waste: w, tableau: t, foundations: f } = gameStateRef.current;
+    if (drag.source === 'waste')      return w.length > 0 ? w[w.length - 1].card : null;
+    if (drag.source === 'tableau')    return t[drag.col]?.[drag.idx]?.card ?? null;
+    if (drag.source === 'foundation') return f[drag.fi]?.length > 0 ? f[drag.fi][f[drag.fi].length - 1] : null;
+    return null;
+  }, []);
+
+  // Check whether the resolved target is a legally valid drop for the card in flight
+  const isValidDropTarget = useCallback((t) => {
+    if (!t) return false;
+    const card = getDragCard();
+    if (!card) return false;
+    const drag = dragRef.current;
+    const { tableau: tab, foundations: f } = gameStateRef.current;
+    if (t.type === 'tableau')    return canPlaceOnTableau(card, tab[t.col] || []);
+    if (t.type === 'foundation') {
+      if (!drag || drag.source === 'foundation') return false;
+      return canPlaceOnFoundation(card, f[t.fi] || []);
+    }
+    return false;
+  }, [getDragCard]);
+
   const createGhost = useCallback((cardEl, clientX, clientY) => {
     const rect = cardEl.getBoundingClientRect();
     const ghost = cardEl.cloneNode(true);
@@ -203,7 +250,18 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
     }
     drag.ghost.style.left = `${e.clientX - drag.offsetX}px`;
     drag.ghost.style.top  = `${e.clientY - drag.offsetY}px`;
-  }, [createGhost]);
+
+    // Continuously track the drop target so pointerup can use the last known
+    // hover position rather than where the finger happened to lift.
+    // Only highlight targets where the move would be legal.
+    const t = resolveDropTarget(e.clientX, e.clientY);
+    const valid = isValidDropTarget(t) ? t : null;
+    const prev = dragTargetRef.current;
+    if (valid?.type !== prev?.type || valid?.col !== prev?.col || valid?.fi !== prev?.fi) {
+      dragTargetRef.current = valid;
+      setDragTarget(valid);
+    }
+  }, [createGhost, resolveDropTarget, isValidDropTarget]);
 
   const handleCardPointerUp = useCallback((e) => {
     const drag = dragRef.current;
@@ -212,36 +270,30 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
     if (drag.ghost) drag.ghost.remove();
     dragRef.current = null;
 
+    // Consume the tracked target and clear the highlight
+    const trackedTarget = dragTargetRef.current;
+    dragTargetRef.current = null;
+    setDragTarget(null);
+
     if (!drag.moved) return; // tap — onClick fires normally, no action needed here
 
-    // Find what element is under the pointer (ghost has pointer-events:none)
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (!el) return;
+    // Use the last-tracked hover target (reliable on touch); fall back to the
+    // current pointer position in case the card was never dragged over a valid zone.
+    const dropTarget = trackedTarget || resolveDropTarget(e.clientX, e.clientY);
+    if (!dropTarget) return;
 
-    // Walk up to find data attributes set on wrappers
-    const target = el.closest('[data-drop]');
-    if (!target) return;
-
-    const dropType = target.dataset.drop;
-    const dropCol  = target.dataset.col !== undefined ? Number(target.dataset.col) : null;
+    const { type: dropType, col: dropCol } = dropTarget;
 
     if (dropType === 'tableau') {
-      if (drag.source === 'waste') {
-        wasteToTableau(dropCol);
-      } else if (drag.source === 'tableau') {
-        tableauToTableau(drag.col, drag.idx, dropCol);
-      } else if (drag.source === 'foundation') {
-        foundationToTableau(drag.fi, dropCol);
-      }
+      if (drag.source === 'waste')           wasteToTableau(dropCol);
+      else if (drag.source === 'tableau')    tableauToTableau(drag.col, drag.idx, dropCol);
+      else if (drag.source === 'foundation') foundationToTableau(drag.fi, dropCol);
     } else if (dropType === 'foundation') {
-      if (drag.source === 'waste') {
-        wasteToFoundation();
-      } else if (drag.source === 'tableau') {
-        tableauToFoundation(drag.col);
-      }
+      if (drag.source === 'waste')           wasteToFoundation();
+      else if (drag.source === 'tableau')    tableauToFoundation(drag.col);
       // foundation→foundation: no-op
     }
-  }, [wasteToTableau, tableauToTableau, wasteToFoundation, tableauToFoundation, foundationToTableau]);
+  }, [wasteToTableau, tableauToTableau, wasteToFoundation, tableauToFoundation, foundationToTableau, resolveDropTarget]);
 
   // Attach global pointer handlers — also handle pointercancel (iOS system interrupts)
   useEffect(() => {
@@ -251,6 +303,8 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
       const drag = dragRef.current;
       if (drag?.ghost) drag.ghost.remove();
       dragRef.current = null;
+      dragTargetRef.current = null;
+      setDragTarget(null);
     };
     window.addEventListener('pointermove',   onMove);
     window.addEventListener('pointerup',     onUp);
@@ -357,7 +411,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
         {foundations.map((pile, fi) => (
           <div
             key={fi}
-            className={`foundation-pile${shaking === `foundation${fi}` ? ' shake' : ''}`}
+            className={`foundation-pile${shaking === `foundation${fi}` ? ' shake' : ''}${dragTarget?.type === 'foundation' && dragTarget?.fi === fi ? ' drop-target' : ''}`}
             onClick={() => handleFoundationClick(fi)}
             data-drop="foundation"
             data-fi={fi}
@@ -384,7 +438,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
         {tableau.map((pile, col) => (
           <div
             key={col}
-            className={`tableau-col${shaking === col ? ' shake' : ''}`}
+            className={`tableau-col${shaking === col ? ' shake' : ''}${dragTarget?.type === 'tableau' && dragTarget?.col === col ? ' drop-target' : ''}`}
             data-drop="tableau"
             data-col={col}
           >

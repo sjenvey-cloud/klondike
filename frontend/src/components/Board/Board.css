@@ -173,6 +173,20 @@
   opacity: 0.5;
 }
 
+/* ── Drop-target highlight (shown while dragging over a valid zone) ── */
+.tableau-col.drop-target {
+  background: rgba(255, 215, 0, 0.08);
+  border-radius: var(--radius-card);
+  outline: 2px solid var(--color-accent, #d4a017);
+  outline-offset: 3px;
+}
+
+.foundation-pile.drop-target {
+  outline: 2px solid var(--color-accent, #d4a017);
+  outline-offset: 3px;
+  border-radius: var(--radius-card);
+}
+
 /* The ghost clone is created via JS with inline styles;
    these classes handle the source card while dragging */
 
