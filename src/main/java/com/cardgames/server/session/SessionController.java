@@ -168,11 +168,17 @@ public class SessionController {
         return new ResponseEntity<>(session, HttpStatus.OK);
     }
 
-    // ── DEV-166: cache eviction helper ───────────────────────────────────
+    // ── DEV-166: cache eviction helpers ──────────────────────────────────
 
     @CacheEvict(cacheNames = "leaderboard", key = "#date + ':moves:' + #drawMode")
-    public void evictLeaderboard(String date, String drawMode) {
-        // evicts moves-sort entry; time-sort entry will expire naturally within 60s TTL
+    public void evictLeaderboardMoves(String date, String drawMode) {}
+
+    @CacheEvict(cacheNames = "leaderboard", key = "#date + ':time:' + #drawMode")
+    public void evictLeaderboardTime(String date, String drawMode) {}
+
+    private void evictLeaderboard(String date, String drawMode) {
+        evictLeaderboardMoves(date, drawMode);
+        evictLeaderboardTime(date, drawMode);
     }
 
     // ── DEV-163: helper ───────────────────────────────────────────────────

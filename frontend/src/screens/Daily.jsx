@@ -29,12 +29,14 @@ export function Daily() {
   }, []);
 
   useEffect(() => {
+    if (view !== 'leaderboard') return;
     getDailyLeaderboard(today, sort).then(setLeaderboard).catch(() => {});
-  }, [today, sort]);
+  }, [today, sort, view]);
 
   useEffect(() => {
+    if (view !== 'leaderboard') return;
     if (user) getMyDailyRank(today, user.id, sort).then(setMyRank).catch(() => {});
-  }, [today, user, sort]);
+  }, [today, user, sort, view]);
 
   return (
     <div className="screen daily-screen">
