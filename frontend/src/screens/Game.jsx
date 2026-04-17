@@ -6,6 +6,7 @@ import { useTimer } from '../hooks/useTimer';
 import { Board } from '../components/Board/Board';
 import { WinModal } from '../components/WinModal/WinModal';
 import { getHand, getHandLeaderboard } from '../services/api';
+import { localDateString } from '../services/dateUtils';
 import './Game.css';
 
 export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null }) {
@@ -27,7 +28,7 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
     if (dailyHand) {
       // Daily games always start fresh
       const drawMode = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localDateString(new Date());
       game.startGame(dailyHand, drawMode, { isDaily: true, dailyDate: today, isRanked });
       return;
     }

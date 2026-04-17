@@ -34,7 +34,8 @@ export function Profile() {
     const monthStart = new Date(y, m, 1);
     // Days from start of viewed month to today (minimum 31 to cover the full month)
     const diffDays = Math.max(31, Math.ceil((today - monthStart) / 86400000) + 1);
-    getProfileHistory(user.id, diffDays).then(data => {
+    const tzOffset = -new Date().getTimezoneOffset();
+    getProfileHistory(user.id, diffDays, tzOffset).then(data => {
       setHistory(Array.isArray(data) ? data : []);
     }).catch(() => {});
   };

@@ -14,7 +14,9 @@ function formatTime(seconds) {
 function formatTimestamp(isoString) {
   if (!isoString) return '—';
   try {
-    const d = new Date(isoString);
+    // Server returns LocalDateTime without timezone suffix; treat as UTC
+    const utc = isoString.endsWith('Z') ? isoString : isoString + 'Z';
+    const d = new Date(utc);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '—';
@@ -66,7 +68,8 @@ export function DayDetail({ date, onClose }) {
     if (!user || !date) return;
     setLoading(true);
     setSelectedSession(null);
-    getSessionsByDate(user.id, date)
+    const tzOffset = -new Date().getTimezoneOffset();
+    getSessionsByDate(user.id, date, tzOffset)
       .then(data => {
         const list = Array.isArray(data) ? data : [];
         setSessions(list);

@@ -182,15 +182,19 @@ public class DailyController {
     }
 
     /**
-     * GET /api/v1/profile/{userId}/history?days=35
+     * GET /api/v1/profile/{userId}/history?days=35&tzOffset=60
+     * tzOffset = minutes east of UTC (e.g. 60 for BST, -300 for US Eastern).
      */
     @GetMapping("/profile/{userId}/history")
     public ResponseEntity<List<DayHistory>> getProfileHistory(
             @PathVariable int userId,
-            @RequestParam(defaultValue = "35") int days) {
+            @RequestParam(defaultValue = "35") int days,
+            @RequestParam(defaultValue = "0")  int tzOffset) {
 
-        LocalDateTime since = LocalDate.now().minusDays(days).atStartOfDay();
-        List<Object[]> rows = sessionRepo.findDailyHistory(userId, since);
+        // Shift "since" boundary into UTC so it aligns with the user's local day
+        LocalDateTime since = LocalDate.now().minusDays(days).atStartOfDay()
+                                       .minusMinutes(tzOffset);
+        List<Object[]> rows = sessionRepo.findDailyHistory(userId, since, tzOffset);
 
         List<DayHistory> result = new ArrayList<>();
         for (Object[] row : rows) {
@@ -203,16 +207,19 @@ public class DailyController {
     }
 
     /**
-     * GET /api/v1/profile/{userId}/sessions?date=2026-04-01
+     * GET /api/v1/profile/{userId}/sessions?date=2026-04-01&tzOffset=60
+     * tzOffset = minutes east of UTC — shifts the day boundary into the user's timezone.
      */
     @GetMapping("/profile/{userId}/sessions")
     public ResponseEntity<List<Session>> getSessionsByDate(
             @PathVariable int userId,
-            @RequestParam String date) {
+            @RequestParam String date,
+            @RequestParam(defaultValue = "0") int tzOffset) {
 
         LocalDate localDate = LocalDate.parse(date);
-        LocalDateTime from = localDate.atStartOfDay();
-        LocalDateTime to   = localDate.plusDays(1).atStartOfDay();
+        // Shift midnight boundaries from user's local time into UTC
+        LocalDateTime from = localDate.atStartOfDay().minusMinutes(tzOffset);
+        LocalDateTime to   = localDate.plusDays(1).atStartOfDay().minusMinutes(tzOffset);
         return ResponseEntity.ok(
             sessionRepo.findByUserIdAndStartedAtBetween(userId, from, to));
     }

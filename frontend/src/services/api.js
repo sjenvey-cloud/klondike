@@ -148,10 +148,11 @@ export const getPreferences  = ()       => get('/profile/preferences');
 export const patchPreferences = (body)  => patch('/profile/preferences', body);
 
 // ── Profile history / sessions ────────────────────────────────────────────
-export const getProfileHistory = (userId, days = 35) =>
-  get(`/profile/${userId}/history?days=${days}`);
-export const getSessionsByDate = (userId, date) =>
-  get(`/profile/${userId}/sessions?date=${date}`);
+// tzOffset = minutes east of UTC (pass -new Date().getTimezoneOffset())
+export const getProfileHistory = (userId, days = 35, tzOffset = 0) =>
+  get(`/profile/${userId}/history?days=${days}&tzOffset=${tzOffset}`);
+export const getSessionsByDate = (userId, date, tzOffset = 0) =>
+  get(`/profile/${userId}/sessions?date=${date}&tzOffset=${tzOffset}`);
 
 // ── Profile stats / records (DEV-150, DEV-151) ────────────────────────────
 export const getProfileStats   = () => get('/profile/stats');

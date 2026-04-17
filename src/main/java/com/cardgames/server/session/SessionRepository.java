@@ -30,12 +30,21 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "WHERE s.handId = :handId AND s.status = 'won'")
     int markWonSessionsAsDaily(@Param("handId") int handId, @Param("date") LocalDate date);
 
-    // DEV-99: history grouped by day
-    @Query("SELECT CAST(s.startedAt AS date) as day, COUNT(s.id), " +
-           "SUM(CASE WHEN s.status = 'won' THEN 1 ELSE 0 END) " +
-           "FROM Session s WHERE s.userId = :userId AND s.startedAt >= :since " +
-           "GROUP BY CAST(s.startedAt AS date) ORDER BY CAST(s.startedAt AS date) ASC")
-    List<Object[]> findDailyHistory(@Param("userId") int userId, @Param("since") LocalDateTime since);
+    // DEV-99: history grouped by day in the user's local timezone
+    // tzOffset = minutes east of UTC (added to stored UTC times before grouping)
+    @Query(value =
+        "SELECT CAST(s.started_at + :tzOffset * INTERVAL '1 minute' AS date) AS day, " +
+        "COUNT(s.id), " +
+        "SUM(CASE WHEN s.status = 'won' THEN 1 ELSE 0 END) " +
+        "FROM sessions s " +
+        "WHERE s.user_id = :userId AND s.started_at >= :since " +
+        "GROUP BY CAST(s.started_at + :tzOffset * INTERVAL '1 minute' AS date) " +
+        "ORDER BY CAST(s.started_at + :tzOffset * INTERVAL '1 minute' AS date) ASC",
+        nativeQuery = true)
+    List<Object[]> findDailyHistory(
+        @Param("userId") int userId,
+        @Param("since") LocalDateTime since,
+        @Param("tzOffset") int tzOffset);
 
     // DEV-100: sessions for a specific calendar day, most recent first
     @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.startedAt >= :from AND s.startedAt < :to ORDER BY s.startedAt DESC")

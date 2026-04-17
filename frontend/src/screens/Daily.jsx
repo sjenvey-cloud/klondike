@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../App';
 import { getDaily, getDailyLeaderboard, getMyDailyRank } from '../services/api';
+import { localDateString } from '../services/dateUtils';
 import { Game } from './Game';
 import './Daily.css';
 
@@ -19,7 +20,7 @@ export function Daily() {
   const [myRank, setMyRank] = useState(null);
   const [sort, setSort] = useState('moves');
   const [view, setView] = useState('board'); // 'board' | 'leaderboard'
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateString(new Date());
 
   useEffect(() => {
     getDaily()
