@@ -5,7 +5,7 @@ import { useGame } from '../hooks/useGame';
 import { useTimer } from '../hooks/useTimer';
 import { Board } from '../components/Board/Board';
 import { WinModal } from '../components/WinModal/WinModal';
-import { getHand } from '../services/api';
+import { getHand, getHandLeaderboard } from '../services/api';
 import './Game.css';
 
 export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null }) {
@@ -15,8 +15,10 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
   const timer = useTimer(!!game.tableau && !game.isWon);
   const [winResult, setWinResult]   = useState(null);
   const [finishing, setFinishing]   = useState(false);
-  // DEV-66: resume prompt
   const [resumePrompt, setResumePrompt] = useState(false);
+  const [lbOpen, setLbOpen]         = useState(false);
+  const [lbData, setLbData]         = useState([]);
+  const [lbLoading, setLbLoading]   = useState(false);
 
   // On mount: check for saved session or replay request
   useEffect(() => {
@@ -74,6 +76,30 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
     game.startGame(null, drawMode);
   }, [game, timer, location.state]);
 
+  const handleRedeal = useCallback(async () => {
+    const currentHandId  = game.handId;
+    const currentDrawMode = game.drawMode;
+    if (!currentHandId) return;
+    await game.abandon();
+    setWinResult(null);
+    setFinishing(false);
+    setLbOpen(false);
+    timer.reset();
+    const hand = await getHand(currentHandId);
+    game.startGame(hand, currentDrawMode);
+  }, [game, timer]);
+
+  const handleOpenLeaderboard = useCallback(() => {
+    if (!game.handId) return;
+    setLbOpen(true);
+    setLbLoading(true);
+    setLbData([]);
+    getHandLeaderboard(game.handId)
+      .then(data => setLbData(Array.isArray(data) ? data : []))
+      .catch(() => setLbData([]))
+      .finally(() => setLbLoading(false));
+  }, [game.handId]);
+
   if (!user) {
     return (
       <div className="screen game-screen game-center">
@@ -107,7 +133,13 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
 
   return (
     <div className="screen game-screen">
-      <Board game={game} timer={timer} />
+      <Board
+        game={game}
+        timer={timer}
+        onLeaderboard={handleOpenLeaderboard}
+        onRedeal={handleRedeal}
+      />
+
       {game.isWon && winResult !== null && (
         <WinModal
           moves={game.moves}
@@ -117,6 +149,60 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
           onShowLeaderboard={onShowLeaderboard}
         />
       )}
+
+      {lbOpen && (
+        <GameLeaderboard
+          entries={lbData}
+          loading={lbLoading}
+          userId={user?.id}
+          onClose={() => setLbOpen(false)}
+          onRedeal={handleRedeal}
+        />
+      )}
+    </div>
+  );
+}
+
+function formatLbTime(s) {
+  if (!s) return '—';
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function GameLeaderboard({ entries, loading, userId, onClose, onRedeal }) {
+  return (
+    <div className="game-lb-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="game-lb-drawer">
+        <div className="game-lb-header">
+          <span className="game-lb-title">Deal Leaderboard</span>
+          <button className="game-lb-close" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        <div className="game-lb-body">
+          <button className="btn-primary game-lb-redeal-btn" onClick={() => { onClose(); onRedeal(); }}>
+            ↺ Redeal This Hand
+          </button>
+          {loading && <p className="game-lb-empty">Loading…</p>}
+          {!loading && entries.length === 0 && (
+            <p className="game-lb-empty">No one has solved this deal yet — you could be first!</p>
+          )}
+          {!loading && entries.length > 0 && (
+            <table className="game-lb-table">
+              <thead>
+                <tr><th>#</th><th>Player</th><th>Moves</th><th>Time</th></tr>
+              </thead>
+              <tbody>
+                {entries.map(row => (
+                  <tr key={row.userId} className={row.userId === userId ? 'game-lb-me' : ''}>
+                    <td>{row.rank}</td>
+                    <td>{row.displayName}</td>
+                    <td>{row.moves}</td>
+                    <td>{formatLbTime(row.timeSeconds)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

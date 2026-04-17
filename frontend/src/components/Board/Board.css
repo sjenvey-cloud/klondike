@@ -187,29 +187,36 @@
   animation: shake 0.4s ease;
 }
 
-/* moves/timer bar */
+/* ── Stats bar ── */
 .board-stats {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   padding: 4px 2px;
   font-family: var(--font-ui);
   font-size: 13px;
   color: var(--color-text-secondary);
 }
 
-.board-stats span {
-  min-width: 60px;
+.board-stat-item {
+  min-width: 68px;
   text-align: center;
 }
 
-/* ── DEV-62: Auto-complete button ── */
+.board-stat-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
+
+/* Auto-complete */
 .autocomplete-btn {
   background: var(--color-accent);
   color: #000;
   border: none;
   border-radius: 6px;
-  padding: 5px 12px;
+  padding: 5px 10px;
   font-family: var(--font-ui);
   font-size: 12px;
   font-weight: 700;
@@ -220,4 +227,40 @@
 
 .autocomplete-btn:hover {
   background: var(--color-accent-hover);
+}
+
+/* Redeal / Leaderboard icon buttons */
+.board-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.board-action-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.board-action-label {
+  font-size: 12px;
+}
+
+/* Hide text label on very small screens, keep icon */
+@media (max-width: 360px) {
+  .board-action-label {
+    display: none;
+  }
+  .board-action-btn {
+    padding: 5px 6px;
+  }
 }

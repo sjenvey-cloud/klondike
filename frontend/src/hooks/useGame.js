@@ -8,10 +8,11 @@ import { createHand, createSession, completeSession, abandonSession } from '../s
 // ── DEV-66: Session persistence ────────────────────────────────────────────
 const SESSION_KEY = 'klondike_session';
 
-function saveSession(sessionId, gameState, moves, turns, startTime) {
+function saveSession(sessionId, handId, gameState, moves, turns, startTime) {
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify({
       sessionId,
+      handId,
       gameState: {
         tableau:     gameState.tableau,
         stock:       gameState.stock,
@@ -239,6 +240,7 @@ function checkCanAutoComplete(state) {
 export function useGame(userId) {
   const [state, dispatch]   = useReducer(reducer, initial);
   const [sessionId, setSessionId] = useState(null);
+  const [handId, setHandId]       = useState(null);
   const [loading, setLoading]     = useState(false);
   const startTimeRef = useRef(null);
 
@@ -249,8 +251,8 @@ export function useGame(userId) {
   // DEV-66: save to sessionStorage after every move
   useEffect(() => {
     if (!state.tableau || !sessionId) return;
-    saveSession(sessionId, state, state.moves, state.turns, startTimeRef.current);
-  }, [state, sessionId]);
+    saveSession(sessionId, handId, state, state.moves, state.turns, startTimeRef.current);
+  }, [state, sessionId, handId]);
 
   // DEV-62: canAutoComplete flag
   const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
@@ -267,6 +269,7 @@ export function useGame(userId) {
       );
       const dealt   = dealKlondike(hand.cards);
       setSessionId(session.id);
+      setHandId(hand.id);
       startTimeRef.current = Date.now();
       clearSavedSession();
       dispatch({ type: 'DEAL', payload: { ...dealt, drawMode } });
@@ -280,6 +283,7 @@ export function useGame(userId) {
     const saved = loadSession();
     if (!saved) return false;
     setSessionId(saved.sessionId);
+    if (saved.handId) setHandId(saved.handId);
     startTimeRef.current = saved.startTime || Date.now();
     dispatch({
       type: 'RESTORE',
@@ -333,6 +337,7 @@ export function useGame(userId) {
   return {
     ...state,
     sessionId,
+    handId,
     loading,
     canAutoComplete,
     startGame,

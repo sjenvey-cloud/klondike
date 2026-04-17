@@ -5,7 +5,7 @@ import './Board.css';
 
 const SUIT_SYMBOLS = ['♣', '♦', '♥', '♠'];
 
-export function Board({ game, timer }) {
+export function Board({ game, timer, onLeaderboard, onRedeal }) {
   const {
     tableau, stock, waste, foundations, draw,
     wasteToTableau, wasteToFoundation,
@@ -249,14 +249,36 @@ export function Board({ game, timer }) {
     <div className="board">
       {/* Stats bar */}
       <div className="board-stats">
-        <span>Moves: {game.moves}</span>
-        <span>{timer?.formatted || '0:00'}</span>
-        <span>{stock.length} left</span>
-        {canAutoComplete && (
-          <button className="autocomplete-btn" onClick={autoComplete}>
-            Auto-Complete
-          </button>
-        )}
+        <span className="board-stat-item">Moves: {game.moves}</span>
+        <span className="board-stat-item">{timer?.formatted || '0:00'}</span>
+        <div className="board-stat-actions">
+          {canAutoComplete && (
+            <button className="autocomplete-btn" onClick={autoComplete}>
+              Auto
+            </button>
+          )}
+          {onRedeal && (
+            <button className="board-action-btn" onClick={onRedeal} title="Redeal this hand" aria-label="Redeal">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2.5 8A5.5 5.5 0 0 1 13 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                <path d="M13.5 8A5.5 5.5 0 0 1 3 10.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                <path d="M11 3.5 13 5.5 11 7.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5 8.5 3 10.5 5 12.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="board-action-label">Redeal</span>
+            </button>
+          )}
+          {onLeaderboard && (
+            <button className="board-action-btn" onClick={onLeaderboard} title="Deal leaderboard" aria-label="Leaderboard">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="1" y="9" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="6.25" y="5" width="3.5" height="10" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+                <rect x="11.5" y="1" width="3.5" height="14" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+              <span className="board-action-label">Board</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Top row */}
