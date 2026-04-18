@@ -27,7 +27,6 @@ export function Home() {
     <div className="screen home-screen">
       <header className="home-header">
         <h1 className="home-title">Klondike Pro</h1>
-        <p className="home-subtitle">Server Validated</p>
       </header>
 
       {user && (
