@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card } from '../Card/Card';
-import { canPlaceOnTableau, canPlaceOnFoundation } from '../../services/gameLogic';
+import { canPlaceOnTableau, canPlaceOnFoundation, foundationIndex } from '../../services/gameLogic';
 import './Board.css';
 
 const SUIT_SYMBOLS = ['♣', '♦', '♥', '♠'];
@@ -130,19 +130,45 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
   // ── DEV-21: Double-click to foundation ───────────────────────────────────
 
   const handleWasteDblClick = useCallback(() => {
+    if (!waste || !waste.length) return;
     clearSelected();
-    wasteToFoundation();
-  }, [wasteToFoundation]);
+    const card = waste[waste.length - 1].card;
+    // 1. Try foundation
+    if (canPlaceOnFoundation(card, foundations[foundationIndex(card)])) {
+      wasteToFoundation();
+      return;
+    }
+    // 2. Leftmost legal tableau column
+    for (let col = 0; col < tableau.length; col++) {
+      if (canPlaceOnTableau(card, tableau[col])) {
+        wasteToTableau(col);
+        return;
+      }
+    }
+    triggerShake('waste');
+  }, [waste, foundations, tableau, wasteToFoundation, wasteToTableau, triggerShake]);
 
   const handleTableauDblClick = useCallback((col, idx, e) => {
     e.stopPropagation();
     const pile = tableau[col];
     if (!pile || !pile[idx] || !pile[idx].faceUp) return;
-    // Only top card
-    if (idx !== pile.length - 1) return;
     clearSelected();
-    tableauToFoundation(col);
-  }, [tableau, tableauToFoundation]);
+    const card = pile[idx].card;
+    const isTop = idx === pile.length - 1;
+    // 1. Top card → try foundation
+    if (isTop && canPlaceOnFoundation(card, foundations[foundationIndex(card)])) {
+      tableauToFoundation(col);
+      return;
+    }
+    // 2. Leftmost legal tableau column (skip source column)
+    for (let toCol = 0; toCol < tableau.length; toCol++) {
+      if (toCol !== col && canPlaceOnTableau(card, tableau[toCol])) {
+        tableauToTableau(col, idx, toCol);
+        return;
+      }
+    }
+    triggerShake(col);
+  }, [tableau, foundations, tableauToFoundation, tableauToTableau, triggerShake]);
 
   // ── DEV-20: Pointer-based drag & drop ────────────────────────────────────
 
