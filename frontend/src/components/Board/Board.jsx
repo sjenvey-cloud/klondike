@@ -11,6 +11,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
     wasteToTableau, wasteToFoundation,
     tableauToTableau, tableauToFoundation, foundationToTableau,
     canAutoComplete, autoComplete,
+    canUndo, undo,
   } = game;
 
   const [selected, setSelected] = useState(null);
@@ -334,6 +335,15 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
           {canAutoComplete && (
             <button className="autocomplete-btn" onClick={autoComplete}>
               Auto
+            </button>
+          )}
+          {canUndo && (
+            <button className="board-action-btn" onClick={undo} aria-label="Undo">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M2.5 7.5A5 5 0 1 1 4 11.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                <path d="M2.5 3v4.5H7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="board-action-label">Undo</span>
             </button>
           )}
           {onRedeal && (

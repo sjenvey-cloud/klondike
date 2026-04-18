@@ -39,6 +39,7 @@ export function clearSavedSession() {
 const initial = {
   tableau: null, stock: null, waste: null, foundations: null,
   moves: 0, turns: [], isWon: false, drawMode: 'draw3',
+  history: [], // undo stack — each entry is a pre-move snapshot
 };
 
 function reducer(state, action) {
@@ -261,6 +262,51 @@ function reducer(state, action) {
   }
 }
 
+// ── History / undo wrapper ────────────────────────────────────────────────
+// Wraps the inner reducer. Move actions push a snapshot before applying;
+// UNDO pops the stack and restores the previous state (costs one move).
+// AUTO_COMPLETE_STEP is intentionally excluded so autocomplete can't be undone.
+
+const UNDO_TRACKED = new Set([
+  'DRAW', 'WASTE_TO_TABLEAU', 'WASTE_TO_FOUNDATION',
+  'TABLEAU_TO_TABLEAU', 'TABLEAU_TO_FOUNDATION', 'FOUNDATION_TO_TABLEAU',
+]);
+
+function historyReducer(state, action) {
+  if (action.type === 'UNDO') {
+    const history = state.history || [];
+    if (history.length === 0) return state;
+    const prev = history[history.length - 1];
+    return {
+      ...state,
+      ...prev,
+      history: history.slice(0, -1),
+      moves: state.moves + 1, // undo counts as a move
+    };
+  }
+
+  const next = reducer(state, action);
+
+  // DEAL / RESTORE always reset history
+  if (action.type === 'DEAL' || action.type === 'RESTORE') {
+    return { ...next, history: [] };
+  }
+
+  // For tracked move actions, snapshot pre-move state if something changed
+  if (UNDO_TRACKED.has(action.type) && next !== state) {
+    const snapshot = {
+      tableau:     state.tableau,
+      stock:       state.stock,
+      waste:       state.waste,
+      foundations: state.foundations,
+      turns:       state.turns,
+    };
+    return { ...next, history: [...(state.history || []), snapshot] };
+  }
+
+  return next;
+}
+
 // ── canAutoComplete helper ─────────────────────────────────────────────────
 // True when all tableau cards are face-up (stock/waste are drained by the
 // auto-complete stepper itself, so they don't need to be empty first).
@@ -272,7 +318,7 @@ function checkCanAutoComplete(state) {
 // ── Hook ──────────────────────────────────────────────────────────────────
 
 export function useGame(userId) {
-  const [state, dispatch]   = useReducer(reducer, initial);
+  const [state, dispatch]   = useReducer(historyReducer, initial);
   const [sessionId, setSessionId] = useState(null);
   const [handId, setHandId]       = useState(null);
   const [loading, setLoading]     = useState(false);
@@ -290,6 +336,10 @@ export function useGame(userId) {
 
   // DEV-62: canAutoComplete flag
   const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
+
+  // Undo: available whenever there's history and the game isn't won
+  const canUndo = (state.history?.length ?? 0) > 0 && !state.isWon;
+  const undo    = useCallback(() => dispatch({ type: 'UNDO' }), []);
 
   const startGame = useCallback(async (handOverride = null, drawMode = 'draw3', opts = {}) => {
     setLoading(true);
@@ -375,6 +425,7 @@ export function useGame(userId) {
     handId,
     loading,
     canAutoComplete,
+    canUndo,
     startGame,
     resumeGame,
     hasSavedSession,
@@ -385,6 +436,7 @@ export function useGame(userId) {
     tableauToFoundation,
     foundationToTableau,
     autoComplete,
+    undo,
     finishGame,
     abandon,
   };
