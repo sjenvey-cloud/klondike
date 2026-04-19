@@ -23,7 +23,7 @@ async function handleResponse(r, retry) {
     return retry();
   }
   if (!r.ok) throw new Error(r.status);
-  return r.json();
+  return r.status === 204 ? null : r.json();
 }
 
 const get = (path) => {
