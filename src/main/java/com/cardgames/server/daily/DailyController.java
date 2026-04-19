@@ -107,9 +107,12 @@ public class DailyController {
 
     /**
      * GET /api/v1/leaderboard/daily/{date}/{sort}
-     * Top 50 ranked wins for the given daily date and draw mode.
-     * Deduplicated to one entry per user (their best score).
-     * Not cached — the query is fast and caching caused stale-empty results.
+     * Top 50 wins for today's daily hand, deduplicated to one entry per user.
+     *
+     * Queries by hand_id from the daily_challenges table rather than the
+     * session.is_daily flag. The is_daily flag was unreliable due to a
+     * Jackson boolean deserialization issue (is-prefix stripping on records)
+     * that caused sessions to be stored with is_daily=false.
      */
     @GetMapping("/leaderboard/daily/{date}/{sort}")
     public ResponseEntity<List<LeaderboardEntry>> getDailyLeaderboard(
@@ -118,9 +121,13 @@ public class DailyController {
             @RequestParam(defaultValue = "draw3") String drawMode) {
 
         LocalDate localDate = LocalDate.parse(date);
-        List<Session> sessions = sessionRepo.findDailyLeaderboard(localDate, drawMode);
 
-        // Sort preference
+        // Look up the authoritative hand for this date from daily_challenges
+        Optional<DailyChallenge> dc = dailyChallengeRepo.findByDateAndMode(localDate, drawMode);
+        if (dc.isEmpty()) return ResponseEntity.ok(List.of());
+
+        List<Session> sessions = sessionRepo.findWonSessionsByHandId(dc.get().getHandId());
+
         if ("time".equals(sort)) {
             sessions = sessions.stream()
                 .sorted(Comparator.comparingInt(Session::getTimeSeconds)
@@ -128,11 +135,8 @@ public class DailyController {
                 .toList();
         }
 
-        // Deduplicate: keep only best session per user (list is already ordered best-first)
         Map<Integer, Session> bestByUser = new LinkedHashMap<>();
-        for (Session s : sessions) {
-            bestByUser.putIfAbsent(s.getUserId(), s);
-        }
+        for (Session s : sessions) bestByUser.putIfAbsent(s.getUserId(), s);
 
         List<LeaderboardEntry> board = new ArrayList<>();
         int rank = 1;
@@ -157,7 +161,11 @@ public class DailyController {
             @RequestParam(defaultValue = "draw3") String drawMode) {
 
         LocalDate localDate = LocalDate.parse(date);
-        List<Session> sessions = sessionRepo.findDailyLeaderboard(localDate, drawMode);
+
+        Optional<DailyChallenge> dc = dailyChallengeRepo.findByDateAndMode(localDate, drawMode);
+        if (dc.isEmpty()) return ResponseEntity.notFound().build();
+
+        List<Session> sessions = sessionRepo.findWonSessionsByHandId(dc.get().getHandId());
 
         if ("time".equals(sort)) {
             sessions = sessions.stream()
@@ -166,7 +174,6 @@ public class DailyController {
                 .toList();
         }
 
-        // Deduplicate same as leaderboard
         Map<Integer, Session> bestByUser = new LinkedHashMap<>();
         for (Session s : sessions) bestByUser.putIfAbsent(s.getUserId(), s);
 
