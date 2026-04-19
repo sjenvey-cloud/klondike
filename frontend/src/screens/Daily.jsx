@@ -28,15 +28,17 @@ export function Daily() {
       .catch(() => setDailyError(true));
   }, []);
 
-  useEffect(() => {
-    if (view !== 'leaderboard') return;
-    getDailyLeaderboard(today, sort).then(setLeaderboard).catch(() => {});
-  }, [today, sort, view]);
+  const drawMode = daily?.hand?.drawMode || 'draw3';
 
   useEffect(() => {
     if (view !== 'leaderboard') return;
-    if (user) getMyDailyRank(today, user.id, sort).then(setMyRank).catch(() => {});
-  }, [today, user, sort, view]);
+    getDailyLeaderboard(today, sort, drawMode).then(setLeaderboard).catch(() => {});
+  }, [today, sort, view, drawMode]);
+
+  useEffect(() => {
+    if (view !== 'leaderboard') return;
+    if (user) getMyDailyRank(today, user.id, sort, drawMode).then(setMyRank).catch(() => {});
+  }, [today, user, sort, view, drawMode]);
 
   return (
     <div className="screen daily-screen">
