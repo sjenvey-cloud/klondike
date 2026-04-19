@@ -426,6 +426,7 @@ export function useGame(userId) {
     loading,
     canAutoComplete,
     canUndo,
+    startTimeRef,
     startGame,
     resumeGame,
     hasSavedSession,

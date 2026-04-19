@@ -1,42 +1,54 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useTimer(running) {
+// sessionStartRef: a ref whose .current is the epoch-ms when the current game
+// session began. Passed from useGame so that timer can resume from the real
+// start time when restoring a saved session, instead of always starting at 0.
+export function useTimer(running, sessionStartRef) {
   const [elapsed, setElapsed] = useState(0);
-  const startRef = useRef(null);       // wall-clock time when timer effectively "started"
+  const startRef = useRef(null);    // epoch-ms anchor: elapsed = Date.now() - startRef.current
   const intervalRef = useRef(null);
-  const pausedAtRef = useRef(null);    // wall-clock time when tab was hidden
+  const pausedAtRef = useRef(null); // epoch-ms when the tab was hidden
 
+  // Start/stop the interval whenever running changes
   useEffect(() => {
     if (running) {
-      // Recompute startRef so that elapsed is preserved across running toggling
-      startRef.current = Date.now() - elapsed * 1000;
+      // Prefer the session's real start time so a resumed game shows the
+      // correct total elapsed, not just the time since the resume click.
+      if (sessionStartRef?.current) {
+        startRef.current = sessionStartRef.current;
+      } else {
+        startRef.current = Date.now() - elapsed * 1000;
+      }
       intervalRef.current = setInterval(() => {
         setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
       }, 1000);
     } else {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-    return () => clearInterval(intervalRef.current);
+    return () => {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running]);
 
-  // Pause/resume when the tab is hidden or the device screen locks
+  // Pause/resume when the tab is hidden (screen lock, app switch, etc.)
   useEffect(() => {
     if (!running) return;
 
     function handleVisibilityChange() {
       if (document.hidden) {
-        // Tab hidden — record the moment and stop ticking
+        // Going hidden: stop the clock and note when
         pausedAtRef.current = Date.now();
         clearInterval(intervalRef.current);
-      } else {
-        // Tab visible again — shift startRef forward by the paused duration so
-        // the elapsed count is correct, then restart the interval
-        if (pausedAtRef.current !== null) {
-          const pausedDuration = Date.now() - pausedAtRef.current;
-          startRef.current += pausedDuration;
-          pausedAtRef.current = null;
-        }
+        intervalRef.current = null;
+      } else if (pausedAtRef.current !== null) {
+        // Becoming visible after a real pause: shift the anchor forward so
+        // elapsed stays accurate, then restart the interval
+        const pausedDuration = Date.now() - pausedAtRef.current;
+        startRef.current += pausedDuration;
+        pausedAtRef.current = null;
         intervalRef.current = setInterval(() => {
           setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
         }, 1000);
@@ -44,13 +56,14 @@ export function useTimer(running) {
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(intervalRef.current);
-    };
+    // Cleanup only removes the listener; Effect 1 owns the interval lifecycle
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [running]);
 
-  const reset = useCallback(() => setElapsed(0), []);
+  const reset = useCallback(() => {
+    setElapsed(0);
+    startRef.current = null;
+  }, []);
 
   const format = (s) => {
     const m = Math.floor(s / 60);

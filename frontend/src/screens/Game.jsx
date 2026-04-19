@@ -13,7 +13,7 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
   const { user } = useContext(AuthContext);
   const location = useLocation();
   const game = useGame(user?.id);
-  const timer = useTimer(!!game.tableau && !game.isWon);
+  const timer = useTimer(!!game.tableau && !game.isWon, game.startTimeRef);
   const [winResult, setWinResult]   = useState(null);
   const [finishing, setFinishing]   = useState(false);
   const [resumePrompt, setResumePrompt] = useState(false);
