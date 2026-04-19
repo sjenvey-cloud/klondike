@@ -1,24 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// sessionStartRef: a ref whose .current is the epoch-ms when the current game
-// session began. Passed from useGame so that timer can resume from the real
-// start time when restoring a saved session, instead of always starting at 0.
-export function useTimer(running, sessionStartRef) {
+// sessionStartRef: ref whose .current is the epoch-ms when the current session began.
+// sessionId: changes whenever a new session/game is created. Used as a dependency
+//   so the timer restarts correctly even when `running` stays true across a redeal.
+export function useTimer(running, sessionStartRef, sessionId) {
   const [elapsed, setElapsed] = useState(0);
   const startRef = useRef(null);    // epoch-ms anchor: elapsed = Date.now() - startRef.current
   const intervalRef = useRef(null);
   const pausedAtRef = useRef(null); // epoch-ms when the tab was hidden
 
-  // Start/stop the interval whenever running changes
+  // Start/stop the interval when running changes OR when a new session begins
   useEffect(() => {
     if (running) {
-      // Prefer the session's real start time so a resumed game shows the
-      // correct total elapsed, not just the time since the resume click.
-      if (sessionStartRef?.current) {
-        startRef.current = sessionStartRef.current;
-      } else {
-        startRef.current = Date.now() - elapsed * 1000;
-      }
+      // Use the session's real start time so a resumed game shows total elapsed,
+      // not just time since the resume click.
+      startRef.current = sessionStartRef?.current ?? Date.now();
       intervalRef.current = setInterval(() => {
         setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
       }, 1000);
@@ -31,7 +27,7 @@ export function useTimer(running, sessionStartRef) {
       intervalRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
+  }, [running, sessionId]);
 
   // Pause/resume when the tab is hidden (screen lock, app switch, etc.)
   useEffect(() => {
@@ -58,11 +54,16 @@ export function useTimer(running, sessionStartRef) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     // Cleanup only removes the listener; Effect 1 owns the interval lifecycle
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [running]);
+  }, [running, sessionId]);
 
+  // Clears the display and stops the current interval immediately.
+  // Effect 1 will start a fresh interval when the next session begins.
   const reset = useCallback(() => {
-    setElapsed(0);
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+    pausedAtRef.current = null;
     startRef.current = null;
+    setElapsed(0);
   }, []);
 
   const format = (s) => {
