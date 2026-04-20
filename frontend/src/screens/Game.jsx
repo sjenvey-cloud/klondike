@@ -137,6 +137,7 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
       <Board
         game={game}
         timer={timer}
+        onNewGame={handleNewGame}
         onLeaderboard={handleOpenLeaderboard}
         onRedeal={handleRedeal}
       />

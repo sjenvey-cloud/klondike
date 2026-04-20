@@ -5,7 +5,7 @@ import './Board.css';
 
 const SUIT_SYMBOLS = ['♣', '♦', '♥', '♠'];
 
-export function Board({ game, timer, onLeaderboard, onRedeal }) {
+export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame }) {
   const {
     tableau, stock, waste, foundations, draw,
     wasteToTableau, wasteToFoundation,
@@ -370,6 +370,16 @@ export function Board({ game, timer, onLeaderboard, onRedeal }) {
                 <path d="M2.5 3v4.5H7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span className="board-action-label">Undo</span>
+            </button>
+          )}
+          {onNewGame && (
+            <button className="board-action-btn" onClick={onNewGame} title="New deal" aria-label="New deal">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="2" y="3" width="9" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M5 1h7a2 2 0 0 1 2 2v9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M6.5 9V7m0 0V5m0 2H4.5m2 0H8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <span className="board-action-label">New</span>
             </button>
           )}
           {onRedeal && (
