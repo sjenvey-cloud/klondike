@@ -5,13 +5,17 @@ import {
   getFriends, getLeague,
   createFriendInvite, acceptFriendInvite, removeFriend,
   getSentInvites, deleteSentInvite, previewInvite,
+  sendFriendRequest, getReceivedFriendRequests,
+  acceptFriendRequest, declineFriendRequest,
+  getCustomLeagues, createCustomLeague, getCustomLeagueDetail,
+  getCustomLeaderboard, deleteCustomLeague, addLeagueMembers, removeLeagueMember,
   getSocialChallenges, getSocialChallengeDetail,
   endSocialChallenge, resumeSocialChallenge,
 } from '../services/api';
 import { getPendingInviteToken, clearPendingInviteToken } from './AcceptInvite';
 import './Friends.css';
 
-const TABS = ['Friends', 'League', 'Challenges'];
+const TABS = ['Friends', 'Leagues', 'Challenges'];
 
 function formatTime(s) {
   if (!s) return '—';
@@ -22,13 +26,11 @@ function formatTime(s) {
 
 function formatDate(iso) {
   if (!iso) return '';
-  try {
-    return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' });
-  } catch { return ''; }
+  try { return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' }); }
+  catch { return ''; }
 }
 
 function timeUntil(iso) {
-  // Backend returns LocalDateTime without Z; treat as UTC
   const diff = new Date(iso + 'Z') - new Date();
   if (diff <= 0) return 'Expired';
   const hours = Math.floor(diff / 3600000);
@@ -41,65 +43,90 @@ export function Friends() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('Friends');
 
-  // Friends list
-  const [friends, setFriends] = useState([]);
-
-  // Invite generation (new link)
-  const [inviteLink, setInviteLink]   = useState('');
-  const [copied, setCopied]           = useState(false);
-
-  // Sent invites panel
-  const [sentInvites, setSentInvites]       = useState([]);
-  const [copiedInviteId, setCopiedInviteId] = useState(null);
-
-  // Received invite panel (from sessionStorage after login-via-link flow)
-  const [pendingInvite, setPendingInvite]       = useState(null); // { token, inviterDisplayName }
-  const [acceptingReceived, setAcceptingReceived] = useState(false);
+  // ── Friends tab state ──────────────────────────────────────────────────
+  const [friends, setFriends]                   = useState([]);
+  const [inviteLink, setInviteLink]             = useState('');
+  const [copied, setCopied]                     = useState(false);
+  const [sentInvites, setSentInvites]           = useState([]);
+  const [copiedInviteId, setCopiedInviteId]     = useState(null);
+  const [pendingInvite, setPendingInvite]       = useState(null);
+  const [acceptingInvite, setAcceptingInvite]   = useState(false);
   const [inviteMsg, setInviteMsg]               = useState(null);
+  const [friendRequests, setFriendRequests]     = useState([]);
 
-  // League
-  const [league, setLeague]   = useState([]);
-  const [period, setPeriod]   = useState('week');
+  // ── Leagues tab state ──────────────────────────────────────────────────
+  // leagueView: 'list' | 'create' | 'detail' | 'add-members'
+  const [leagueView, setLeagueView]             = useState('list');
+  const [friendsPeriod, setFriendsPeriod]       = useState('week');
+  const [friendsLeague, setFriendsLeague]       = useState([]);
+  const [customLeagues, setCustomLeagues]       = useState([]);
+  const [leagueBusy, setLeagueBusy]             = useState(false);
 
-  // Social challenges
+  // Create league form
+  const [createName, setCreateName]             = useState('');
+  const [createSelected, setCreateSelected]     = useState(new Set());
+
+  // Detail view
+  const [selectedLeague, setSelectedLeague]     = useState(null); // CustomLeagueDetail
+  const [leaderboard, setLeaderboard]           = useState([]);
+  const [detailPeriod, setDetailPeriod]         = useState('week');
+  const [lbLoading, setLbLoading]               = useState(false);
+  const [pendingRequests, setPendingRequests]   = useState(new Set()); // userIds with pending request
+
+  // Add members form
+  const [addSelected, setAddSelected]           = useState(new Set());
+
+  // ── Challenges tab state ───────────────────────────────────────────────
   const [challenges, setChallenges]             = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [detailLoading, setDetailLoading]       = useState(false);
   const [actionBusy, setActionBusy]             = useState(false);
 
-  // ── Load friends, sent invites, and check for pending received invite ──
+  // ── Initial data loads ─────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
     getFriends().then(setFriends).catch(() => {});
     getSentInvites().then(setSentInvites).catch(() => {});
+    getReceivedFriendRequests().then(setFriendRequests).catch(() => {});
 
-    // If the user arrived here after clicking an invite link and then
-    // logging in, a token will be in sessionStorage. Preview it so we can
-    // show "X wants to be your friend" with accept/decline.
     const token = getPendingInviteToken();
     if (token) {
       previewInvite(token)
-        .then(data => setPendingInvite({ token, inviterDisplayName: data.inviterDisplayName }))
-        .catch(() => clearPendingInviteToken()); // stale / expired — discard silently
+        .then(d => setPendingInvite({ token, inviterDisplayName: d.inviterDisplayName }))
+        .catch(() => clearPendingInviteToken());
     }
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
-    getLeague(period).then(setLeague).catch(() => {});
-  }, [user, period]);
+    if (!user || tab !== 'Leagues') return;
+    getCustomLeagues().then(setCustomLeagues).catch(() => {});
+  }, [user, tab]);
+
+  useEffect(() => {
+    if (!user || tab !== 'Leagues' || leagueView !== 'list') return;
+    getLeague(friendsPeriod).then(setFriendsLeague).catch(() => {});
+  }, [user, tab, leagueView, friendsPeriod]);
 
   useEffect(() => {
     if (!user || tab !== 'Challenges') return;
     getSocialChallenges().then(setChallenges).catch(() => {});
   }, [user, tab]);
 
-  // ── Invite generation ──────────────────────────────────────────────────
+  // Reload leaderboard when period changes in detail view
+  useEffect(() => {
+    if (!selectedLeague) return;
+    setLbLoading(true);
+    getCustomLeaderboard(selectedLeague.id, detailPeriod)
+      .then(setLeaderboard)
+      .catch(() => setLeaderboard([]))
+      .finally(() => setLbLoading(false));
+  }, [selectedLeague, detailPeriod]);
+
+  // ── Friends tab handlers ───────────────────────────────────────────────
   const handleInvite = async () => {
     const res = await createFriendInvite();
     setInviteLink(res.inviteUrl);
     setCopied(false);
-    // Refresh the sent invites list to include the new one
     getSentInvites().then(setSentInvites).catch(() => {});
   };
 
@@ -110,7 +137,6 @@ export function Friends() {
     });
   }, [inviteLink]);
 
-  // ── Sent invites management ────────────────────────────────────────────
   const handleCopySentInvite = useCallback((id, url) => {
     navigator.clipboard.writeText(url).then(() => {
       setCopiedInviteId(id);
@@ -119,16 +145,13 @@ export function Friends() {
   }, []);
 
   const handleDeleteSentInvite = useCallback(async (id) => {
-    try {
-      await deleteSentInvite(id);
-      setSentInvites(prev => prev.filter(i => i.id !== id));
-    } catch {}
+    await deleteSentInvite(id).catch(() => {});
+    setSentInvites(prev => prev.filter(i => i.id !== id));
   }, []);
 
-  // ── Received invite actions ────────────────────────────────────────────
-  const handleAcceptReceived = useCallback(async () => {
-    if (!pendingInvite || acceptingReceived) return;
-    setAcceptingReceived(true);
+  const handleAcceptInvite = useCallback(async () => {
+    if (!pendingInvite || acceptingInvite) return;
+    setAcceptingInvite(true);
     const name = pendingInvite.inviterDisplayName;
     try {
       await acceptFriendInvite(pendingInvite.token);
@@ -143,28 +166,113 @@ export function Friends() {
       setInviteMsg('Could not accept invite — it may have expired.');
       setTimeout(() => setInviteMsg(null), 4000);
     } finally {
-      setAcceptingReceived(false);
+      setAcceptingInvite(false);
     }
-  }, [pendingInvite, acceptingReceived]);
+  }, [pendingInvite, acceptingInvite]);
 
-  const handleDeclineReceived = useCallback(() => {
+  const handleDeclineInvite = useCallback(() => {
     clearPendingInviteToken();
     setPendingInvite(null);
   }, []);
 
-  // ── Friends list ───────────────────────────────────────────────────────
-  const handleRemove = async (friendId) => {
+  const handleAcceptFriendRequest = useCallback(async (id, name) => {
+    await acceptFriendRequest(id).catch(() => {});
+    setFriendRequests(prev => prev.filter(r => r.id !== id));
+    getFriends().then(setFriends).catch(() => {});
+    setInviteMsg(`You are now friends with ${name}!`);
+    setTimeout(() => setInviteMsg(null), 4000);
+  }, []);
+
+  const handleDeclineFriendRequest = useCallback(async (id) => {
+    await declineFriendRequest(id).catch(() => {});
+    setFriendRequests(prev => prev.filter(r => r.id !== id));
+  }, []);
+
+  const handleRemoveFriend = async (friendId) => {
     await removeFriend(friendId);
     setFriends(prev => prev.filter(f => f.userId !== friendId));
   };
 
-  // ── Social challenges ──────────────────────────────────────────────────
+  // ── Leagues tab handlers ───────────────────────────────────────────────
+  const openLeagueDetail = useCallback(async (id) => {
+    setLeagueBusy(true);
+    setDetailPeriod('week');
+    try {
+      const detail = await getCustomLeagueDetail(id);
+      setSelectedLeague(detail);
+      setLeagueView('detail');
+      // Build initial pending set from member data
+      const pending = new Set(
+        detail.members.filter(m => m.hasPendingRequest).map(m => m.userId)
+      );
+      setPendingRequests(pending);
+    } catch {} finally {
+      setLeagueBusy(false);
+    }
+  }, []);
+
+  const handleCreateLeague = useCallback(async () => {
+    if (!createName.trim() || leagueBusy) return;
+    setLeagueBusy(true);
+    try {
+      await createCustomLeague(createName.trim(), [...createSelected]);
+      setCreateName('');
+      setCreateSelected(new Set());
+      const leagues = await getCustomLeagues();
+      setCustomLeagues(leagues);
+      setLeagueView('list');
+    } catch {} finally {
+      setLeagueBusy(false);
+    }
+  }, [createName, createSelected, leagueBusy]);
+
+  const handleDeleteLeague = useCallback(async (id) => {
+    await deleteCustomLeague(id).catch(() => {});
+    setCustomLeagues(prev => prev.filter(l => l.id !== id));
+    setSelectedLeague(null);
+    setLeagueView('list');
+  }, []);
+
+  const handleRemoveLeagueMember = useCallback(async (leagueId, userId) => {
+    await removeLeagueMember(leagueId, userId).catch(() => {});
+    setSelectedLeague(prev => prev ? {
+      ...prev,
+      members: prev.members.filter(m => m.userId !== userId),
+    } : prev);
+  }, []);
+
+  const handleAddMembers = useCallback(async () => {
+    if (!selectedLeague || addSelected.size === 0 || leagueBusy) return;
+    setLeagueBusy(true);
+    try {
+      await addLeagueMembers(selectedLeague.id, [...addSelected]);
+      const detail = await getCustomLeagueDetail(selectedLeague.id);
+      setSelectedLeague(detail);
+      setAddSelected(new Set());
+      setLeagueView('detail');
+    } catch {} finally {
+      setLeagueBusy(false);
+    }
+  }, [selectedLeague, addSelected, leagueBusy]);
+
+  const handleSendFriendRequest = useCallback(async (targetUserId) => {
+    await sendFriendRequest(targetUserId).catch(() => {});
+    setPendingRequests(prev => new Set([...prev, targetUserId]));
+    // Also update the member entry in selectedLeague so the button updates
+    setSelectedLeague(prev => prev ? {
+      ...prev,
+      members: prev.members.map(m =>
+        m.userId === targetUserId ? { ...m, hasPendingRequest: true } : m
+      ),
+    } : prev);
+  }, []);
+
+  // ── Challenges tab handlers ────────────────────────────────────────────
   const openChallenge = useCallback(async (id) => {
     setDetailLoading(true);
     setSelectedChallenge(null);
     try {
-      const detail = await getSocialChallengeDetail(id);
-      setSelectedChallenge(detail);
+      setSelectedChallenge(await getSocialChallengeDetail(id));
     } catch {} finally {
       setDetailLoading(false);
     }
@@ -175,15 +283,10 @@ export function Friends() {
     setActionBusy(true);
     try {
       await endSocialChallenge(id);
-      const [detail, list] = await Promise.all([
-        getSocialChallengeDetail(id),
-        getSocialChallenges(),
-      ]);
+      const [detail, list] = await Promise.all([getSocialChallengeDetail(id), getSocialChallenges()]);
       setSelectedChallenge(detail);
       setChallenges(list);
-    } catch {} finally {
-      setActionBusy(false);
-    }
+    } catch {} finally { setActionBusy(false); }
   }, [actionBusy]);
 
   const handleResumeChallenge = useCallback(async (id) => {
@@ -191,22 +294,11 @@ export function Friends() {
     setActionBusy(true);
     try {
       await resumeSocialChallenge(id);
-      const [detail, list] = await Promise.all([
-        getSocialChallengeDetail(id),
-        getSocialChallenges(),
-      ]);
+      const [detail, list] = await Promise.all([getSocialChallengeDetail(id), getSocialChallenges()]);
       setSelectedChallenge(detail);
       setChallenges(list);
-    } catch {} finally {
-      setActionBusy(false);
-    }
+    } catch {} finally { setActionBusy(false); }
   }, [actionBusy]);
-
-  const handlePlayChallenge = useCallback((challenge) => {
-    navigate('/game', {
-      state: { replayHandId: challenge.handId, replayDrawMode: challenge.drawMode },
-    });
-  }, [navigate]);
 
   const newChallengeCount = challenges.filter(
     c => c.status === 'active' && !c.isCreator && !c.userHasWon
@@ -221,7 +313,17 @@ export function Friends() {
     );
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────
+  // Members already in the selected league (for the add-members picker)
+  const leagueMemberIds = selectedLeague
+    ? new Set(selectedLeague.members.map(m => m.userId))
+    : new Set();
+
+  // Friends not yet in the league (for add-members picker)
+  const addableFriends = friends.filter(f => !leagueMemberIds.has(f.userId));
+
+  // Friends not yet in the create form
+  const friendsForCreate = friends;
+
   return (
     <div className="screen friends-screen">
       <div className="tab-bar">
@@ -229,7 +331,14 @@ export function Friends() {
           <button
             key={t}
             className={`tab-btn${tab === t ? ' active' : ''}`}
-            onClick={() => { setTab(t); setSelectedChallenge(null); }}
+            onClick={() => {
+              setTab(t);
+              setSelectedChallenge(null);
+              if (t === 'Leagues') {
+                setLeagueView('list');
+                setSelectedLeague(null);
+              }
+            }}
           >
             {t}
             {t === 'Challenges' && newChallengeCount > 0 && (
@@ -239,11 +348,13 @@ export function Friends() {
         ))}
       </div>
 
-      {/* ── Friends tab ── */}
+      {/* ════════════════════════════════════════════════════════════════════
+          FRIENDS TAB
+          ════════════════════════════════════════════════════════════════════ */}
       {tab === 'Friends' && (
         <div className="tab-content">
 
-          {/* Received invite (sessionStorage → login flow) */}
+          {/* Received invite (sessionStorage token) */}
           {pendingInvite && (
             <div className="received-invite-card">
               <div className="received-invite-info">
@@ -254,23 +365,40 @@ export function Friends() {
                 </div>
               </div>
               <div className="received-invite-actions">
-                <button
-                  className="btn-primary received-invite-accept"
-                  onClick={handleAcceptReceived}
-                  disabled={acceptingReceived}
-                >
-                  {acceptingReceived ? '…' : 'Accept'}
+                <button className="btn-primary received-invite-accept" onClick={handleAcceptInvite} disabled={acceptingInvite}>
+                  {acceptingInvite ? '…' : 'Accept'}
                 </button>
-                <button className="received-invite-decline" onClick={handleDeclineReceived}>
-                  Decline
-                </button>
+                <button className="received-invite-decline" onClick={handleDeclineInvite}>Decline</button>
               </div>
             </div>
           )}
 
+          {/* Received friend requests (from league "Add Friend" flow) */}
+          {friendRequests.map(req => (
+            <div key={req.id} className="received-invite-card">
+              <div className="received-invite-info">
+                <span className="received-invite-icon">👋</span>
+                <div>
+                  <span className="received-invite-name">{req.requesterDisplayName}</span>
+                  <span className="received-invite-sub"> wants to be your friend</span>
+                </div>
+              </div>
+              <div className="received-invite-actions">
+                <button className="btn-primary received-invite-accept"
+                  onClick={() => handleAcceptFriendRequest(req.id, req.requesterDisplayName)}>
+                  Accept
+                </button>
+                <button className="received-invite-decline"
+                  onClick={() => handleDeclineFriendRequest(req.id)}>
+                  Decline
+                </button>
+              </div>
+            </div>
+          ))}
+
           {inviteMsg && <p className="invite-msg">{inviteMsg}</p>}
 
-          {/* Generate new invite */}
+          {/* Generate invite link */}
           <button className="btn-primary invite-btn" onClick={handleInvite}>
             + Invite a Friend
           </button>
@@ -281,36 +409,16 @@ export function Friends() {
               <div className="invite-link-row">
                 <code className="invite-link">{inviteLink}</code>
                 <div className="invite-actions">
-                  <button
-                    className={`invite-action-btn${copied ? ' copied' : ''}`}
-                    onClick={handleCopy}
-                    title="Copy link"
-                    aria-label="Copy invite link"
-                  >
-                    {copied ? (
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : (
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-                        <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v7A1.5 1.5 0 0 0 3.5 12H5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    )}
+                  <button className={`invite-action-btn${copied ? ' copied' : ''}`} onClick={handleCopy} title="Copy link">
+                    {copied
+                      ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      : <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v7A1.5 1.5 0 0 0 3.5 12H5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    }
                     <span className="invite-action-label">{copied ? 'Copied!' : 'Copy'}</span>
                   </button>
-                  <a
-                    className="invite-action-btn"
-                    href={`sms:?body=${encodeURIComponent('Join me on Klondike Pro! Accept my friend invite: ' + inviteLink)}`}
-                    title="Send via text message"
-                    aria-label="Send invite via text message"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M13 1H3a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2l1.5 2.5a.5.5 0 0 0 .866 0L9 12h4a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-                      <circle cx="5.5" cy="6.5" r="1" fill="currentColor"/>
-                      <circle cx="8" cy="6.5" r="1" fill="currentColor"/>
-                      <circle cx="10.5" cy="6.5" r="1" fill="currentColor"/>
-                    </svg>
+                  <a className="invite-action-btn"
+                    href={`sms:?body=${encodeURIComponent('Join me on Klondike Pro! ' + inviteLink)}`}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 1H3a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2l1.5 2.5a.5.5 0 0 0 .866 0L9 12h4a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="5.5" cy="6.5" r="1" fill="currentColor"/><circle cx="8" cy="6.5" r="1" fill="currentColor"/><circle cx="10.5" cy="6.5" r="1" fill="currentColor"/></svg>
                     <span className="invite-action-label">Text</span>
                   </a>
                 </div>
@@ -329,32 +437,15 @@ export function Friends() {
                     <span className="sent-invite-date">Sent {formatDate(inv.createdAt)}</span>
                   </div>
                   <div className="sent-invite-btns">
-                    <button
-                      className={`invite-action-btn${copiedInviteId === inv.id ? ' copied' : ''}`}
-                      onClick={() => handleCopySentInvite(inv.id, inv.inviteUrl)}
-                      title="Copy invite link"
-                    >
-                      {copiedInviteId === inv.id ? (
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                          <path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      ) : (
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                          <rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-                          <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v7A1.5 1.5 0 0 0 3.5 12H5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                        </svg>
-                      )}
-                      <span className="invite-action-label">
-                        {copiedInviteId === inv.id ? 'Copied' : 'Copy'}
-                      </span>
+                    <button className={`invite-action-btn${copiedInviteId === inv.id ? ' copied' : ''}`}
+                      onClick={() => handleCopySentInvite(inv.id, inv.inviteUrl)}>
+                      {copiedInviteId === inv.id
+                        ? <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        : <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v7A1.5 1.5 0 0 0 3.5 12H5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                      }
+                      <span className="invite-action-label">{copiedInviteId === inv.id ? 'Copied' : 'Copy'}</span>
                     </button>
-                    <button
-                      className="sent-invite-delete-btn"
-                      onClick={() => handleDeleteSentInvite(inv.id)}
-                      title="Delete invite"
-                    >
-                      Delete
-                    </button>
+                    <button className="sent-invite-delete-btn" onClick={() => handleDeleteSentInvite(inv.id)}>Delete</button>
                   </div>
                 </div>
               ))}
@@ -363,9 +454,7 @@ export function Friends() {
 
           {/* Friends list */}
           <div className="friends-list">
-            {friends.length === 0 && (
-              <p className="empty-state">No friends yet. Invite someone to get started!</p>
-            )}
+            {friends.length === 0 && <p className="empty-state">No friends yet. Invite someone!</p>}
             {friends.map(f => (
               <div key={f.userId} className="friend-row">
                 <div className="friend-info">
@@ -374,118 +463,338 @@ export function Friends() {
                     <span className="friend-stat">{f.gamesCompletedToday} won today</span>
                   )}
                 </div>
-                <button className="btn-danger-sm" onClick={() => handleRemove(f.userId)}>Remove</button>
+                <button className="btn-danger-sm" onClick={() => handleRemoveFriend(f.userId)}>Remove</button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* ── League tab ── */}
-      {tab === 'League' && (
+      {/* ════════════════════════════════════════════════════════════════════
+          LEAGUES TAB — LIST VIEW
+          ════════════════════════════════════════════════════════════════════ */}
+      {tab === 'Leagues' && leagueView === 'list' && (
         <div className="tab-content">
+
+          {/* ── Friends League ── */}
+          <div className="league-section-header">Friends League</div>
           <div className="period-toggle">
             {['week', 'month', 'alltime'].map(p => (
-              <button key={p} className={`period-btn${period === p ? ' active' : ''}`} onClick={() => setPeriod(p)}>
-                {p === 'alltime' ? 'All Time' : p.charAt(0).toUpperCase() + p.slice(1)}
+              <button key={p} className={`period-btn${friendsPeriod === p ? ' active' : ''}`}
+                onClick={() => setFriendsPeriod(p)}>
+                {p === 'alltime' ? 'All Time' : p === 'week' ? 'Week' : 'Month'}
               </button>
             ))}
           </div>
           <table className="lb-table">
-            <thead>
-              <tr><th>#</th><th>Player</th><th>Wins</th><th>Best</th></tr>
-            </thead>
+            <thead><tr><th>#</th><th>Player</th><th>Wins</th><th>Best</th></tr></thead>
             <tbody>
-              {league.map((row, i) => (
+              {friendsLeague.map(row => (
                 <tr key={row.userId} className={row.userId === user.id ? 'lb-me' : ''}>
-                  <td>{i + 1}</td>
-                  <td>{row.displayName}</td>
-                  <td>{row.wins}</td>
-                  <td>{row.bestMoves ?? '—'}</td>
+                  <td>{row.rank}</td><td>{row.displayName}</td>
+                  <td>{row.wins}</td><td>{row.bestMoves ?? '—'}</td>
                 </tr>
               ))}
-              {league.length === 0 && (
+              {friendsLeague.length === 0 && (
                 <tr><td colSpan={4} className="lb-empty">No data for this period.</td></tr>
               )}
             </tbody>
           </table>
+
+          {/* ── My Leagues ── */}
+          <div className="league-section-header league-section-header--spaced">
+            My Leagues
+            <button className="btn-primary league-create-btn" onClick={() => {
+              setCreateName('');
+              setCreateSelected(new Set());
+              setLeagueView('create');
+            }}>
+              + Create League
+            </button>
+          </div>
+
+          {customLeagues.length === 0 && (
+            <p className="empty-state">No leagues yet. Create one to compete with a group!</p>
+          )}
+          {customLeagues.map(l => (
+            <button key={l.id} className="league-card" onClick={() => openLeagueDetail(l.id)}>
+              <div className="league-card-name">{l.name}</div>
+              <div className="league-card-meta">
+                {l.memberCount} member{l.memberCount !== 1 ? 's' : ''}
+                {l.isCreator && <span className="league-creator-badge"> · Creator</span>}
+              </div>
+              <div className="league-card-chevron">›</div>
+            </button>
+          ))}
         </div>
       )}
 
-      {/* ── Challenges tab — list ── */}
+      {/* ════════════════════════════════════════════════════════════════════
+          LEAGUES TAB — CREATE VIEW
+          ════════════════════════════════════════════════════════════════════ */}
+      {tab === 'Leagues' && leagueView === 'create' && (
+        <div className="tab-content">
+          <div className="league-detail-header">
+            <button className="sc-back-btn" onClick={() => setLeagueView('list')}>‹ Leagues</button>
+          </div>
+
+          <p className="league-form-label">League Name</p>
+          <input
+            className="text-input league-name-input"
+            placeholder="e.g. Work Friends"
+            value={createName}
+            onChange={e => setCreateName(e.target.value)}
+            maxLength={100}
+          />
+
+          {friendsForCreate.length > 0 && (
+            <>
+              <p className="league-form-label">Add Friends</p>
+              <div className="league-member-picker">
+                {friendsForCreate.map(f => {
+                  const checked = createSelected.has(f.userId);
+                  return (
+                    <label key={f.userId} className="league-picker-row">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setCreateSelected(prev => {
+                            const next = new Set(prev);
+                            checked ? next.delete(f.userId) : next.add(f.userId);
+                            return next;
+                          });
+                        }}
+                      />
+                      <span className="league-picker-name">{f.displayName}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <button
+            className="btn-primary"
+            onClick={handleCreateLeague}
+            disabled={!createName.trim() || leagueBusy}
+          >
+            {leagueBusy ? 'Creating…' : 'Create League'}
+          </button>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          LEAGUES TAB — DETAIL VIEW
+          ════════════════════════════════════════════════════════════════════ */}
+      {tab === 'Leagues' && leagueView === 'detail' && selectedLeague && (
+        <div className="tab-content">
+          <div className="league-detail-header">
+            <button className="sc-back-btn" onClick={() => { setLeagueView('list'); setSelectedLeague(null); }}>
+              ‹ Leagues
+            </button>
+          </div>
+
+          <h2 className="league-detail-title">{selectedLeague.name}</h2>
+
+          {/* Leaderboard */}
+          <div className="period-toggle">
+            {['week', 'month', 'alltime'].map(p => (
+              <button key={p} className={`period-btn${detailPeriod === p ? ' active' : ''}`}
+                onClick={() => setDetailPeriod(p)}>
+                {p === 'alltime' ? 'All Time' : p === 'week' ? 'Week' : 'Month'}
+              </button>
+            ))}
+          </div>
+
+          {lbLoading
+            ? <p className="empty-state">Loading…</p>
+            : (
+              <table className="lb-table">
+                <thead><tr><th>#</th><th>Player</th><th>Wins</th><th>Best</th><th></th></tr></thead>
+                <tbody>
+                  {leaderboard.map(row => {
+                    const member = selectedLeague.members.find(m => m.userId === row.userId);
+                    const isSelf = row.userId === user.id;
+                    const isFriend = member?.isFriend ?? true;
+                    const hasPending = pendingRequests.has(row.userId) || member?.hasPendingRequest;
+                    return (
+                      <tr key={row.userId} className={isSelf ? 'lb-me' : ''}>
+                        <td>{row.rank}</td>
+                        <td>{row.displayName}</td>
+                        <td>{row.wins}</td>
+                        <td>{row.bestMoves ?? '—'}</td>
+                        <td>
+                          {!isSelf && !isFriend && (
+                            <button
+                              className={`league-add-friend-btn${hasPending ? ' league-add-friend-btn--sent' : ''}`}
+                              onClick={() => !hasPending && handleSendFriendRequest(row.userId)}
+                              disabled={hasPending}
+                            >
+                              {hasPending ? 'Requested' : '+ Friend'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {leaderboard.length === 0 && !lbLoading && (
+                    <tr><td colSpan={5} className="lb-empty">No data for this period.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            )
+          }
+
+          {/* Members management */}
+          <div className="league-members-section">
+            <div className="league-members-header">
+              <span>Members</span>
+              {selectedLeague.isCreator && (
+                <button className="league-add-member-btn"
+                  onClick={() => { setAddSelected(new Set()); setLeagueView('add-members'); }}>
+                  + Add
+                </button>
+              )}
+            </div>
+            {selectedLeague.members.map(m => (
+              <div key={m.userId} className="league-member-row">
+                <span className="league-member-name">
+                  {m.displayName}
+                  {m.userId === user.id && <span className="league-you-badge"> (you)</span>}
+                  {m.userId === selectedLeague.creatorUserId && m.userId !== user.id && (
+                    <span className="league-creator-badge"> ★</span>
+                  )}
+                </span>
+                {selectedLeague.isCreator && m.userId !== user.id && (
+                  <button className="btn-danger-sm"
+                    onClick={() => handleRemoveLeagueMember(selectedLeague.id, m.userId)}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Danger zone */}
+          {selectedLeague.isCreator && (
+            <div className="league-danger-zone">
+              <button className="league-delete-btn"
+                onClick={() => handleDeleteLeague(selectedLeague.id)}>
+                Delete League
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          LEAGUES TAB — ADD MEMBERS VIEW
+          ════════════════════════════════════════════════════════════════════ */}
+      {tab === 'Leagues' && leagueView === 'add-members' && selectedLeague && (
+        <div className="tab-content">
+          <div className="league-detail-header">
+            <button className="sc-back-btn" onClick={() => setLeagueView('detail')}>‹ Back</button>
+          </div>
+
+          <p className="league-form-label">Add friends to <strong>{selectedLeague.name}</strong></p>
+
+          {addableFriends.length === 0
+            ? <p className="empty-state">All your friends are already in this league.</p>
+            : (
+              <div className="league-member-picker">
+                {addableFriends.map(f => {
+                  const checked = addSelected.has(f.userId);
+                  return (
+                    <label key={f.userId} className="league-picker-row">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setAddSelected(prev => {
+                            const next = new Set(prev);
+                            checked ? next.delete(f.userId) : next.add(f.userId);
+                            return next;
+                          });
+                        }}
+                      />
+                      <span className="league-picker-name">{f.displayName}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )
+          }
+
+          <button
+            className="btn-primary"
+            onClick={handleAddMembers}
+            disabled={addSelected.size === 0 || leagueBusy}
+          >
+            {leagueBusy ? 'Adding…' : `Add ${addSelected.size > 0 ? addSelected.size : ''} Member${addSelected.size !== 1 ? 's' : ''}`}
+          </button>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          CHALLENGES TAB
+          ════════════════════════════════════════════════════════════════════ */}
       {tab === 'Challenges' && !selectedChallenge && (
         <div className="tab-content">
           {challenges.length === 0 && !detailLoading && (
-            <p className="empty-state">
-              No challenges yet. Win a deal in your Profile and tap ⚔ Challenge Friends.
-            </p>
+            <p className="empty-state">No challenges yet. Win a deal and tap ⚔ Challenge Friends.</p>
           )}
           {challenges.map(c => {
             const isNew = !c.isCreator && !c.userHasWon && c.status === 'active';
             return (
               <button key={c.id} className="sc-card" onClick={() => openChallenge(c.id)}>
                 <div className="sc-card-top">
-                  <span className="sc-mode-badge">
-                    {c.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
-                  </span>
+                  <span className="sc-mode-badge">{c.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}</span>
                   <span className={`sc-status-badge sc-status-badge--${c.status}`}>
                     {c.status === 'active' ? 'Active' : 'Ended'}
                   </span>
                   {isNew && <span className="sc-new-badge">New</span>}
                 </div>
                 <div className="sc-card-mid">
-                  <span className="sc-creator">
-                    {c.isCreator ? 'You' : c.creatorDisplayName}
-                  </span>
+                  <span className="sc-creator">{c.isCreator ? 'You' : c.creatorDisplayName}</span>
                   <span className="sc-date">{formatDate(c.createdAt)}</span>
                 </div>
-                <div className="sc-card-bot">
-                  {c.winnerCount}/{c.participantCount + 1} completed · ›
-                </div>
+                <div className="sc-card-bot">{c.winnerCount}/{c.participantCount + 1} completed · ›</div>
               </button>
             );
           })}
         </div>
       )}
 
-      {/* ── Challenges tab — detail ── */}
       {tab === 'Challenges' && selectedChallenge && (() => {
         const ch = selectedChallenge;
-        const isCreator   = ch.creatorUserId === user?.id;
-        const myEntry     = ch.leaderboard.find(e => e.userId === user?.id);
-        const userHasWon  = myEntry?.moves != null;
-        const canPlay     = ch.status === 'active' && !userHasWon;
-
+        const isCreator  = ch.creatorUserId === user?.id;
+        const myEntry    = ch.leaderboard.find(e => e.userId === user?.id);
+        const userHasWon = myEntry?.moves != null;
+        const canPlay    = ch.status === 'active' && !userHasWon;
         return (
           <div className="tab-content sc-detail">
             <div className="sc-detail-header">
-              <button className="sc-back-btn" onClick={() => setSelectedChallenge(null)}>
-                ‹ Challenges
-              </button>
+              <button className="sc-back-btn" onClick={() => setSelectedChallenge(null)}>‹ Challenges</button>
               <span className={`sc-status-badge sc-status-badge--${ch.status}`}>
                 {ch.status === 'active' ? 'Active' : 'Ended'}
               </span>
             </div>
-
             <div className="sc-detail-meta">
-              <span className="sc-mode-badge">
-                {ch.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
-              </span>
+              <span className="sc-mode-badge">{ch.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}</span>
               <span className="sc-meta-text">
                 Created by <strong>{isCreator ? 'you' : ch.creatorDisplayName}</strong> on {formatDate(ch.createdAt)}
               </span>
             </div>
-
             {myEntry && userHasWon && (
               <div className="sc-my-rank-bar">
-                Your rank: <strong>#{myEntry.rank}</strong>
-                {' · '}{myEntry.moves} moves · {formatTime(myEntry.timeSeconds)}
+                Your rank: <strong>#{myEntry.rank}</strong> · {myEntry.moves} moves · {formatTime(myEntry.timeSeconds)}
               </div>
             )}
-
             <div className="sc-action-row">
               {canPlay && (
-                <button className="btn-primary sc-play-btn" onClick={() => handlePlayChallenge(ch)}>
+                <button className="btn-primary sc-play-btn"
+                  onClick={() => navigate('/game', { state: { replayHandId: ch.handId, replayDrawMode: ch.drawMode } })}>
                   ▶ Play Challenge
                 </button>
               )}
@@ -500,25 +809,14 @@ export function Friends() {
                 </button>
               )}
             </div>
-
             <table className="lb-table sc-lb-table">
-              <thead>
-                <tr><th>#</th><th>Player</th><th>Moves</th><th>Time</th></tr>
-              </thead>
+              <thead><tr><th>#</th><th>Player</th><th>Moves</th><th>Time</th></tr></thead>
               <tbody>
                 {ch.leaderboard.map(row => (
-                  <tr
-                    key={row.userId}
-                    className={[
-                      row.userId === user?.id ? 'lb-me' : '',
-                      row.moves == null ? 'sc-lb-unplayed' : '',
-                    ].filter(Boolean).join(' ')}
-                  >
+                  <tr key={row.userId}
+                    className={[row.userId === user?.id ? 'lb-me' : '', row.moves == null ? 'sc-lb-unplayed' : ''].filter(Boolean).join(' ')}>
                     <td>{row.moves != null ? row.rank : '—'}</td>
-                    <td>
-                      {row.displayName}
-                      {row.isCreator && <span className="sc-creator-badge"> ★</span>}
-                    </td>
+                    <td>{row.displayName}{row.isCreator && <span className="sc-creator-badge"> ★</span>}</td>
                     <td>{row.moves ?? '—'}</td>
                     <td>{formatTime(row.timeSeconds)}</td>
                   </tr>
@@ -530,9 +828,7 @@ export function Friends() {
       })()}
 
       {tab === 'Challenges' && detailLoading && (
-        <div className="tab-content">
-          <p className="empty-state">Loading challenge…</p>
-        </div>
+        <div className="tab-content"><p className="empty-state">Loading challenge…</p></div>
       )}
     </div>
   );

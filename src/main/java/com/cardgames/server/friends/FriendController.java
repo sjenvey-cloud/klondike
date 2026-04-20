@@ -11,8 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import org.springframework.beans.factory.annotation.Value;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,17 +24,20 @@ public class FriendController {
     @Value("${app.base-url}")
     private String appBaseUrl;
 
-    private final FriendRepository       friendRepository;
-    private final FriendInviteRepository inviteRepository;
-    private final UserRepository         userRepository;
-    private final SessionRepository      sessionRepository;
+    private final FriendRepository        friendRepository;
+    private final FriendInviteRepository  inviteRepository;
+    private final FriendRequestRepository requestRepository;
+    private final UserRepository          userRepository;
+    private final SessionRepository       sessionRepository;
 
     public FriendController(FriendRepository friendRepository,
                             FriendInviteRepository inviteRepository,
+                            FriendRequestRepository requestRepository,
                             UserRepository userRepository,
                             SessionRepository sessionRepository) {
-        this.friendRepository = friendRepository;
+        this.friendRepository  = friendRepository;
         this.inviteRepository  = inviteRepository;
+        this.requestRepository = requestRepository;
         this.userRepository    = userRepository;
         this.sessionRepository = sessionRepository;
     }
@@ -188,5 +192,98 @@ public class FriendController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inviter not found"));
 
         return ResponseEntity.ok(new InvitePreviewResponse(token, inviter.getDisplayName()));
+    }
+
+    // ── POST /api/v1/friends/requests — send a direct friend request ───────
+    // Used when adding a league member who isn't already a friend.
+    // If the other user has already sent a request, auto-accepts into a friendship.
+
+    @PostMapping("/requests")
+    public ResponseEntity<Void> sendFriendRequest(
+            @RequestBody Map<String, Integer> body, Authentication auth) {
+
+        int userId   = (Integer) auth.getPrincipal();
+        int targetId = body.get("targetUserId");
+
+        if (userId == targetId) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot add yourself");
+        }
+        if (friendRepository.findFriendship(userId, targetId).isPresent()) {
+            return ResponseEntity.noContent().build(); // already friends — idempotent
+        }
+
+        // If the target already sent us a request, auto-accept both sides
+        Optional<FriendRequest> reverse = requestRepository.findByRequesterIdAndRequesteeId(targetId, userId);
+        if (reverse.isPresent()) {
+            friendRepository.save(new Friend(userId, targetId));
+            requestRepository.delete(reverse.get());
+            requestRepository.findByRequesterIdAndRequesteeId(userId, targetId)
+                .ifPresent(requestRepository::delete);
+            return ResponseEntity.noContent().build();
+        }
+
+        // Idempotent: don't create a duplicate
+        if (!requestRepository.existsByRequesterIdAndRequesteeId(userId, targetId)) {
+            requestRepository.save(new FriendRequest(userId, targetId));
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── GET /api/v1/friends/requests/received ─────────────────────────────
+
+    @GetMapping("/requests/received")
+    public ResponseEntity<List<FriendRequestEntry>> getReceivedRequests(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+
+        List<FriendRequestEntry> result = requestRepository.findByRequesteeId(userId).stream()
+            .map(r -> {
+                User requester = userRepository.findById(r.getRequesterId()).orElse(null);
+                String name = requester != null ? requester.getDisplayName() : "Unknown";
+                return new FriendRequestEntry(r.getId(), r.getRequesterId(), name, r.getCreatedAt());
+            })
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
+    // ── POST /api/v1/friends/requests/{id}/accept ─────────────────────────
+
+    @PostMapping("/requests/{id}/accept")
+    public ResponseEntity<Void> acceptFriendRequest(
+            @PathVariable int id, Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        FriendRequest request = requestRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
+
+        if (request.getRequesteeId() != userId) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your request");
+        }
+
+        if (friendRepository.findFriendship(request.getRequesterId(), userId).isEmpty()) {
+            friendRepository.save(new Friend(request.getRequesterId(), userId));
+        }
+        requestRepository.delete(request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── DELETE /api/v1/friends/requests/{id} — decline or cancel ──────────
+
+    @DeleteMapping("/requests/{id}")
+    public ResponseEntity<Void> deleteFriendRequest(
+            @PathVariable int id, Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        FriendRequest request = requestRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
+
+        if (request.getRequesteeId() != userId && request.getRequesterId() != userId) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your request");
+        }
+
+        requestRepository.delete(request);
+        return ResponseEntity.noContent().build();
     }
 }

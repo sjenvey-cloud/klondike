@@ -125,6 +125,21 @@ export const getSentInvites     = ()           => get('/friends/invites');
 export const deleteSentInvite   = (id)         => del(`/friends/invites/${id}`);
 export const previewInvite      = (token)      => get(`/friends/invites/preview/${token}`);
 
+// Friend requests (direct in-app, used from league member list)
+export const sendFriendRequest          = (targetUserId) => post('/friends/requests', { targetUserId });
+export const getReceivedFriendRequests  = ()             => get('/friends/requests/received');
+export const acceptFriendRequest        = (id)           => post(`/friends/requests/${id}/accept`, {});
+export const declineFriendRequest       = (id)           => del(`/friends/requests/${id}`);
+
+// Custom named leagues
+export const getCustomLeagues       = ()                    => get('/custom-leagues');
+export const createCustomLeague     = (name, memberIds)     => post('/custom-leagues', { name, memberIds });
+export const getCustomLeagueDetail  = (id)                  => get(`/custom-leagues/${id}`);
+export const getCustomLeaderboard   = (id, period = 'week') => get(`/custom-leagues/${id}/leaderboard?period=${period}`);
+export const deleteCustomLeague     = (id)                  => del(`/custom-leagues/${id}`);
+export const addLeagueMembers       = (id, userIds)         => post(`/custom-leagues/${id}/members`, { userIds });
+export const removeLeagueMember     = (id, userId)          => del(`/custom-leagues/${id}/members/${userId}`);
+
 // ── Challenges (legacy 1-to-1) ────────────────────────────────────────────
 export const getChallengeInbox  = ()                      => get('/challenges/inbox');
 export const createChallenge    = (sessionId, challenged) => post('/challenges', { sessionId, challengedUserId: challenged });
