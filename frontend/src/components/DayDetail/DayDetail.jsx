@@ -163,29 +163,25 @@ export function DayDetail({ date, onClose }) {
                   >
                     <div className="day-detail-session-row">
                       <div className="day-detail-session-left">
-                        <span className="day-detail-session-time">
-                          {formatTimestamp(s.startedAt || s.createdAt)}
-                        </span>
                         <span className="day-detail-mode-badge">
                           {s.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
                         </span>
+                        {s.moves != null && (
+                          <span className="day-detail-session-meta" style={{ gap: 0 }}>
+                            {s.moves} moves · {formatTime(s.timeSeconds ?? s.duration)}
+                          </span>
+                        )}
                       </div>
                       <div className="day-detail-session-right">
-                        <span className={`day-detail-status day-detail-status--${status}`}>
-                          {STATUS_LABELS[status] || status}
-                        </span>
+                        {isWon && <span className="day-detail-won-check">✓</span>}
                         {othersWon && (
                           <span className="day-detail-solved-badge" title={`${winCount} player${winCount === 1 ? '' : 's'} solved this deal`}>
                             <GroupIcon className="day-detail-solved-icon" />
                             {winCount}
                           </span>
                         )}
+                        <span className="day-detail-chevron">›</span>
                       </div>
-                    </div>
-                    <div className="day-detail-session-row day-detail-session-meta">
-                      <span>{s.moves ?? s.moveCount ?? '—'} moves</span>
-                      <span>{formatTime(s.timeSeconds ?? s.duration)}</span>
-                      <span className="day-detail-chevron">›</span>
                     </div>
                   </button>
                 );

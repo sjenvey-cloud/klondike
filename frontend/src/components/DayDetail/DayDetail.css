@@ -4,35 +4,31 @@
   background: rgba(0, 0, 0, 0.55);
   z-index: 1000;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  padding: 16px;
 }
 
 .day-detail-drawer {
   width: 100%;
   max-width: 480px;
   background: var(--color-surface);
-  border-radius: 16px 16px 0 0;
-  border-top: 1px solid var(--color-border);
-  padding: 0 0 env(safe-area-inset-bottom, 0);
-  animation: drawerSlideUp 0.25s ease-out;
-  max-height: 80vh;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  animation: drawerFadeIn 0.2s ease-out;
+  max-height: 78vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Detail panel: use a fixed height so flex children get a definite
-   pixel value — max-height alone is not enough for overflow-y: auto
-   to kick in on the body in some mobile browsers. */
 .day-detail-drawer--detail {
-  height: 92vh;
-  max-height: 92vh;
+  max-height: 90vh;
 }
 
-@keyframes drawerSlideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+@keyframes drawerFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* ── Header ── */
@@ -186,7 +182,7 @@
   padding: 1px 5px;
 }
 
-/* ── Status badges ── */
+/* ── Status badges (used in Panel 2 "Your attempt" row only) ── */
 .day-detail-status {
   font-family: var(--font-ui);
   font-size: 11px;
@@ -203,14 +199,18 @@
   background: var(--color-accent-muted);
 }
 
-.day-detail-status--abandoned {
+.day-detail-status--abandoned,
+.day-detail-status--active {
   color: var(--color-text-secondary);
   background: var(--color-surface);
 }
 
-.day-detail-status--active {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.12);
+/* ── Win checkmark (Panel 1 list only) ── */
+.day-detail-won-check {
+  color: var(--color-accent);
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 /* ── "N players solved" badge ── */
