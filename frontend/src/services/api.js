@@ -121,6 +121,9 @@ export const getFriends         = ()           => get('/friends');
 export const createFriendInvite = ()           => post('/friends/invite', {});
 export const acceptFriendInvite = (token)      => post(`/friends/invite/${token}/accept`, {});
 export const removeFriend       = (friendId)   => del(`/friends/${friendId}`);
+export const getSentInvites     = ()           => get('/friends/invites');
+export const deleteSentInvite   = (id)         => del(`/friends/invites/${id}`);
+export const previewInvite      = (token)      => get(`/friends/invites/preview/${token}`);
 
 // ── Challenges (legacy 1-to-1) ────────────────────────────────────────────
 export const getChallengeInbox  = ()                      => get('/challenges/inbox');

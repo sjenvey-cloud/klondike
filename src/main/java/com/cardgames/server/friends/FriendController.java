@@ -124,4 +124,69 @@ public class FriendController {
         friendRepository.delete(friendship);
         return ResponseEntity.noContent().build();
     }
+
+    // ── GET /api/v1/friends/invites — list my pending sent invites ────────
+
+    @GetMapping("/invites")
+    public ResponseEntity<List<SentInviteResponse>> listSentInvites(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+        List<FriendInvite> invites = inviteRepository
+            .findByInviterIdAndAcceptedFalseAndExpiresAtAfterOrderByCreatedAtDesc(
+                userId, LocalDateTime.now());
+
+        List<SentInviteResponse> result = invites.stream()
+            .map(i -> new SentInviteResponse(
+                i.getId(),
+                i.getToken(),
+                appBaseUrl + "/friends/accept?token=" + i.getToken(),
+                i.getExpiresAt(),
+                i.getCreatedAt()))
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
+    // ── DELETE /api/v1/friends/invites/{id} — cancel a sent invite ────────
+
+    @DeleteMapping("/invites/{id}")
+    public ResponseEntity<Void> deleteInvite(
+            @PathVariable int id, Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        FriendInvite invite = inviteRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found"));
+
+        if (invite.getInviterId() != userId) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your invite");
+        }
+
+        inviteRepository.delete(invite);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── GET /api/v1/friends/invites/preview/{token} — preview without accepting
+
+    @GetMapping("/invites/preview/{token}")
+    public ResponseEntity<InvitePreviewResponse> previewInvite(
+            @PathVariable String token, Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        FriendInvite invite = inviteRepository.findByToken(token)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found"));
+
+        if (invite.isAccepted()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Invite already accepted");
+        }
+        if (invite.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Invite expired");
+        }
+        if (invite.getInviterId() == userId) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot accept your own invite");
+        }
+
+        User inviter = userRepository.findById(invite.getInviterId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inviter not found"));
+
+        return ResponseEntity.ok(new InvitePreviewResponse(token, inviter.getDisplayName()));
+    }
 }
