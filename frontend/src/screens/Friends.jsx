@@ -342,7 +342,7 @@ export function Friends() {
           >
             {t}
             {t === 'Challenges' && newChallengeCount > 0 && (
-              <span className="badge">{newChallengeCount}</span>
+              <span className="tab-heart-badge" aria-label={`${newChallengeCount} new`}>♥</span>
             )}
           </button>
         ))}

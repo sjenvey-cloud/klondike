@@ -14,7 +14,7 @@ import { Settings } from './screens/Settings';
 import { Login } from './screens/Login';
 import { AcceptInvite } from './screens/AcceptInvite';
 import { PreferencesContext } from './contexts/PreferencesContext';
-import { getChallengeInbox } from './services/api';
+import { getPendingChallengeCount } from './services/api';
 import './styles/tokens.css';
 import './index.css';
 
@@ -32,21 +32,15 @@ function AppInner() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    const fetch = () => {
-      getChallengeInbox()
+    const poll = () => {
+      getPendingChallengeCount()
         .then(data => {
-          if (!cancelled) {
-            const count = Array.isArray(data) ? data.length : (data?.count ?? 0);
-            setChallengeCount(count);
-          }
+          if (!cancelled) setChallengeCount(data?.count ?? 0);
         })
-        .catch(err => {
-          // 404 is expected while the challenges backend is not yet deployed — ignore silently
-          if (err?.message !== '404') console.error('challengeInbox poll error', err);
-        });
+        .catch(() => {}); // silently ignore auth/network errors
     };
-    fetch();
-    const interval = setInterval(fetch, 60000);
+    poll();
+    const interval = setInterval(poll, 60000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [user]);
 

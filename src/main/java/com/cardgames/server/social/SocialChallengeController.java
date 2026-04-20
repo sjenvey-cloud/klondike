@@ -1,5 +1,6 @@
 package com.cardgames.server.social;
 
+import com.cardgames.server.customleague.CustomLeagueMemberRepository;
 import com.cardgames.server.friends.Friend;
 import com.cardgames.server.friends.FriendRepository;
 import com.cardgames.server.session.Session;
@@ -26,23 +27,30 @@ public class SocialChallengeController {
     private final SessionRepository                    sessionRepo;
     private final UserRepository                       userRepo;
     private final FriendRepository                     friendRepo;
+    private final CustomLeagueMemberRepository         leagueMemberRepo;
 
     public SocialChallengeController(
             SocialChallengeRepository challengeRepo,
             SocialChallengeParticipantRepository participantRepo,
             SessionRepository sessionRepo,
             UserRepository userRepo,
-            FriendRepository friendRepo) {
-        this.challengeRepo  = challengeRepo;
-        this.participantRepo = participantRepo;
-        this.sessionRepo    = sessionRepo;
-        this.userRepo       = userRepo;
-        this.friendRepo     = friendRepo;
+            FriendRepository friendRepo,
+            CustomLeagueMemberRepository leagueMemberRepo) {
+        this.challengeRepo    = challengeRepo;
+        this.participantRepo  = participantRepo;
+        this.sessionRepo      = sessionRepo;
+        this.userRepo         = userRepo;
+        this.friendRepo       = friendRepo;
+        this.leagueMemberRepo = leagueMemberRepo;
     }
 
     /**
      * POST /api/v1/social/challenges
-     * Create a group challenge from a won session; invites all current friends.
+     * Create a group challenge from a won session.
+     *
+     * If invitedUserIds is provided (even empty), only those users are invited.
+     * If invitedLeagueIds is also provided, all members of those leagues are merged in.
+     * If both are null, falls back to inviting all current friends (backward compat).
      */
     @Transactional
     @PostMapping("/challenges")
@@ -64,12 +72,33 @@ public class SocialChallengeController {
             userId, session.getHandId(), session.getId(), session.getDrawMode());
         challenge = challengeRepo.save(challenge);
 
-        // Invite all current friends as participants
-        List<Friend> friends = friendRepo.findAllByUserId(userId);
-        for (Friend f : friends) {
-            int friendId = f.otherUserId(userId);
-            participantRepo.save(new SocialChallengeParticipant(challenge.getId(), friendId));
+        // Build the set of participant user IDs
+        Set<Integer> inviteeIds = new LinkedHashSet<>();
+
+        if (req.invitedUserIds() == null && req.invitedLeagueIds() == null) {
+            // Legacy / from game-win screen: invite all friends
+            friendRepo.findAllByUserId(userId)
+                .forEach(f -> inviteeIds.add(f.otherUserId(userId)));
+        } else {
+            // Explicit selection from profile calendar
+            if (req.invitedUserIds() != null) {
+                inviteeIds.addAll(req.invitedUserIds());
+            }
+            if (req.invitedLeagueIds() != null) {
+                for (int leagueId : req.invitedLeagueIds()) {
+                    leagueMemberRepo.findByLeagueId(leagueId).stream()
+                        .map(m -> m.getUserId())
+                        .forEach(inviteeIds::add);
+                }
+            }
         }
+
+        // Never invite the creator as a participant
+        inviteeIds.remove(userId);
+
+        int finalId = challenge.getId();
+        inviteeIds.forEach(id ->
+            participantRepo.save(new SocialChallengeParticipant(finalId, id)));
 
         User creator = userRepo.findById(userId).orElse(null);
         String creatorName = creator != null ? creator.getDisplayName() : "Unknown";
@@ -79,8 +108,32 @@ public class SocialChallengeController {
             challenge.getHandId(), challenge.getDrawMode(),
             SocialChallenge.STATUS_ACTIVE,
             challenge.getCreatedAt(), null,
-            friends.size(), 0, true, true
+            inviteeIds.size(), 0, true, true
         ));
+    }
+
+    /**
+     * GET /api/v1/social/challenges/pending-count
+     * Number of active challenges where the user is a participant but hasn't won yet.
+     * Used to drive the notification badge on the nav Social tab.
+     */
+    @GetMapping("/challenges/pending-count")
+    public ResponseEntity<Map<String, Integer>> getPendingCount(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+
+        List<SocialChallenge> participating =
+            challengeRepo.findChallengesWhereParticipant(userId);
+
+        long count = participating.stream()
+            .filter(c -> SocialChallenge.STATUS_ACTIVE.equals(c.getStatus()))
+            .filter(c -> {
+                // Has the user won on this hand already?
+                List<Session> won = sessionRepo.findWonSessionsByHandId(c.getHandId());
+                return won.stream().noneMatch(s -> s.getUserId() == userId);
+            })
+            .count();
+
+        return ResponseEntity.ok(Map.of("count", (int) count));
     }
 
     /**

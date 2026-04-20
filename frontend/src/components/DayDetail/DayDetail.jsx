@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../App';
-import { getSessionsByDate, getHandLeaderboard, createSocialChallenge } from '../../services/api';
+import {
+  getSessionsByDate, getHandLeaderboard,
+  createSocialChallenge, getFriends, getCustomLeagues,
+} from '../../services/api';
 import './DayDetail.css';
 
 function formatTime(seconds) {
@@ -14,7 +17,6 @@ function formatTime(seconds) {
 function formatTimestamp(isoString) {
   if (!isoString) return '—';
   try {
-    // Server returns LocalDateTime without timezone suffix; treat as UTC
     const utc = isoString.endsWith('Z') ? isoString : isoString + 'Z';
     const d = new Date(utc);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -30,7 +32,6 @@ const STATUS_LABELS = {
   complete:  'Won',
 };
 
-// Trophy icon — inline SVG, no external dependency
 function TrophyIcon({ className }) {
   return (
     <svg className={className} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -41,7 +42,6 @@ function TrophyIcon({ className }) {
   );
 }
 
-// People/group icon for "others solved"
 function GroupIcon({ className }) {
   return (
     <svg className={className} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -56,26 +56,39 @@ function GroupIcon({ className }) {
 export function DayDetail({ date, onClose }) {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [sessions, setSessions]         = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [handWinCounts, setHandWinCounts] = useState({}); // handId → leaderboard entry count
+
+  // Panel 1 state
+  const [sessions, setSessions]             = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [handWinCounts, setHandWinCounts]   = useState({});
   const [selectedSession, setSelectedSession] = useState(null);
+
+  // Panel 2 state
   const [handLeaderboard, setHandLeaderboard] = useState([]);
-  const [lbLoading, setLbLoading]       = useState(false);
-  const [challenging, setChallenging]   = useState(false);
-  const [challengeMsg, setChallengeMsg] = useState(null);
+  const [lbLoading, setLbLoading]             = useState(false);
+
+  // Challenge picker state
+  const [pickerOpen, setPickerOpen]           = useState(false);
+  const [pickerLoading, setPickerLoading]     = useState(false);
+  const [pickerFriends, setPickerFriends]     = useState([]);
+  const [pickerLeagues, setPickerLeagues]     = useState([]);
+  const [pickerUserIds, setPickerUserIds]     = useState(new Set());
+  const [pickerLeagueIds, setPickerLeagueIds] = useState(new Set());
+  const [challenging, setChallenging]         = useState(false);
+  const [challengeMsg, setChallengeMsg]       = useState(null);
 
   // Load sessions for the day
   useEffect(() => {
     if (!user || !date) return;
     setLoading(true);
     setSelectedSession(null);
+    setPickerOpen(false);
+    setChallengeMsg(null);
     const tzOffset = -new Date().getTimezoneOffset();
     getSessionsByDate(user.id, date, tzOffset)
       .then(data => {
         const list = Array.isArray(data) ? data : [];
         setSessions(list);
-        // Pre-fetch leaderboard counts for unique hands
         const uniqueHandIds = [...new Set(list.map(s => s.handId).filter(Boolean))];
         if (uniqueHandIds.length > 0) {
           Promise.all(uniqueHandIds.map(id =>
@@ -93,11 +106,13 @@ export function DayDetail({ date, onClose }) {
       .finally(() => setLoading(false));
   }, [user, date]);
 
-  // Load full leaderboard when a session is selected
+  // Load leaderboard when a session is selected
   useEffect(() => {
     if (!selectedSession?.handId) return;
     setLbLoading(true);
     setHandLeaderboard([]);
+    setPickerOpen(false);
+    setChallengeMsg(null);
     getHandLeaderboard(selectedSession.handId)
       .then(lb => setHandLeaderboard(Array.isArray(lb) ? lb : []))
       .catch(() => setHandLeaderboard([]))
@@ -115,19 +130,64 @@ export function DayDetail({ date, onClose }) {
     });
   }, [onClose, navigate]);
 
-  const handleChallenge = useCallback(async (session) => {
-    if (challenging) return;
+  // Open the challenge picker — loads friends + leagues
+  const handleOpenPicker = useCallback(async () => {
+    setPickerOpen(true);
+    setPickerLoading(true);
+    setPickerUserIds(new Set());
+    setPickerLeagueIds(new Set());
+    setChallengeMsg(null);
+    try {
+      const [friends, leagues] = await Promise.all([
+        getFriends().catch(() => []),
+        getCustomLeagues().catch(() => []),
+      ]);
+      setPickerFriends(Array.isArray(friends) ? friends : []);
+      setPickerLeagues(Array.isArray(leagues) ? leagues : []);
+    } finally {
+      setPickerLoading(false);
+    }
+  }, []);
+
+  const toggleUser = useCallback((id) => {
+    setPickerUserIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleLeague = useCallback((id) => {
+    setPickerLeagueIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleSendChallenge = useCallback(async () => {
+    if (challenging || !selectedSession) return;
     setChallenging(true);
     setChallengeMsg(null);
     try {
-      await createSocialChallenge(session.id);
-      setChallengeMsg('Challenge sent to your friends!');
+      await createSocialChallenge(
+        selectedSession.id,
+        [...pickerUserIds],
+        [...pickerLeagueIds],
+      );
+      const total = pickerUserIds.size + pickerLeagueIds.size;
+      setChallengeMsg(
+        total === 0
+          ? 'Challenge created!'
+          : `Challenge sent to ${total} recipient${total !== 1 ? 's' : ''}!`
+      );
+      setPickerOpen(false);
     } catch {
       setChallengeMsg('Could not create challenge. Try again.');
     } finally {
       setChallenging(false);
     }
-  }, [challenging]);
+  }, [challenging, selectedSession, pickerUserIds, pickerLeagueIds]);
 
   if (!date) return null;
 
@@ -167,7 +227,7 @@ export function DayDetail({ date, onClose }) {
                           {s.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
                         </span>
                         {s.moves != null && (
-                          <span className="day-detail-session-meta" style={{ gap: 0 }}>
+                          <span className="day-detail-session-meta">
                             {s.moves} moves · {formatTime(s.timeSeconds ?? s.duration)}
                           </span>
                         )}
@@ -195,12 +255,13 @@ export function DayDetail({ date, onClose }) {
           const s = selectedSession;
           const status = s.status || (s.won ? 'won' : 'abandoned');
           const isWon  = status === 'won' || status === 'complete';
+          const isDaily = !!s.isDaily;
           const myEntry = handLeaderboard.find(e => e.userId === user?.id);
 
           return (
             <>
               <div className="day-detail-header">
-                <button className="day-detail-back" onClick={() => setSelectedSession(null)} aria-label="Back">
+                <button className="day-detail-back" onClick={() => { setSelectedSession(null); setPickerOpen(false); setChallengeMsg(null); }} aria-label="Back">
                   ‹ Back
                 </button>
                 <span className="day-detail-mode-title">
@@ -215,16 +276,88 @@ export function DayDetail({ date, onClose }) {
                   ↺ Play This Hand
                 </button>
 
-                {/* Challenge friends — only shown for won sessions */}
-                {isWon && (
-                  <button
-                    className="day-detail-challenge-btn"
-                    onClick={() => handleChallenge(s)}
-                    disabled={challenging}
-                  >
-                    {challenging ? 'Sending…' : '⚔ Challenge Friends'}
-                  </button>
+                {/* Challenge — only for won, non-daily sessions */}
+                {isWon && !isDaily && (
+                  pickerOpen ? (
+                    <div className="day-detail-picker">
+                      <div className="day-detail-picker-header">
+                        <span className="day-detail-picker-title">⚔ Create Challenge</span>
+                        <button className="day-detail-picker-cancel" onClick={() => setPickerOpen(false)}>
+                          Cancel
+                        </button>
+                      </div>
+
+                      {pickerLoading ? (
+                        <p className="day-detail-empty">Loading…</p>
+                      ) : (
+                        <>
+                          {pickerFriends.length > 0 && (
+                            <>
+                              <p className="day-detail-picker-label">Friends</p>
+                              <div className="day-detail-picker-list">
+                                {pickerFriends.map(f => (
+                                  <label key={f.userId} className="day-detail-picker-row">
+                                    <input
+                                      type="checkbox"
+                                      checked={pickerUserIds.has(f.userId)}
+                                      onChange={() => toggleUser(f.userId)}
+                                    />
+                                    <span className="day-detail-picker-name">{f.displayName}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </>
+                          )}
+
+                          {pickerLeagues.length > 0 && (
+                            <>
+                              <p className="day-detail-picker-label">Leagues</p>
+                              <div className="day-detail-picker-list">
+                                {pickerLeagues.map(l => (
+                                  <label key={l.id} className="day-detail-picker-row">
+                                    <input
+                                      type="checkbox"
+                                      checked={pickerLeagueIds.has(l.id)}
+                                      onChange={() => toggleLeague(l.id)}
+                                    />
+                                    <span className="day-detail-picker-name">
+                                      {l.name}
+                                      <span className="day-detail-picker-meta"> · {l.memberCount} member{l.memberCount !== 1 ? 's' : ''}</span>
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </>
+                          )}
+
+                          {pickerFriends.length === 0 && pickerLeagues.length === 0 && (
+                            <p className="day-detail-empty">Add friends or create a league to challenge others.</p>
+                          )}
+
+                          <button
+                            className="btn-primary day-detail-picker-send"
+                            onClick={handleSendChallenge}
+                            disabled={challenging}
+                          >
+                            {challenging
+                              ? 'Sending…'
+                              : pickerUserIds.size + pickerLeagueIds.size === 0
+                                ? 'Send to Everyone'
+                                : `Challenge ${pickerUserIds.size + pickerLeagueIds.size} selected`}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      className="day-detail-challenge-btn"
+                      onClick={handleOpenPicker}
+                    >
+                      ⚔ Create Challenge
+                    </button>
+                  )
                 )}
+
                 {challengeMsg && (
                   <p className="day-detail-challenge-msg">{challengeMsg}</p>
                 )}

@@ -148,7 +148,10 @@ export const playChallenge      = (challengeId)           => post(`/challenges/$
 // ── Social group challenges ───────────────────────────────────────────────
 export const getSocialChallenges      = ()    => get('/social/challenges');
 export const getSocialChallengeDetail = (id)  => get(`/social/challenges/${id}`);
-export const createSocialChallenge    = (sessionId) => post('/social/challenges', { sessionId });
+export const getPendingChallengeCount = ()    => get('/social/challenges/pending-count');
+// invitedUserIds / invitedLeagueIds: explicit selections from picker, or null to invite all friends
+export const createSocialChallenge    = (sessionId, invitedUserIds = null, invitedLeagueIds = null) =>
+  post('/social/challenges', { sessionId, invitedUserIds, invitedLeagueIds });
 export const endSocialChallenge       = (id)  => post(`/social/challenges/${id}/end`, {});
 export const resumeSocialChallenge    = (id)  => post(`/social/challenges/${id}/resume`, {});
 

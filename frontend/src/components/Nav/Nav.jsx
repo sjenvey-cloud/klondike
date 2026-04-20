@@ -23,7 +23,9 @@ export function Nav({ challengeBadge = 0 }) {
           <span className="nav-tab-icon-wrap">
             <span className="nav-tab-icon">{tab.icon}</span>
             {tab.badge && challengeBadge > 0 && (
-              <span className="nav-badge">{challengeBadge > 99 ? '99+' : challengeBadge}</span>
+              <span className="nav-heart-badge" aria-label={`${challengeBadge} pending challenge${challengeBadge !== 1 ? 's' : ''}`}>
+                ♥
+              </span>
             )}
           </span>
           <span>{tab.label}</span>
