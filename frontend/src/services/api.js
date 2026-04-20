@@ -122,10 +122,17 @@ export const createFriendInvite = ()           => post('/friends/invite', {});
 export const acceptFriendInvite = (token)      => post(`/friends/invite/${token}/accept`, {});
 export const removeFriend       = (friendId)   => del(`/friends/${friendId}`);
 
-// ── Challenges ────────────────────────────────────────────────────────────
+// ── Challenges (legacy 1-to-1) ────────────────────────────────────────────
 export const getChallengeInbox  = ()                      => get('/challenges/inbox');
 export const createChallenge    = (sessionId, challenged) => post('/challenges', { sessionId, challengedUserId: challenged });
 export const playChallenge      = (challengeId)           => post(`/challenges/${challengeId}/play`, {});
+
+// ── Social group challenges ───────────────────────────────────────────────
+export const getSocialChallenges      = ()    => get('/social/challenges');
+export const getSocialChallengeDetail = (id)  => get(`/social/challenges/${id}`);
+export const createSocialChallenge    = (sessionId) => post('/social/challenges', { sessionId });
+export const endSocialChallenge       = (id)  => post(`/social/challenges/${id}/end`, {});
+export const resumeSocialChallenge    = (id)  => post(`/social/challenges/${id}/resume`, {});
 
 // ── League ────────────────────────────────────────────────────────────────
 export const getLeague = (period = 'weekly') =>

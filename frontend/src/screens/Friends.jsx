@@ -1,33 +1,60 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import {
-  getFriends, getLeague, getChallengeInbox,
-  createFriendInvite, removeFriend, playChallenge,
+  getFriends, getLeague,
+  createFriendInvite, removeFriend,
+  getSocialChallenges, getSocialChallengeDetail,
+  endSocialChallenge, resumeSocialChallenge,
 } from '../services/api';
 import './Friends.css';
 
 const TABS = ['Friends', 'League', 'Challenges'];
 
+function formatTime(s) {
+  if (!s) return '—';
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  } catch { return ''; }
+}
+
 export function Friends() {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [tab, setTab] = useState('Friends');
   const [friends, setFriends] = useState([]);
   const [league, setLeague] = useState([]);
-  const [inbox, setInbox] = useState([]);
   const [period, setPeriod] = useState('week');
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Social challenges
+  const [challenges, setChallenges]   = useState([]);
+  const [selectedChallenge, setSelectedChallenge] = useState(null); // SocialChallengeDetail
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [actionBusy, setActionBusy]   = useState(false);
+
   useEffect(() => {
     if (!user) return;
     getFriends().then(setFriends).catch(() => {});
-    getChallengeInbox().then(setInbox).catch(() => {});
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
     getLeague(period).then(setLeague).catch(() => {});
   }, [user, period]);
+
+  useEffect(() => {
+    if (!user || tab !== 'Challenges') return;
+    getSocialChallenges().then(setChallenges).catch(() => {});
+  }, [user, tab]);
 
   const handleInvite = async () => {
     const res = await createFriendInvite();
@@ -47,6 +74,63 @@ export function Friends() {
     setFriends(prev => prev.filter(f => f.userId !== friendId));
   };
 
+  const openChallenge = useCallback(async (id) => {
+    setDetailLoading(true);
+    setSelectedChallenge(null);
+    try {
+      const detail = await getSocialChallengeDetail(id);
+      setSelectedChallenge(detail);
+    } catch {
+      // failed to load detail
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  const handleEndChallenge = useCallback(async (id) => {
+    if (actionBusy) return;
+    setActionBusy(true);
+    try {
+      await endSocialChallenge(id);
+      // Refresh detail + list
+      const [detail, list] = await Promise.all([
+        getSocialChallengeDetail(id),
+        getSocialChallenges(),
+      ]);
+      setSelectedChallenge(detail);
+      setChallenges(list);
+    } catch {} finally {
+      setActionBusy(false);
+    }
+  }, [actionBusy]);
+
+  const handleResumeChallenge = useCallback(async (id) => {
+    if (actionBusy) return;
+    setActionBusy(true);
+    try {
+      await resumeSocialChallenge(id);
+      const [detail, list] = await Promise.all([
+        getSocialChallengeDetail(id),
+        getSocialChallenges(),
+      ]);
+      setSelectedChallenge(detail);
+      setChallenges(list);
+    } catch {} finally {
+      setActionBusy(false);
+    }
+  }, [actionBusy]);
+
+  const handlePlayChallenge = useCallback((challenge) => {
+    navigate('/game', {
+      state: { replayHandId: challenge.handId, replayDrawMode: challenge.drawMode },
+    });
+  }, [navigate]);
+
+  // Badge: active challenges where user hasn't won yet and is not creator
+  const newChallengeCount = challenges.filter(
+    c => c.status === 'active' && !c.isCreator && !c.userHasWon
+  ).length;
+
   if (!user) {
     return (
       <div className="screen friends-screen friends-center">
@@ -59,10 +143,14 @@ export function Friends() {
     <div className="screen friends-screen">
       <div className="tab-bar">
         {TABS.map(t => (
-          <button key={t} className={`tab-btn${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
+          <button
+            key={t}
+            className={`tab-btn${tab === t ? ' active' : ''}`}
+            onClick={() => { setTab(t); setSelectedChallenge(null); }}
+          >
             {t}
-            {t === 'Challenges' && inbox.length > 0 && (
-              <span className="badge">{inbox.length}</span>
+            {t === 'Challenges' && newChallengeCount > 0 && (
+              <span className="badge">{newChallengeCount}</span>
             )}
           </button>
         ))}
@@ -164,30 +252,139 @@ export function Friends() {
         </div>
       )}
 
-      {tab === 'Challenges' && (
+      {tab === 'Challenges' && !selectedChallenge && (
         <div className="tab-content">
-          {inbox.length === 0 && (
-            <p className="empty-state">No challenges yet.</p>
+          {challenges.length === 0 && !detailLoading && (
+            <p className="empty-state">
+              No challenges yet. Win a deal in your Profile and tap ⚔ Challenge Friends.
+            </p>
           )}
-          {inbox.map(c => (
-            <div key={c.challengeId} className="challenge-row">
-              <div>
-                <span className="friend-name">{c.challengerDisplayName}</span> challenged you!
-                <div className="challenge-stat">
-                  {c.moves} moves · {c.timeSeconds ? `${Math.floor(c.timeSeconds / 60)}:${String(c.timeSeconds % 60).padStart(2,'0')}` : '—'}
-                </div>
-              </div>
+          {challenges.map(c => {
+            const isNew = !c.isCreator && !c.userHasWon && c.status === 'active';
+            return (
               <button
-                className="btn-primary"
-                style={{ fontSize: 13, padding: '6px 12px' }}
-                onClick={() => playChallenge(c.challengeId)
-                  .then(res => { window.location.href = `/game?challengeSession=${res.sessionId}`; })
-                  .catch(() => {})}
+                key={c.id}
+                className="sc-card"
+                onClick={() => openChallenge(c.id)}
               >
-                Accept
+                <div className="sc-card-top">
+                  <span className="sc-mode-badge">
+                    {c.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
+                  </span>
+                  <span className={`sc-status-badge sc-status-badge--${c.status}`}>
+                    {c.status === 'active' ? 'Active' : 'Ended'}
+                  </span>
+                  {isNew && <span className="sc-new-badge">New</span>}
+                </div>
+                <div className="sc-card-mid">
+                  <span className="sc-creator">
+                    {c.isCreator ? 'You' : c.creatorDisplayName}
+                  </span>
+                  <span className="sc-date">{formatDate(c.createdAt)}</span>
+                </div>
+                <div className="sc-card-bot">
+                  {c.winnerCount}/{c.participantCount + 1} completed · ›
+                </div>
               </button>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === 'Challenges' && selectedChallenge && (() => {
+        const ch = selectedChallenge;
+        const isCreator = ch.creatorUserId === user?.id;
+        const myEntry = ch.leaderboard.find(e => e.userId === user?.id);
+        const userHasWon = myEntry?.moves != null;
+        const canPlay = ch.status === 'active' && !userHasWon;
+
+        return (
+          <div className="tab-content sc-detail">
+            <div className="sc-detail-header">
+              <button className="sc-back-btn" onClick={() => setSelectedChallenge(null)}>
+                ‹ Challenges
+              </button>
+              <span className={`sc-status-badge sc-status-badge--${ch.status}`}>
+                {ch.status === 'active' ? 'Active' : 'Ended'}
+              </span>
             </div>
-          ))}
+
+            <div className="sc-detail-meta">
+              <span className="sc-mode-badge">
+                {ch.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
+              </span>
+              <span className="sc-meta-text">
+                Created by <strong>{isCreator ? 'you' : ch.creatorDisplayName}</strong> on {formatDate(ch.createdAt)}
+              </span>
+            </div>
+
+            {myEntry && userHasWon && (
+              <div className="sc-my-rank-bar">
+                Your rank: <strong>#{myEntry.rank}</strong>
+                {' · '}{myEntry.moves} moves · {formatTime(myEntry.timeSeconds)}
+              </div>
+            )}
+
+            <div className="sc-action-row">
+              {canPlay && (
+                <button
+                  className="btn-primary sc-play-btn"
+                  onClick={() => handlePlayChallenge(ch)}
+                >
+                  ▶ Play Challenge
+                </button>
+              )}
+              {isCreator && ch.status === 'active' && (
+                <button
+                  className="sc-end-btn"
+                  onClick={() => handleEndChallenge(ch.id)}
+                  disabled={actionBusy}
+                >
+                  {actionBusy ? 'Updating…' : 'End Challenge'}
+                </button>
+              )}
+              {isCreator && ch.status === 'ended' && (
+                <button
+                  className="sc-resume-btn"
+                  onClick={() => handleResumeChallenge(ch.id)}
+                  disabled={actionBusy}
+                >
+                  {actionBusy ? 'Updating…' : 'Resume Challenge'}
+                </button>
+              )}
+            </div>
+
+            <table className="lb-table sc-lb-table">
+              <thead>
+                <tr><th>#</th><th>Player</th><th>Moves</th><th>Time</th></tr>
+              </thead>
+              <tbody>
+                {ch.leaderboard.map(row => (
+                  <tr
+                    key={row.userId}
+                    className={[
+                      row.userId === user?.id ? 'lb-me' : '',
+                      row.moves == null ? 'sc-lb-unplayed' : '',
+                    ].filter(Boolean).join(' ')}
+                  >
+                    <td>{row.moves != null ? row.rank : '—'}</td>
+                    <td>
+                      {row.displayName}
+                      {row.isCreator && <span className="sc-creator-badge"> ★</span>}
+                    </td>
+                    <td>{row.moves ?? '—'}</td>
+                    <td>{formatTime(row.timeSeconds)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
+      {tab === 'Challenges' && detailLoading && (
+        <div className="tab-content">
+          <p className="empty-state">Loading challenge…</p>
         </div>
       )}
     </div>

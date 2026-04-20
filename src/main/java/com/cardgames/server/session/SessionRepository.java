@@ -17,6 +17,9 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     boolean existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
         int userId, LocalDate dailyDate, String drawMode, String[] statuses);
 
+    // Social challenge: check if a user has won a specific hand
+    boolean existsByUserIdAndHandIdAndStatus(int userId, int handId, String status);
+
     // Daily leaderboard (top 50 ranked wins for a date+mode)
     @Query("SELECT s FROM Session s WHERE s.isDaily = true AND s.dailyDate = :date " +
            "AND s.drawMode = :drawMode AND s.isRanked = true AND s.status = 'won' " +

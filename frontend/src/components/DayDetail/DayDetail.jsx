@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../App';
-import { getSessionsByDate, getHandLeaderboard } from '../../services/api';
+import { getSessionsByDate, getHandLeaderboard, createSocialChallenge } from '../../services/api';
 import './DayDetail.css';
 
 function formatTime(seconds) {
@@ -62,6 +62,8 @@ export function DayDetail({ date, onClose }) {
   const [selectedSession, setSelectedSession] = useState(null);
   const [handLeaderboard, setHandLeaderboard] = useState([]);
   const [lbLoading, setLbLoading]       = useState(false);
+  const [challenging, setChallenging]   = useState(false);
+  const [challengeMsg, setChallengeMsg] = useState(null);
 
   // Load sessions for the day
   useEffect(() => {
@@ -112,6 +114,20 @@ export function DayDetail({ date, onClose }) {
       state: { replayHandId: session.handId, replayDrawMode: session.drawMode },
     });
   }, [onClose, navigate]);
+
+  const handleChallenge = useCallback(async (session) => {
+    if (challenging) return;
+    setChallenging(true);
+    setChallengeMsg(null);
+    try {
+      await createSocialChallenge(session.id);
+      setChallengeMsg('Challenge sent to your friends!');
+    } catch {
+      setChallengeMsg('Could not create challenge. Try again.');
+    } finally {
+      setChallenging(false);
+    }
+  }, [challenging]);
 
   if (!date) return null;
 
@@ -202,6 +218,20 @@ export function DayDetail({ date, onClose }) {
                 <button className="btn-primary day-detail-replay-btn" onClick={() => handleReplay(s)}>
                   ↺ Play This Hand
                 </button>
+
+                {/* Challenge friends — only shown for won sessions */}
+                {isWon && (
+                  <button
+                    className="day-detail-challenge-btn"
+                    onClick={() => handleChallenge(s)}
+                    disabled={challenging}
+                  >
+                    {challenging ? 'Sending…' : '⚔ Challenge Friends'}
+                  </button>
+                )}
+                {challengeMsg && (
+                  <p className="day-detail-challenge-msg">{challengeMsg}</p>
+                )}
 
                 {/* Your result summary */}
                 <div className="day-detail-your-result">

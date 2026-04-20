@@ -326,3 +326,36 @@
   color: var(--color-accent);
   font-weight: 600;
 }
+
+/* ── Challenge friends button ──────────────────────────────────────────── */
+.day-detail-challenge-btn {
+  width: 100%;
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.day-detail-challenge-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.day-detail-challenge-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.day-detail-challenge-msg {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin: 0;
+}

@@ -248,3 +248,198 @@
   color: var(--color-text-secondary);
   margin-top: 3px;
 }
+
+/* ── Social Challenges ────────────────────────────────────────────────────── */
+
+.sc-card {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+
+.sc-card:hover {
+  border-color: var(--color-accent);
+}
+
+.sc-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sc-card-mid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sc-card-bot {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.sc-creator {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.sc-date {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.sc-mode-badge {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--color-text-secondary);
+}
+
+.sc-status-badge {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.sc-status-badge--active {
+  background: color-mix(in srgb, #4caf50 15%, transparent);
+  color: #4caf50;
+  border: 1px solid #4caf5055;
+}
+
+.sc-status-badge--ended {
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.sc-new-badge {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--color-accent);
+  color: #000;
+  border-radius: 4px;
+  padding: 2px 6px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Challenge detail ─────────────────────────────────────────────────────── */
+
+.sc-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sc-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sc-back-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 0;
+  flex: 1;
+  text-align: left;
+}
+
+.sc-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sc-meta-text {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.sc-my-rank-bar {
+  background: var(--color-accent-muted);
+  border: 1px solid var(--color-accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.sc-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sc-play-btn {
+  flex: 1;
+  font-size: 14px;
+  padding: 10px 16px;
+}
+
+.sc-end-btn,
+.sc-resume-btn {
+  flex: 1;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.sc-end-btn:hover:not(:disabled),
+.sc-resume-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.sc-end-btn:disabled,
+.sc-resume-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.sc-lb-table {
+  margin-top: 4px;
+}
+
+.sc-lb-unplayed td {
+  color: var(--color-text-secondary) !important;
+  opacity: 0.6;
+}
+
+.sc-creator-badge {
+  font-size: 11px;
+  color: var(--color-accent);
+}
