@@ -53,6 +53,19 @@ function GroupIcon({ className }) {
   );
 }
 
+function CalendarIcon({ className }) {
+  return (
+    <svg className={className} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+      <path d="M1 7h14" stroke="currentColor" strokeWidth="1.4"/>
+      <path d="M5 1v4M11 1v4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <circle cx="5.5" cy="11" r="1" fill="currentColor"/>
+      <circle cx="8" cy="11" r="1" fill="currentColor"/>
+      <circle cx="10.5" cy="11" r="1" fill="currentColor"/>
+    </svg>
+  );
+}
+
 export function DayDetail({ date, onClose }) {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -233,6 +246,9 @@ export function DayDetail({ date, onClose }) {
                         )}
                       </div>
                       <div className="day-detail-session-right">
+                        {s.isDaily && (
+                          <CalendarIcon className="day-detail-daily-icon" title="Daily challenge" />
+                        )}
                         {isWon && <span className="day-detail-won-check">✓</span>}
                         {othersWon && (
                           <span className="day-detail-solved-badge" title={`${winCount} player${winCount === 1 ? '' : 's'} solved this deal`}>

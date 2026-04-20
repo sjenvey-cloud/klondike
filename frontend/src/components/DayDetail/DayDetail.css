@@ -213,6 +213,12 @@
   flex-shrink: 0;
 }
 
+/* ── Daily challenge calendar icon ── */
+.day-detail-daily-icon {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
 /* ── "N players solved" badge ── */
 .day-detail-solved-badge {
   display: flex;
