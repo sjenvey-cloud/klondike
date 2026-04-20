@@ -14,7 +14,7 @@ function formatTime(s) {
 }
 
 export function Profile() {
-  const { user, login, updateDisplayName } = useContext(AuthContext);
+  const { user, login, logout, updateDisplayName } = useContext(AuthContext);
   const { preferences } = useContext(PreferencesContext);
   const [profile, setProfile] = useState(null);
   const [nameInput, setNameInput] = useState('');
@@ -172,6 +172,10 @@ export function Profile() {
           />
           <button className="btn-primary" onClick={handleSaveName}>Save</button>
         </div>
+      </div>
+
+      <div className="profile-section profile-section--signout">
+        <button className="btn-signout" onClick={logout}>Sign Out</button>
       </div>
 
       {selectedDay && (
