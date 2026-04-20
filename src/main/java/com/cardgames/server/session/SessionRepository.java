@@ -92,6 +92,12 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "ORDER BY s.moves ASC, s.timeSeconds ASC")
     List<Session> findWonSessionsByHandId(@Param("handId") int handId);
 
+    // Calendar user-status: all sessions for a user across a set of hand IDs
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.handId IN :handIds")
+    List<Session> findByUserIdAndHandIdIn(
+        @Param("userId") int userId,
+        @Param("handIds") List<Integer> handIds);
+
     // DEV-164: league — wins + best moves for a set of userIds within a time window
     @Query("SELECT s.userId, COUNT(s.id), MIN(CASE WHEN s.status = 'won' THEN s.moves ELSE NULL END) " +
            "FROM Session s WHERE s.userId IN :userIds AND s.status = 'won' " +

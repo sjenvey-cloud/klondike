@@ -102,7 +102,8 @@ export const abandonSession = (id, moves, timeSeconds, turns) =>
 
 // ── Daily ─────────────────────────────────────────────────────────────────
 export const getDaily        = (drawMode = 'draw3') => get(`/daily?drawMode=${drawMode}`);
-export const getDailyByDate  = (date) => get(`/daily/${date}`);
+export const getDailyCalendar = (drawMode = 'draw3', months = 4) => get(`/daily/calendar?drawMode=${drawMode}&months=${months}`);
+export const getDailyByDate  = (date, drawMode = 'draw3') => get(`/daily/${date}?drawMode=${drawMode}`);
 
 // ── Leaderboard ───────────────────────────────────────────────────────────
 export const getDailyLeaderboard = (date, sort = 'moves', drawMode = 'draw3') =>

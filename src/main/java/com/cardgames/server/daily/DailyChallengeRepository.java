@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -15,4 +16,12 @@ public interface DailyChallengeRepository extends JpaRepository<DailyChallenge, 
     Optional<DailyChallenge> findByDateAndMode(
         @Param("date") LocalDate date,
         @Param("drawMode") String drawMode);
+
+    @Query("SELECT dc FROM DailyChallenge dc WHERE dc.drawMode = :drawMode " +
+           "AND dc.challengeDate >= :since AND dc.challengeDate <= :until " +
+           "ORDER BY dc.challengeDate DESC")
+    List<DailyChallenge> findByDrawModeAndDateRange(
+        @Param("drawMode") String drawMode,
+        @Param("since") LocalDate since,
+        @Param("until") LocalDate until);
 }

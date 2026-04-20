@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = {
     "http://localhost:4200",
@@ -185,6 +186,85 @@ public class DailyController {
         User user = userRepo.findById(userId).orElse(null);
         String name = (user != null) ? user.getDisplayName() : "Unknown";
         return ResponseEntity.ok(new LeaderboardEntry(idx + 1, userId, name, s.getMoves(), s.getTimeSeconds()));
+    }
+
+    /**
+     * GET /api/v1/daily/calendar?drawMode=draw3&months=4
+     * Returns daily challenge entries for the past N months, with the
+     * authenticated user's status for each day ("won" | "played" | "not_played").
+     * NOTE: must be declared before /daily/{date} so the literal "calendar"
+     * segment takes priority over the path-variable pattern.
+     */
+    @GetMapping("/daily/calendar")
+    public ResponseEntity<List<DailyCalendarEntry>> getDailyCalendar(
+            @RequestParam(defaultValue = "draw3") String drawMode,
+            @RequestParam(defaultValue = "4")    int months,
+            Authentication auth) {
+
+        LocalDate today = LocalDate.now();
+        LocalDate since = today.minusMonths(months - 1).withDayOfMonth(1);
+
+        List<DailyChallenge> challenges =
+            dailyChallengeRepo.findByDrawModeAndDateRange(drawMode, since, today);
+
+        if (challenges.isEmpty()) return ResponseEntity.ok(List.of());
+
+        // Determine the authenticated user's status per hand
+        Map<Integer, String> statusByHandId = new HashMap<>();
+        if (auth != null) {
+            int userId = (Integer) auth.getPrincipal();
+            List<Integer> handIds = challenges.stream()
+                .map(DailyChallenge::getHandId).collect(Collectors.toList());
+            List<Session> sessions = sessionRepo.findByUserIdAndHandIdIn(userId, handIds);
+            for (Session s : sessions) {
+                String cur = statusByHandId.getOrDefault(s.getHandId(), "not_played");
+                if ("won".equals(s.getStatus())) {
+                    statusByHandId.put(s.getHandId(), "won");
+                } else if (!"won".equals(cur)) {
+                    statusByHandId.put(s.getHandId(), "played");
+                }
+            }
+        }
+
+        List<DailyCalendarEntry> result = challenges.stream()
+            .map(dc -> new DailyCalendarEntry(
+                dc.getChallengeDate().toString(),
+                dc.getHandId(),
+                dc.getDrawMode(),
+                statusByHandId.getOrDefault(dc.getHandId(), "not_played")))
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * GET /api/v1/daily/{date}?drawMode=draw3
+     * Returns the daily hand for a specific past date — for practice replay.
+     * Always returns userHasRankedAttempt=true so the game starts unranked.
+     */
+    @GetMapping("/daily/{date}")
+    public ResponseEntity<DailyHandResponse> getDailyByDate(
+            @PathVariable String date,
+            @RequestParam(defaultValue = "draw3") String drawMode) {
+
+        LocalDate localDate;
+        try {
+            localDate = LocalDate.parse(date);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (localDate.isAfter(LocalDate.now())) return ResponseEntity.badRequest().build();
+
+        Hand hand = dailyChallengeRepo.findByDateAndMode(localDate, drawMode)
+            .map(dc -> handRepo.findById(dc.getHandId()).orElse(null))
+            .orElse(null);
+        if (hand == null) return ResponseEntity.notFound().build();
+
+        int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
+        HandResponse handResponse = new HandResponse(
+            hand.getId(), hand.getShuffleSeed(), cards, drawMode);
+        // Past challenges are always practice (unranked)
+        return ResponseEntity.ok(new DailyHandResponse(handResponse, true));
     }
 
     /**

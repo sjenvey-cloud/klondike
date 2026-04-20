@@ -1,0 +1,307 @@
+/* ── DailyCalendar — container & nav ─────────────────────────────────────── */
+
+.dc-container {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dc-empty {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  padding: 8px 0;
+}
+
+.dc-empty--center {
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* ── Navigation ──────────────────────────────────────────────────────────── */
+
+.dc-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dc-nav-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.dc-nav-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.dc-nav-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.dc-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ── Calendar grid ───────────────────────────────────────────────────────── */
+
+.dc-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.dc-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  position: relative;
+  gap: 2px;
+}
+
+.dc-cell--label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  aspect-ratio: auto;
+  padding-bottom: 4px;
+}
+
+.dc-cell--empty {
+  background: none;
+}
+
+.dc-cell--future {
+  opacity: 0.3;
+}
+
+.dc-cell--has-challenge {
+  cursor: pointer;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.dc-cell--has-challenge:hover {
+  border-color: var(--color-accent);
+}
+
+.dc-cell--today {
+  border-color: var(--color-accent) !important;
+  color: var(--color-accent);
+}
+
+.dc-cell--won {
+  background: color-mix(in srgb, var(--color-win, #d4af37) 12%, transparent) !important;
+  border-color: color-mix(in srgb, var(--color-win, #d4af37) 40%, transparent) !important;
+}
+
+.dc-cell--played {
+  background: var(--color-accent-muted);
+}
+
+.dc-day-num {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* ── Heart icon ──────────────────────────────────────────────────────────── */
+
+.dc-heart {
+  color: var(--color-win, #d4af37);
+  flex-shrink: 0;
+}
+
+.dc-heart--filled {
+  opacity: 1;
+}
+
+.dc-heart--faint {
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+}
+
+/* ── Dot (challenge exists, not played) ──────────────────────────────────── */
+
+.dc-dot {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────────── */
+
+.dc-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dc-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ── Detail view ─────────────────────────────────────────────────────────── */
+
+.dc-detail {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  gap: 12px;
+}
+
+.dc-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dc-back-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.dc-detail-date {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dc-my-rank-bar {
+  background: var(--color-accent-muted);
+  border: 1px solid var(--color-accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.dc-sort-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.dc-sort-label {
+  flex-shrink: 0;
+}
+
+.dc-sort-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+}
+
+.dc-sort-btn.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.dc-play-btn {
+  margin-left: auto;
+  background: var(--color-accent);
+  color: #000;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: opacity 0.15s;
+}
+
+.dc-play-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.dc-play-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Leaderboard table ───────────────────────────────────────────────────── */
+
+.dc-lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.dc-lb-table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dc-lb-table td {
+  padding: 10px 8px;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dc-lb-table tr.dc-lb-me td {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-weight: 600;
+}

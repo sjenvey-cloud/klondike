@@ -3,6 +3,7 @@ import { AuthContext } from '../App';
 import { getDaily, getDailyLeaderboard, getMyDailyRank } from '../services/api';
 import { localDateString } from '../services/dateUtils';
 import { Game } from './Game';
+import { DailyCalendar } from '../components/DailyCalendar/DailyCalendar';
 import './Daily.css';
 
 function formatTime(s) {
@@ -19,7 +20,7 @@ export function Daily() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [myRank, setMyRank] = useState(null);
   const [sort, setSort] = useState('moves');
-  const [view, setView] = useState('board'); // 'board' | 'leaderboard'
+  const [view, setView] = useState('board'); // 'board' | 'leaderboard' | 'calendar'
   const today = localDateString(new Date());
 
   useEffect(() => {
@@ -56,6 +57,10 @@ export function Daily() {
             className={`daily-tab${view === 'leaderboard' ? ' active' : ''}`}
             onClick={() => setView('leaderboard')}
           >Leaderboard</button>
+          <button
+            className={`daily-tab${view === 'calendar' ? ' active' : ''}`}
+            onClick={() => setView('calendar')}
+          >Calendar</button>
         </div>
       </div>
 
@@ -133,6 +138,10 @@ export function Daily() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {view === 'calendar' && (
+        <DailyCalendar drawMode={drawMode} />
       )}
     </div>
   );
