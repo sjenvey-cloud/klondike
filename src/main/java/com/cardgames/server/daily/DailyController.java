@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+// Note: deterministicSeed() has been moved to DailyGeneratorService.
+
 @CrossOrigin(origins = {
     "http://localhost:4200",
     "http://localhost:5173",
@@ -34,15 +36,18 @@ public class DailyController {
     private final SessionRepository        sessionRepo;
     private final UserRepository           userRepo;
     private final DailyChallengeRepository dailyChallengeRepo;
+    private final DailyGeneratorService    dailyGenerator;
 
     public DailyController(HandRepository handRepo,
                            SessionRepository sessionRepo,
                            UserRepository userRepo,
-                           DailyChallengeRepository dailyChallengeRepo) {
+                           DailyChallengeRepository dailyChallengeRepo,
+                           DailyGeneratorService dailyGenerator) {
         this.handRepo           = handRepo;
         this.sessionRepo        = sessionRepo;
         this.userRepo           = userRepo;
         this.dailyChallengeRepo = dailyChallengeRepo;
+        this.dailyGenerator     = dailyGenerator;
     }
 
     /**
@@ -56,7 +61,6 @@ public class DailyController {
      *
      * Every user receives the same hand for the same UTC date and draw mode.
      */
-    @Transactional
     @GetMapping("/daily")
     public ResponseEntity<DailyHandResponse> getDaily(
             @RequestParam(defaultValue = "draw3") String drawMode,
@@ -64,34 +68,8 @@ public class DailyController {
 
         LocalDate today = LocalDate.now();
 
-        // 1. Already selected for today?
-        Hand hand = dailyChallengeRepo.findByDateAndMode(today, drawMode)
-            .map(dc -> handRepo.findById(dc.getHandId()).orElse(null))
-            .orElse(null);
-
-        // 2. Promote a previously-solved hand that hasn't been a daily yet
-        if (hand == null) {
-            List<Hand> eligible = handRepo.findEligibleDailyHands(drawMode);
-            if (!eligible.isEmpty()) {
-                hand = eligible.get(0); // already ORDER BY RANDOM()
-                dailyChallengeRepo.save(new DailyChallenge(today, drawMode, hand.getId()));
-                // Note: we intentionally do NOT call markWonSessionsAsDaily here.
-                // That bulk UPDATE was causing a unique constraint violation
-                // (idx_one_ranked_daily) whenever a user had won the promoted hand
-                // more than once. The leaderboard and calendar both query by hand_id,
-                // so retroactive is_daily marking is not required for correctness.
-            }
-        }
-
-        // 3. Fallback: deterministic seed
-        if (hand == null) {
-            long seed = deterministicSeed(today, drawMode);
-            hand = handRepo.findByShuffleSeed(seed).orElseGet(() -> {
-                Hand h = new Hand(seed, drawMode);
-                return handRepo.save(h);
-            });
-            dailyChallengeRepo.save(new DailyChallenge(today, drawMode, hand.getId()));
-        }
+        // Delegate selection/creation to the shared service (also used by the scheduler).
+        Hand hand = dailyGenerator.ensureDaily(today, drawMode);
 
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
         HandResponse handResponse = new HandResponse(hand.getId(), hand.getShuffleSeed(), cards, drawMode);
@@ -319,12 +297,4 @@ public class DailyController {
         return ResponseEntity.ok(new ArrayList<>(byHand.values()));
     }
 
-    // ── Fallback seed derivation (used only when no pre-played hand exists) ──
-
-    private long deterministicSeed(LocalDate date, String drawMode) {
-        long dateSeed     = date.toEpochDay();
-        long drawModeSeed = "draw1".equals(drawMode) ? 1_000_000_007L : 999_999_937L;
-        long raw = Math.abs((dateSeed * 6_364_136_223_846_793_005L + drawModeSeed) % 0x1_0000_0000L);
-        return Math.max(1L, raw);
-    }
 }
