@@ -267,6 +267,41 @@ public class SocialChallengeController {
     }
 
     /**
+     * POST /api/v1/social/challenges/{id}/participants
+     * Add one or more friends to an existing active challenge.
+     * Only the creator can add participants; already-present users are silently skipped.
+     */
+    @Transactional
+    @PostMapping("/challenges/{id}/participants")
+    public ResponseEntity<Void> addParticipants(
+            @PathVariable int id,
+            @RequestBody AddChallengeParticipantsRequest req,
+            Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        SocialChallenge challenge = challengeRepo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Challenge not found"));
+        if (challenge.getCreatorUserId() != userId)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can add participants");
+        if (!SocialChallenge.STATUS_ACTIVE.equals(challenge.getStatus()))
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Challenge is not active");
+
+        // Build set of already-involved user IDs (creator + existing participants)
+        Set<Integer> existing = participantRepo.findByChallengeId(id).stream()
+            .map(SocialChallengeParticipant::getUserId)
+            .collect(Collectors.toCollection(HashSet::new));
+        existing.add(userId); // never add the creator as a participant
+
+        for (int targetId : req.userIds()) {
+            if (!existing.contains(targetId)) {
+                participantRepo.save(new SocialChallengeParticipant(id, targetId));
+            }
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * POST /api/v1/social/challenges/{id}/end
      * Creator ends the challenge (status → "ended").
      */

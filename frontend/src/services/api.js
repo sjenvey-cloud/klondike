@@ -152,6 +152,7 @@ export const getPendingChallengeCount = ()    => get('/social/challenges/pending
 // invitedUserIds / invitedLeagueIds: explicit selections from picker, or null to invite all friends
 export const createSocialChallenge    = (sessionId, invitedUserIds = null, invitedLeagueIds = null) =>
   post('/social/challenges', { sessionId, invitedUserIds, invitedLeagueIds });
+export const addChallengeParticipants = (id, userIds) => post(`/social/challenges/${id}/participants`, { userIds });
 export const endSocialChallenge       = (id)  => post(`/social/challenges/${id}/end`, {});
 export const resumeSocialChallenge    = (id)  => post(`/social/challenges/${id}/resume`, {});
 

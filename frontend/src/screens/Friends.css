@@ -445,6 +445,113 @@
   cursor: default;
 }
 
+/* ── Add-participants button ──────────────────────────────────────────────── */
+
+.sc-add-players-btn {
+  flex: 1;
+  background: none;
+  border: 1px solid var(--color-accent);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sc-add-players-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.sc-add-players-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Add-participants picker panel ────────────────────────────────────────── */
+
+.sc-add-pax-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.sc-add-pax-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.sc-add-pax-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.sc-add-pax-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+
+.sc-add-pax-row:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.sc-add-pax-row input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.sc-add-pax-name {
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.sc-add-pax-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.sc-add-pax-actions .btn-primary {
+  flex: 1;
+  font-size: 14px;
+  padding: 10px 16px;
+}
+
+.sc-add-pax-cancel {
+  flex: 1;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.sc-add-pax-cancel:hover {
+  border-color: var(--color-text-secondary);
+  color: var(--color-text-primary);
+}
+
 .sc-lb-table {
   margin-top: 4px;
 }

@@ -10,7 +10,7 @@ import {
   getCustomLeagues, createCustomLeague, getCustomLeagueDetail,
   getCustomLeaderboard, deleteCustomLeague, addLeagueMembers, removeLeagueMember,
   getSocialChallenges, getSocialChallengeDetail,
-  endSocialChallenge, resumeSocialChallenge,
+  addChallengeParticipants, endSocialChallenge, resumeSocialChallenge,
 } from '../services/api';
 import { getPendingInviteToken, clearPendingInviteToken } from './AcceptInvite';
 import './Friends.css';
@@ -81,6 +81,9 @@ export function Friends() {
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [detailLoading, setDetailLoading]       = useState(false);
   const [actionBusy, setActionBusy]             = useState(false);
+  // Add-participants picker (shown inside detail view)
+  const [addPaxOpen, setAddPaxOpen]             = useState(false);
+  const [addPaxSelected, setAddPaxSelected]     = useState(new Set());
 
   // ── Initial data loads ─────────────────────────────────────────────────
   useEffect(() => {
@@ -299,6 +302,19 @@ export function Friends() {
       setChallenges(list);
     } catch {} finally { setActionBusy(false); }
   }, [actionBusy]);
+
+  const handleAddParticipants = useCallback(async (challengeId) => {
+    if (addPaxSelected.size === 0 || actionBusy) return;
+    setActionBusy(true);
+    try {
+      await addChallengeParticipants(challengeId, [...addPaxSelected]);
+      const [detail, list] = await Promise.all([getSocialChallengeDetail(challengeId), getSocialChallenges()]);
+      setSelectedChallenge(detail);
+      setChallenges(list);
+      setAddPaxSelected(new Set());
+      setAddPaxOpen(false);
+    } catch {} finally { setActionBusy(false); }
+  }, [addPaxSelected, actionBusy]);
 
   const newChallengeCount = challenges.filter(
     c => c.status === 'active' && !c.isCreator && !c.userHasWon
@@ -771,11 +787,17 @@ export function Friends() {
         const isCreator  = ch.creatorUserId === user?.id;
         const myEntry    = ch.leaderboard.find(e => e.userId === user?.id);
         const userHasWon = myEntry?.moves != null;
-        const canPlay    = ch.status === 'active' && !userHasWon;
+        // Allow playing/replaying any time the challenge is active
+        const canPlay    = ch.status === 'active';
+
+        // Friends not yet in the challenge (for add-participants picker)
+        const involvedIds  = new Set(ch.leaderboard.map(e => e.userId));
+        const addableFriends = friends.filter(f => !involvedIds.has(f.userId));
+
         return (
           <div className="tab-content sc-detail">
             <div className="sc-detail-header">
-              <button className="sc-back-btn" onClick={() => setSelectedChallenge(null)}>‹ Challenges</button>
+              <button className="sc-back-btn" onClick={() => { setSelectedChallenge(null); setAddPaxOpen(false); setAddPaxSelected(new Set()); }}>‹ Challenges</button>
               <span className={`sc-status-badge sc-status-badge--${ch.status}`}>
                 {ch.status === 'active' ? 'Active' : 'Ended'}
               </span>
@@ -795,7 +817,14 @@ export function Friends() {
               {canPlay && (
                 <button className="btn-primary sc-play-btn"
                   onClick={() => navigate('/game', { state: { replayHandId: ch.handId, replayDrawMode: ch.drawMode } })}>
-                  ▶ Play Challenge
+                  {userHasWon ? '↺ Replay' : '▶ Play Challenge'}
+                </button>
+              )}
+              {isCreator && ch.status === 'active' && (
+                <button className="sc-add-players-btn"
+                  onClick={() => { setAddPaxOpen(o => !o); setAddPaxSelected(new Set()); }}
+                  disabled={actionBusy}>
+                  + Add Players
                 </button>
               )}
               {isCreator && ch.status === 'active' && (
@@ -809,6 +838,49 @@ export function Friends() {
                 </button>
               )}
             </div>
+
+            {/* ── Add participants picker ────────────────────────── */}
+            {addPaxOpen && isCreator && ch.status === 'active' && (
+              <div className="sc-add-pax-panel">
+                <p className="sc-add-pax-title">Add players to this challenge</p>
+                {addableFriends.length === 0
+                  ? <p className="empty-state">All your friends are already in this challenge.</p>
+                  : (
+                    <div className="sc-add-pax-list">
+                      {addableFriends.map(f => {
+                        const checked = addPaxSelected.has(f.userId);
+                        return (
+                          <label key={f.userId} className="sc-add-pax-row">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => setAddPaxSelected(prev => {
+                                const next = new Set(prev);
+                                checked ? next.delete(f.userId) : next.add(f.userId);
+                                return next;
+                              })}
+                            />
+                            <span className="sc-add-pax-name">{f.displayName}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )
+                }
+                <div className="sc-add-pax-actions">
+                  <button className="btn-primary"
+                    onClick={() => handleAddParticipants(ch.id)}
+                    disabled={addPaxSelected.size === 0 || actionBusy}>
+                    {actionBusy ? 'Adding…' : `Invite${addPaxSelected.size > 0 ? ` (${addPaxSelected.size})` : ''}`}
+                  </button>
+                  <button className="sc-add-pax-cancel"
+                    onClick={() => { setAddPaxOpen(false); setAddPaxSelected(new Set()); }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             <table className="lb-table sc-lb-table">
               <thead><tr><th>#</th><th>Player</th><th>Moves</th><th>Time</th></tr></thead>
               <tbody>
