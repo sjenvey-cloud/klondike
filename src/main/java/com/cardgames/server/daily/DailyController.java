@@ -75,8 +75,11 @@ public class DailyController {
             if (!eligible.isEmpty()) {
                 hand = eligible.get(0); // already ORDER BY RANDOM()
                 dailyChallengeRepo.save(new DailyChallenge(today, drawMode, hand.getId()));
-                // Pre-populate leaderboard with prior wins on this hand
-                sessionRepo.markWonSessionsAsDaily(hand.getId(), today);
+                // Note: we intentionally do NOT call markWonSessionsAsDaily here.
+                // That bulk UPDATE was causing a unique constraint violation
+                // (idx_one_ranked_daily) whenever a user had won the promoted hand
+                // more than once. The leaderboard and calendar both query by hand_id,
+                // so retroactive is_daily marking is not required for correctness.
             }
         }
 
