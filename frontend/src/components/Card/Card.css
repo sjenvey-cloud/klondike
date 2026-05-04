@@ -154,6 +154,323 @@
   line-height: 1;
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+   CLASSIC STYLE  — white card, traditional pip arrangement
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.card-face--style-classic {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.18);
+  padding: 2px 3px;
+  justify-content: space-between;
+}
+
+/* Colour overrides: traditional deck red / ink black regardless of theme */
+.card-face--style-classic.red   { color: #c8102e; }
+.card-face--style-classic.black { color: #1a1a1a; }
+
+/* Thin inner border frame — the classic "border" look */
+.card-face--style-classic::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* Smaller corner labels to maximise pip area */
+.cs-rank     { font-size: 12px; }
+.cs-suit-sm  { font-size: 8px;  }
+
+/* Pip area fills the space between the two corner blocks */
+.cs-classic-body {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.cs-pip-area {
+  position: absolute;
+  inset: 0;
+}
+
+.cs-pip {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  /* scale with card height so pips stay proportional across screen sizes */
+  font-size: calc(var(--card-h, 88px) * 0.105);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Ace: oversized suit symbol */
+.cs-classic-ace {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: calc(var(--card-h, 88px) * 0.26);
+  line-height: 1;
+}
+
+/* Face cards (J/Q/K): letter + suit in a bordered centred box */
+.cs-classic-face-inner {
+  position: absolute;
+  inset: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.9;
+}
+
+.cs-classic-face-rank {
+  font-family: var(--font-heading);
+  font-size: calc(var(--card-h, 88px) * 0.20);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cs-classic-face-suit {
+  font-size: calc(var(--card-h, 88px) * 0.13);
+  line-height: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MODERN STYLE  — warm white, geometric ornate framing
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.card-face--style-modern {
+  background: #fefef0;
+  border: 1px solid rgba(0,0,0,0.12);
+  padding: 3px 4px;
+  justify-content: space-between;
+}
+
+.card-face--style-modern.red   { color: #b71c1c; }
+.card-face--style-modern.black { color: #1a1a1a; }
+
+/* Double inner rule — heraldic feel */
+.card-face--style-modern::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.card-face--style-modern::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border: 0.5px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* Bold corner rank */
+.cs-modern-rank {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+/* Centre area */
+.cs-modern-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Number / Ace cards: suit in a rotated diamond frame */
+.cs-modern-pip-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+}
+
+.cs-modern-pip-frame::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 1px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.3;
+}
+
+.cs-modern-center-suit {
+  font-size: calc(var(--card-h, 88px) * 0.17);
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.cs-modern-center-rank {
+  font-family: var(--font-heading);
+  font-size: calc(var(--card-h, 88px) * 0.10);
+  font-weight: 700;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* Face cards: stacked rank + suit with decorative diamond */
+.cs-modern-face-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  position: relative;
+}
+
+.cs-modern-face-diamond {
+  position: absolute;
+  inset: -6px -8px;
+  border: 1.5px solid currentColor;
+  transform: rotate(45deg) scale(0.9);
+  opacity: 0.25;
+}
+
+.cs-modern-face-rank {
+  font-family: var(--font-heading);
+  font-size: calc(var(--card-h, 88px) * 0.22);
+  font-weight: 900;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.cs-modern-face-suit {
+  font-size: calc(var(--card-h, 88px) * 0.13);
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FANTASY STYLE  — parchment, arcane circle motifs
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.card-face--style-fantasy {
+  background: #f5ecd8;
+  border: 1px solid rgba(101, 67, 33, 0.28);
+  padding: 3px 4px;
+  justify-content: space-between;
+}
+
+.card-face--style-fantasy.red   { color: #8b1a1a; }
+.card-face--style-fantasy.black { color: #1a1835; }
+
+/* Aged inner border */
+.card-face--style-fantasy::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(101, 67, 33, 0.25);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* Corner dots for mystical feel */
+.card-face--style-fantasy::after {
+  content: '✦';
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 6px;
+  opacity: 0.25;
+  pointer-events: none;
+  color: #8b5e3c;
+}
+
+.cs-fantasy-rank    { font-size: 12px; font-family: var(--font-heading); font-weight: 700; }
+.cs-fantasy-suit-sm { font-size: 8px; }
+
+/* Centre */
+.cs-fantasy-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Circular ring wrapping the suit symbol */
+.cs-fantasy-ring {
+  width:  calc(var(--card-h, 88px) * 0.28);
+  height: calc(var(--card-h, 88px) * 0.28);
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Inner concentric ring */
+.cs-fantasy-ring::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 0.5px solid currentColor;
+  opacity: 0.35;
+}
+
+/* Larger ring for Ace */
+.cs-fantasy-ring--ace {
+  width:  calc(var(--card-h, 88px) * 0.35);
+  height: calc(var(--card-h, 88px) * 0.35);
+  border-width: 2px;
+}
+
+/* Slightly taller ring for face cards */
+.cs-fantasy-ring--face {
+  width:  calc(var(--card-h, 88px) * 0.30);
+  height: calc(var(--card-h, 88px) * 0.30);
+}
+
+.cs-fantasy-center-suit {
+  font-size: calc(var(--card-h, 88px) * 0.14);
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.cs-fantasy-face-rank {
+  font-family: var(--font-heading);
+  font-size: calc(var(--card-h, 88px) * 0.18);
+  font-weight: 700;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.cs-fantasy-center-label {
+  font-family: var(--font-heading);
+  font-size: calc(var(--card-h, 88px) * 0.095);
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.85;
+}
+
 /* ── Empty slot ── */
 .card-slot {
   width: var(--card-w, 62px);

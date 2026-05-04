@@ -3,7 +3,7 @@ import { getRank, getSuit, rankLabel } from '../../services/gameLogic';
 import { PreferencesContext } from '../../App';
 import './Card.css';
 
-// ── Design renderers ──────────────────────────────────────────────────────
+// ── Legacy design renderers (kept for backward compat) ────────────────────
 
 function StandardFace({ label, suit, colorClass, selected }) {
   return (
@@ -49,11 +49,134 @@ function MinimalFace({ label, suit, colorClass, selected }) {
   );
 }
 
+// ── Classic style — traditional pip-based cards ───────────────────────────
+
+// Traditional pip positions as [top%, left%] within the pip area.
+// The pip area sits between the two corner blocks.
+const PIP_POSITIONS = {
+  1:  [[50, 50]],
+  2:  [[22, 50], [78, 50]],
+  3:  [[22, 50], [50, 50], [78, 50]],
+  4:  [[22, 22], [22, 78], [78, 22], [78, 78]],
+  5:  [[22, 22], [22, 78], [50, 50], [78, 22], [78, 78]],
+  6:  [[20, 22], [50, 22], [80, 22], [20, 78], [50, 78], [80, 78]],
+  7:  [[18, 22], [46, 22], [74, 22], [32, 50], [18, 78], [46, 78], [74, 78]],
+  8:  [[18, 22], [46, 22], [74, 22], [32, 50], [68, 50], [18, 78], [46, 78], [74, 78]],
+  9:  [[13, 22], [35, 22], [57, 22], [79, 22], [50, 50], [13, 78], [35, 78], [57, 78], [79, 78]],
+  10: [[13, 22], [35, 22], [57, 22], [79, 22], [26, 50], [74, 50], [13, 78], [35, 78], [57, 78], [79, 78]],
+};
+
+function ClassicStyleFace({ label, suit, colorClass, selected, rank }) {
+  const isFaceCard = rank >= 11; // J, Q, K
+  const isAce      = rank === 1;
+  return (
+    <div className={`card-face card-face--style-classic ${colorClass}${selected ? ' selected' : ''}`}>
+      <div className="card-corner top">
+        <span className="card-rank cs-rank">{label}</span>
+        <span className="card-suit-small cs-suit-sm">{suit.symbol}</span>
+      </div>
+
+      <div className="cs-classic-body">
+        {isFaceCard && (
+          <div className="cs-classic-face-inner">
+            <span className="cs-classic-face-rank">{label}</span>
+            <span className="cs-classic-face-suit">{suit.symbol}</span>
+          </div>
+        )}
+        {isAce && (
+          <span className="cs-classic-ace">{suit.symbol}</span>
+        )}
+        {!isFaceCard && !isAce && (
+          <div className="cs-pip-area">
+            {(PIP_POSITIONS[rank] || []).map(([top, left], i) => (
+              <span key={i} className="cs-pip" style={{ top: `${top}%`, left: `${left}%` }}>
+                {suit.symbol}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card-corner bottom">
+        <span className="card-rank cs-rank">{label}</span>
+        <span className="card-suit-small cs-suit-sm">{suit.symbol}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Modern style — bold geometric ornate cards ────────────────────────────
+
+function ModernStyleFace({ label, suit, colorClass, selected, rank }) {
+  const isFaceCard = rank >= 11;
+  return (
+    <div className={`card-face card-face--style-modern ${colorClass}${selected ? ' selected' : ''}`}>
+      <div className="card-corner top">
+        <span className="card-rank cs-modern-rank">{label}</span>
+        <span className="card-suit-small">{suit.symbol}</span>
+      </div>
+
+      <div className="cs-modern-center">
+        {isFaceCard ? (
+          <div className="cs-modern-face-frame">
+            <div className="cs-modern-face-diamond" />
+            <span className="cs-modern-face-rank">{label}</span>
+            <span className="cs-modern-face-suit">{suit.symbol}</span>
+          </div>
+        ) : (
+          <div className="cs-modern-pip-frame">
+            <span className="cs-modern-center-suit">{suit.symbol}</span>
+            <span className="cs-modern-center-rank">{label}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="card-corner bottom">
+        <span className="card-rank cs-modern-rank">{label}</span>
+        <span className="card-suit-small">{suit.symbol}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Fantasy style — parchment arcane cards ────────────────────────────────
+
+function FantasyStyleFace({ label, suit, colorClass, selected, rank }) {
+  const isFaceCard = rank >= 11;
+  const isAce      = rank === 1;
+  return (
+    <div className={`card-face card-face--style-fantasy ${colorClass}${selected ? ' selected' : ''}`}>
+      <div className="card-corner top">
+        <span className="card-rank cs-fantasy-rank">{label}</span>
+        <span className="card-suit-small cs-fantasy-suit-sm">{suit.symbol}</span>
+      </div>
+
+      <div className="cs-fantasy-center">
+        <div className={`cs-fantasy-ring${isFaceCard ? ' cs-fantasy-ring--face' : ''}${isAce ? ' cs-fantasy-ring--ace' : ''}`}>
+          {isFaceCard
+            ? <span className="cs-fantasy-face-rank">{label}</span>
+            : <span className="cs-fantasy-center-suit">{suit.symbol}</span>
+          }
+        </div>
+        {!isFaceCard && !isAce && (
+          <span className="cs-fantasy-center-label">{label}</span>
+        )}
+      </div>
+
+      <div className="card-corner bottom">
+        <span className="card-rank cs-fantasy-rank">{label}</span>
+        <span className="card-suit-small cs-fantasy-suit-sm">{suit.symbol}</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Card ─────────────────────────────────────────────────────────────
 
 export function Card({ card, faceUp, selected, onClick, design: designProp }) {
   const { preferences } = useContext(PreferencesContext);
-  const design = designProp || preferences.cardFaceDesign || 'standard';
+  const cardStyle = preferences.cardStyle || null;
+  const design    = designProp || preferences.cardFaceDesign || 'standard';
 
   if (!faceUp) {
     const hasPattern = Boolean(preferences?.cardBackPattern);
@@ -64,22 +187,20 @@ export function Card({ card, faceUp, selected, onClick, design: designProp }) {
     );
   }
 
-  const rank = getRank(card);
-  const suit = getSuit(card);
-  const label = rankLabel(rank);
+  const rank       = getRank(card);
+  const suit       = getSuit(card);
+  const label      = rankLabel(rank);
   const colorClass = suit.color;
-
-  const faceProps = { label, suit, colorClass, selected };
+  const faceProps  = { label, suit, colorClass, selected, rank };
 
   return (
     <div className="card-wrap" onClick={onClick}>
-      {design === 'minimal' ? (
-        <MinimalFace {...faceProps} />
-      ) : design === 'classic' ? (
-        <ClassicFace {...faceProps} />
-      ) : (
-        <StandardFace {...faceProps} />
-      )}
+      {cardStyle === 'classic'  ? <ClassicStyleFace  {...faceProps} /> :
+       cardStyle === 'modern'   ? <ModernStyleFace   {...faceProps} /> :
+       cardStyle === 'fantasy'  ? <FantasyStyleFace  {...faceProps} /> :
+       design    === 'minimal'  ? <MinimalFace       {...faceProps} /> :
+       design    === 'classic'  ? <ClassicFace       {...faceProps} /> :
+                                  <StandardFace      {...faceProps} />}
     </div>
   );
 }

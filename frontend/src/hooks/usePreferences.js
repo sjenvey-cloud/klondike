@@ -8,6 +8,7 @@ const DEFAULTS = {
   feltColour:       '#0d1117',
   animationsEnabled: true,
   cardFaceDesign:   'standard',
+  cardStyle:        null,   // 'classic' | 'modern' | 'fantasy' — takes precedence over cardFaceDesign when set
 };
 
 function applyPreferences(prefs) {

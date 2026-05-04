@@ -179,3 +179,159 @@
   border-color: var(--color-danger, #e05c5c);
   color: var(--color-danger, #e05c5c);
 }
+
+/* ── Appearance: Card Style ───────────────────────────────────────────────── */
+
+.app-card-style-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.app-style-btn {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.app-style-btn--active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-muted);
+}
+
+/* Mini card preview */
+.app-style-preview {
+  width: 38px;
+  height: 54px;
+  border-radius: 5px;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.app-style-preview-inner {
+  position: absolute;
+  inset: 3px;
+  border-radius: 2px;
+  border: 1px solid;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Extra inner rule for Modern */
+.app-style-preview--modern::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 1px;
+  border: 0.5px solid rgba(183,28,28,0.18);
+  pointer-events: none;
+}
+
+/* Fantasy inner corner decoration */
+.app-style-preview--fantasy::before {
+  content: '✦';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 5px;
+  color: #8b5e3c;
+  opacity: 0.4;
+}
+
+.app-style-preview-suit {
+  font-size: 15px;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.app-style-preview-rank {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.app-style-label {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.app-style-desc {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.app-style-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 11px;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* ── Appearance: Baize Colour ─────────────────────────────────────────────── */
+
+.app-baize-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.app-baize-btn {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  height: 64px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.app-baize-btn--active {
+  border-color: var(--color-accent);
+  transform: scale(1.04);
+}
+
+.app-baize-label {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.app-baize-check {
+  font-size: 14px;
+  color: var(--color-accent);
+  font-weight: 700;
+  filter: drop-shadow(0 0 3px rgba(0,0,0,0.5));
+}

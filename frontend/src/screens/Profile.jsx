@@ -15,7 +15,7 @@ function formatTime(s) {
 
 export function Profile() {
   const { user, login, logout, updateDisplayName } = useContext(AuthContext);
-  const { preferences } = useContext(PreferencesContext);
+  const { preferences, updatePreference } = useContext(PreferencesContext);
   const [profile, setProfile] = useState(null);
   const [nameInput, setNameInput] = useState('');
   const [loginName, setLoginName] = useState('');
@@ -49,6 +49,30 @@ export function Profile() {
       setNameInput(user.displayName);
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const CARD_STYLES = [
+    {
+      key: 'classic', label: 'Classic',
+      desc: 'Traditional pip cards',
+      preview: { bg: '#ffffff', border: 'rgba(0,0,0,0.18)', innerBorder: 'rgba(0,0,0,0.10)', suit: '#c8102e' },
+    },
+    {
+      key: 'modern', label: 'Modern',
+      desc: 'Bold geometric style',
+      preview: { bg: '#fefef0', border: 'rgba(0,0,0,0.12)', innerBorder: 'rgba(183,28,28,0.30)', suit: '#b71c1c' },
+    },
+    {
+      key: 'fantasy', label: 'Fantasy',
+      desc: 'Arcane parchment theme',
+      preview: { bg: '#f5ecd8', border: 'rgba(101,67,33,0.28)', innerBorder: 'rgba(101,67,33,0.22)', suit: '#8b1a1a' },
+    },
+  ];
+
+  const BAIZE_COLOURS = [
+    { key: 'green', label: 'Green', value: '#2d6a4f' },
+    { key: 'blue',  label: 'Blue',  value: '#1a3a5c' },
+    { key: 'gray',  label: 'Gray',  value: '#3d3d4a' },
+  ];
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -161,6 +185,61 @@ export function Profile() {
           </div>
         </div>
       )}
+
+      {/* ── Appearance ─────────────────────────────────────────────────── */}
+      <div className="profile-section">
+        <h3 className="profile-section-title">Card Style</h3>
+        <div className="app-card-style-grid">
+          {CARD_STYLES.map(s => {
+            const active = preferences.cardStyle === s.key;
+            return (
+              <button
+                key={s.key}
+                className={`app-style-btn${active ? ' app-style-btn--active' : ''}`}
+                onClick={() => updatePreference('cardStyle', s.key)}
+              >
+                {/* Mini card preview */}
+                <div
+                  className={`app-style-preview app-style-preview--${s.key}`}
+                  style={{ background: s.preview.bg, borderColor: s.preview.border }}
+                >
+                  {/* Inner border frame */}
+                  <div
+                    className="app-style-preview-inner"
+                    style={{ borderColor: s.preview.innerBorder }}
+                  />
+                  <span className="app-style-preview-suit" style={{ color: s.preview.suit }}>♥</span>
+                  <span className="app-style-preview-rank" style={{ color: s.preview.suit }}>A</span>
+                </div>
+                <span className="app-style-label">{s.label}</span>
+                <span className="app-style-desc">{s.desc}</span>
+                {active && <span className="app-style-check">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="profile-section">
+        <h3 className="profile-section-title">Table Colour</h3>
+        <div className="app-baize-row">
+          {BAIZE_COLOURS.map(b => {
+            const active = preferences.feltColour === b.value;
+            return (
+              <button
+                key={b.key}
+                className={`app-baize-btn${active ? ' app-baize-btn--active' : ''}`}
+                style={{ background: b.value }}
+                onClick={() => updatePreference('feltColour', b.value)}
+                aria-label={`${b.label} baize`}
+              >
+                <span className="app-baize-label">{b.label}</span>
+                {active && <span className="app-baize-check">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="profile-section">
         <h3 className="profile-section-title">Display Name</h3>
