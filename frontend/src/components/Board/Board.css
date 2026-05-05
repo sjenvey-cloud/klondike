@@ -89,17 +89,31 @@
   flex-shrink: 0;
 }
 
-/* Waste pile — show top 3 fanned */
+/* Waste pile */
 .waste-area {
   position: relative;
-  width: calc(var(--card-w) + 24px);
+  width: var(--card-w);
   height: var(--card-h);
   flex-shrink: 0;
+  overflow: visible; /* fanned cards extend beyond the box into the spacer */
+}
+
+/* Draw-3: restore the old waste-area width so the top-row layout is unchanged.
+   The top card (left=32) overflows 8 px beyond this box, which is fine because
+   overflow is visible and it lands safely in the flex spacer. */
+.waste-area--draw3 {
+  width: calc(var(--card-w) + 24px);
 }
 
 .waste-card {
   position: absolute;
   top: 0;
+}
+
+/* Non-playable peek cards: slightly dimmed so the top card reads as the active one */
+.waste-card--peek {
+  pointer-events: none; /* only the top card is interactive */
+  opacity: 0.82;
 }
 
 /* Foundation piles */

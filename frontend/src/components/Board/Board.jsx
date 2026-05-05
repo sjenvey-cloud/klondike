@@ -5,7 +5,7 @@ import './Board.css';
 
 const SUIT_SYMBOLS = ['♣', '♦', '♥', '♠'];
 
-export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame }) {
+export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMode }) {
   const {
     tableau, stock, waste, foundations, draw,
     wasteToTableau, wasteToFoundation,
@@ -347,9 +347,15 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame }) {
 
   if (!tableau) return null;
 
+  const isDraw3 = drawMode === 'draw3';
+  const FAN     = 16; // px offset per visible card in the draw-3 fan
+
   const wasteTop    = waste.length > 0 ? waste[waste.length - 1] : null;
-  const wasteSecond = waste.length > 1 ? waste[waste.length - 2] : null;
-  const wasteThird  = waste.length > 2 ? waste[waste.length - 3] : null;
+  const wasteSecond = isDraw3 && waste.length > 1 ? waste[waste.length - 2] : null;
+  const wasteThird  = isDraw3 && waste.length > 2 ? waste[waste.length - 3] : null;
+
+  // Top card slides right by FAN for each peeking card beneath it
+  const wasteTopLeft = isDraw3 ? Math.min(waste.length - 1, 2) * FAN : 0;
 
   return (
     <div className="board">
@@ -416,27 +422,27 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame }) {
           : <div className="stock-empty" onClick={handleStockClick}>↺</div>
         }
 
-        {/* Waste — show up to 3 fanned */}
+        {/* Waste — draw1: top card only; draw3: up to 3 fanned at 16 px steps */}
         <div
-          className={`waste-area${shaking === 'waste' ? ' shake' : ''}`}
+          className={`waste-area${shaking === 'waste' ? ' shake' : ''}${isDraw3 ? ' waste-area--draw3' : ''}`}
           onClick={handleWasteClick}
           onDoubleClick={handleWasteDblClick}
           data-drop="waste"
         >
           {wasteThird && (
-            <div className="waste-card" style={{ left: 0 }}>
+            <div className="waste-card waste-card--peek" style={{ left: 0 }}>
               <Card card={wasteThird.card} faceUp={true} />
             </div>
           )}
           {wasteSecond && (
-            <div className="waste-card" style={{ left: 8 }}>
+            <div className="waste-card waste-card--peek" style={{ left: FAN }}>
               <Card card={wasteSecond.card} faceUp={true} />
             </div>
           )}
           {wasteTop && (
             <div
               className={`waste-card${dragRef.current?.source === 'waste' ? ' dragging' : ''}`}
-              style={{ left: waste.length > 1 ? 16 : 0 }}
+              style={{ left: wasteTopLeft }}
               onPointerDown={(e) => handleCardPointerDown(e, 'waste', null, null)}
             >
               <Card
