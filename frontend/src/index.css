@@ -30,6 +30,9 @@ body {
 
 .app-main {
   flex: 1;
+  min-height: 0;        /* Safari flex-scroll fix: allows flex child to shrink below content height
+                           so that .screen { height: 100% } inherits the constrained flex size
+                           and overflow-y: auto actually activates scroll */
   overflow: hidden;
   padding-bottom: 56px; /* nav height */
 }
