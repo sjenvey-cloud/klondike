@@ -232,6 +232,19 @@
   opacity: 0.6;
 }
 
+/* Image-based preview (Classic sprite) */
+.app-style-preview--img {
+  width: 38px;
+  height: 54px;
+  border-radius: 5px;
+  object-fit: cover;
+  margin-bottom: 2px;
+  border: none;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 /* Extra inner rule for Modern */
 .app-style-preview--modern::after {
   content: '';

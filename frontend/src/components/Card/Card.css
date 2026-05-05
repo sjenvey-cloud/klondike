@@ -471,6 +471,24 @@
   opacity: 0.85;
 }
 
+/* ── Image-based card (Classic sprite sheet) ── */
+.card-image {
+  width: var(--card-w, 62px);
+  height: var(--card-h, 88px);
+  display: block;
+  border-radius: var(--radius-card);
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.card-image--selected {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-card);
+}
+
 /* ── Empty slot ── */
 .card-slot {
   width: var(--card-w, 62px);

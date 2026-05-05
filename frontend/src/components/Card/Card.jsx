@@ -3,6 +3,35 @@ import { getRank, getSuit, rankLabel } from '../../services/gameLogic';
 import { PreferencesContext } from '../../App';
 import './Card.css';
 
+// ── Image-based card renderer (classic sprite sheet) ─────────────────────
+
+const SUIT_CODE = { clubs: 'C', diamonds: 'D', hearts: 'H', spades: 'S' };
+
+function ImageFace({ rank, suit, selected }) {
+  const rankCode = rankLabel(rank); // 'A', '2', ..., '10', 'J', 'Q', 'K'
+  const suitCode = SUIT_CODE[suit.name];
+  const src = `/cards/${rankCode}_${suitCode}.png`;
+  return (
+    <img
+      className={`card-image${selected ? ' card-image--selected' : ''}`}
+      src={src}
+      alt={`${rankCode} of ${suit.name}`}
+      draggable={false}
+    />
+  );
+}
+
+function ImageBack() {
+  return (
+    <img
+      className="card-image"
+      src="/cards/back_red.png"
+      alt="card back"
+      draggable={false}
+    />
+  );
+}
+
 // ── Legacy design renderers (kept for backward compat) ────────────────────
 
 function StandardFace({ label, suit, colorClass, selected }) {
@@ -179,6 +208,13 @@ export function Card({ card, faceUp, selected, onClick, design: designProp }) {
   const design    = designProp || preferences.cardFaceDesign || 'standard';
 
   if (!faceUp) {
+    if (cardStyle === 'classic') {
+      return (
+        <div className="card-wrap" onClick={onClick}>
+          <ImageBack />
+        </div>
+      );
+    }
     const hasPattern = Boolean(preferences?.cardBackPattern);
     return (
       <div className="card-wrap" onClick={onClick}>
@@ -195,7 +231,7 @@ export function Card({ card, faceUp, selected, onClick, design: designProp }) {
 
   return (
     <div className="card-wrap" onClick={onClick}>
-      {cardStyle === 'classic'  ? <ClassicStyleFace  {...faceProps} /> :
+      {cardStyle === 'classic'  ? <ImageFace rank={rank} suit={suit} selected={selected} /> :
        cardStyle === 'modern'   ? <ModernStyleFace   {...faceProps} /> :
        cardStyle === 'fantasy'  ? <FantasyStyleFace  {...faceProps} /> :
        design    === 'minimal'  ? <MinimalFace       {...faceProps} /> :

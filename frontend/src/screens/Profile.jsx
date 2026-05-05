@@ -199,18 +199,26 @@ export function Profile() {
                 onClick={() => updatePreference('cardStyle', s.key)}
               >
                 {/* Mini card preview */}
-                <div
-                  className={`app-style-preview app-style-preview--${s.key}`}
-                  style={{ background: s.preview.bg, borderColor: s.preview.border }}
-                >
-                  {/* Inner border frame */}
-                  <div
-                    className="app-style-preview-inner"
-                    style={{ borderColor: s.preview.innerBorder }}
+                {s.key === 'classic' ? (
+                  <img
+                    className="app-style-preview app-style-preview--img"
+                    src="/cards/A_H.png"
+                    alt="Classic card preview"
+                    draggable={false}
                   />
-                  <span className="app-style-preview-suit" style={{ color: s.preview.suit }}>♥</span>
-                  <span className="app-style-preview-rank" style={{ color: s.preview.suit }}>A</span>
-                </div>
+                ) : (
+                  <div
+                    className={`app-style-preview app-style-preview--${s.key}`}
+                    style={{ background: s.preview.bg, borderColor: s.preview.border }}
+                  >
+                    <div
+                      className="app-style-preview-inner"
+                      style={{ borderColor: s.preview.innerBorder }}
+                    />
+                    <span className="app-style-preview-suit" style={{ color: s.preview.suit }}>♥</span>
+                    <span className="app-style-preview-rank" style={{ color: s.preview.suit }}>A</span>
+                  </div>
+                )}
                 <span className="app-style-label">{s.label}</span>
                 <span className="app-style-desc">{s.desc}</span>
                 {active && <span className="app-style-check">✓</span>}
