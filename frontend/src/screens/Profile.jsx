@@ -51,21 +51,9 @@ export function Profile() {
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const CARD_STYLES = [
-    {
-      key: 'classic', label: 'Classic',
-      desc: 'Traditional pip cards',
-      preview: { bg: '#ffffff', border: 'rgba(0,0,0,0.18)', innerBorder: 'rgba(0,0,0,0.10)', suit: '#c8102e' },
-    },
-    {
-      key: 'modern', label: 'Modern',
-      desc: 'Bold geometric style',
-      preview: { bg: '#fefef0', border: 'rgba(0,0,0,0.12)', innerBorder: 'rgba(183,28,28,0.30)', suit: '#b71c1c' },
-    },
-    {
-      key: 'fantasy', label: 'Fantasy',
-      desc: 'Arcane parchment theme',
-      preview: { bg: '#f5ecd8', border: 'rgba(101,67,33,0.28)', innerBorder: 'rgba(101,67,33,0.22)', suit: '#8b1a1a' },
-    },
+    { key: 'classic', label: 'Classic', desc: 'Traditional pip cards',   previewImg: '/cards/A_H.png'                },
+    { key: 'modern',  label: 'Modern',  desc: 'Bold geometric style',    previewImg: '/cards/modern/A_H.png'         },
+    { key: 'fantasy', label: 'Fantasy', desc: 'Arcane illustrated deck', previewImg: '/cards/fantasy/A_D.png'        },
   ];
 
   const BAIZE_COLOURS = [
@@ -198,27 +186,12 @@ export function Profile() {
                 className={`app-style-btn${active ? ' app-style-btn--active' : ''}`}
                 onClick={() => updatePreference('cardStyle', s.key)}
               >
-                {/* Mini card preview */}
-                {s.key === 'classic' ? (
-                  <img
-                    className="app-style-preview app-style-preview--img"
-                    src="/cards/A_H.png"
-                    alt="Classic card preview"
-                    draggable={false}
-                  />
-                ) : (
-                  <div
-                    className={`app-style-preview app-style-preview--${s.key}`}
-                    style={{ background: s.preview.bg, borderColor: s.preview.border }}
-                  >
-                    <div
-                      className="app-style-preview-inner"
-                      style={{ borderColor: s.preview.innerBorder }}
-                    />
-                    <span className="app-style-preview-suit" style={{ color: s.preview.suit }}>♥</span>
-                    <span className="app-style-preview-rank" style={{ color: s.preview.suit }}>A</span>
-                  </div>
-                )}
+                <img
+                  className="app-style-preview app-style-preview--img"
+                  src={s.previewImg}
+                  alt={`${s.label} card preview`}
+                  draggable={false}
+                />
                 <span className="app-style-label">{s.label}</span>
                 <span className="app-style-desc">{s.desc}</span>
                 {active && <span className="app-style-check">✓</span>}

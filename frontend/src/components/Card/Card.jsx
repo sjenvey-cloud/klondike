@@ -3,14 +3,23 @@ import { getRank, getSuit, rankLabel } from '../../services/gameLogic';
 import { PreferencesContext } from '../../App';
 import './Card.css';
 
-// ── Image-based card renderer (classic sprite sheet) ─────────────────────
+// ── Image-based card renderer (sprite sheets) ────────────────────────────
 
 const SUIT_CODE = { clubs: 'C', diamonds: 'D', hearts: 'H', spades: 'S' };
 
-function ImageFace({ rank, suit, selected }) {
+// Style → subfolder and back image
+const STYLE_CONFIG = {
+  classic: { folder: '',        back: '/cards/back_red.png'           },
+  fantasy: { folder: 'fantasy', back: '/cards/fantasy/back_blue.png'  },
+  modern:  { folder: 'modern',  back: '/cards/modern/back_red.png'    },
+};
+
+function ImageFace({ rank, suit, selected, cardStyle }) {
   const rankCode = rankLabel(rank); // 'A', '2', ..., '10', 'J', 'Q', 'K'
   const suitCode = SUIT_CODE[suit.name];
-  const src = `/cards/${rankCode}_${suitCode}.png`;
+  const { folder } = STYLE_CONFIG[cardStyle] || STYLE_CONFIG.classic;
+  const src = folder ? `/cards/${folder}/${rankCode}_${suitCode}.png`
+                     : `/cards/${rankCode}_${suitCode}.png`;
   return (
     <img
       className={`card-image${selected ? ' card-image--selected' : ''}`}
@@ -21,11 +30,12 @@ function ImageFace({ rank, suit, selected }) {
   );
 }
 
-function ImageBack() {
+function ImageBack({ cardStyle }) {
+  const { back } = STYLE_CONFIG[cardStyle] || STYLE_CONFIG.classic;
   return (
     <img
       className="card-image"
-      src="/cards/back_red.png"
+      src={back}
       alt="card back"
       draggable={false}
     />
@@ -208,10 +218,10 @@ export function Card({ card, faceUp, selected, onClick, design: designProp }) {
   const design    = designProp || preferences.cardFaceDesign || 'standard';
 
   if (!faceUp) {
-    if (cardStyle === 'classic') {
+    if (cardStyle === 'classic' || cardStyle === 'fantasy' || cardStyle === 'modern') {
       return (
         <div className="card-wrap" onClick={onClick}>
-          <ImageBack />
+          <ImageBack cardStyle={cardStyle} />
         </div>
       );
     }
@@ -231,9 +241,9 @@ export function Card({ card, faceUp, selected, onClick, design: designProp }) {
 
   return (
     <div className="card-wrap" onClick={onClick}>
-      {cardStyle === 'classic'  ? <ImageFace rank={rank} suit={suit} selected={selected} /> :
-       cardStyle === 'modern'   ? <ModernStyleFace   {...faceProps} /> :
-       cardStyle === 'fantasy'  ? <FantasyStyleFace  {...faceProps} /> :
+      {cardStyle === 'classic'  ? <ImageFace rank={rank} suit={suit} selected={selected} cardStyle="classic" /> :
+       cardStyle === 'fantasy'  ? <ImageFace rank={rank} suit={suit} selected={selected} cardStyle="fantasy" /> :
+       cardStyle === 'modern'   ? <ImageFace rank={rank} suit={suit} selected={selected} cardStyle="modern"  /> :
        design    === 'minimal'  ? <MinimalFace       {...faceProps} /> :
        design    === 'classic'  ? <ClassicFace       {...faceProps} /> :
                                   <StandardFace      {...faceProps} />}
