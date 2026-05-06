@@ -51,9 +51,9 @@ export function Profile() {
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const CARD_STYLES = [
-    { key: 'classic', label: 'Classic', desc: 'Traditional pip cards',   previewImg: '/cards/A_H.png'                },
-    { key: 'modern',  label: 'Modern',  desc: 'Bold geometric style',    previewImg: '/cards/modern/A_H.png'         },
-    { key: 'fantasy', label: 'Fantasy', desc: 'Arcane illustrated deck', previewImg: '/cards/fantasy/A_D.png'        },
+    { key: 'classic', label: 'Classic', desc: 'Traditional pip cards',   previewImg: '/cards/A_H.png',              comingSoon: false },
+    { key: 'modern',  label: 'Modern',  desc: 'Coming soon',             previewImg: '/cards/modern/A_H.png',       comingSoon: true  },
+    { key: 'fantasy', label: 'Fantasy', desc: 'Coming soon',             previewImg: '/cards/fantasy/A_D.png',      comingSoon: true  },
   ];
 
   const BAIZE_COLOURS = [
@@ -183,15 +183,18 @@ export function Profile() {
             return (
               <button
                 key={s.key}
-                className={`app-style-btn${active ? ' app-style-btn--active' : ''}`}
-                onClick={() => updatePreference('cardStyle', s.key)}
+                className={`app-style-btn${active ? ' app-style-btn--active' : ''}${s.comingSoon ? ' app-style-btn--disabled' : ''}`}
+                onClick={() => !s.comingSoon && updatePreference('cardStyle', s.key)}
               >
-                <img
-                  className="app-style-preview app-style-preview--img"
-                  src={s.previewImg}
-                  alt={`${s.label} card preview`}
-                  draggable={false}
-                />
+                <div className="app-style-preview-wrap">
+                  <img
+                    className={`app-style-preview app-style-preview--img${s.comingSoon ? ' app-style-preview--dim' : ''}`}
+                    src={s.previewImg}
+                    alt={`${s.label} card preview`}
+                    draggable={false}
+                  />
+                  {s.comingSoon && <span className="app-style-coming-soon">Soon</span>}
+                </div>
                 <span className="app-style-label">{s.label}</span>
                 <span className="app-style-desc">{s.desc}</span>
                 {active && <span className="app-style-check">✓</span>}

@@ -43,6 +43,7 @@ public class PreferencesController {
 
         if (body.drawModeDefault()  != null) prefs.setDrawModeDefault(body.drawModeDefault());
         if (body.cardFaceDesign()   != null) prefs.setCardFaceDesign(body.cardFaceDesign());
+        if (body.cardStyle()       != null) prefs.setCardStyle(body.cardStyle());
         if (body.cardBackColour()   != null) prefs.setCardBackColour(body.cardBackColour());
         if (body.cardBackPattern()  != null) prefs.setCardBackPattern(
             body.cardBackPattern().isEmpty() ? null : body.cardBackPattern());

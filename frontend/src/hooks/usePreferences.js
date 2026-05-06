@@ -5,10 +5,10 @@ import { getPreferences, patchPreferences } from '../services/api';
 const DEFAULTS = {
   cardBackColour:   '#1c2333',
   cardBackPattern:  null,
-  feltColour:       '#0d1117',
+  feltColour:       '#2d6a4f',
   animationsEnabled: true,
-  cardFaceDesign:   'standard',
-  cardStyle:        null,   // 'classic' | 'modern' | 'fantasy' — takes precedence over cardFaceDesign when set
+  cardFaceDesign:   'classic',
+  cardStyle:        'classic',   // 'classic' | 'modern' | 'fantasy' — takes precedence over cardFaceDesign when set
 };
 
 function applyPreferences(prefs) {

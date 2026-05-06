@@ -245,6 +245,35 @@
   -webkit-user-drag: none;
 }
 
+.app-style-btn--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.app-style-preview-wrap {
+  position: relative;
+}
+
+.app-style-preview--dim {
+  opacity: 0.5;
+}
+
+.app-style-coming-soon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* Extra inner rule for Modern */
 .app-style-preview--modern::after {
   content: '';

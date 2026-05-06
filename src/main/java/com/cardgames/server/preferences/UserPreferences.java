@@ -17,6 +17,9 @@ public class UserPreferences {
     @Column(name = "card_face_design", nullable = false)
     private String cardFaceDesign = "standard";
 
+    @Column(name = "card_style", nullable = false)
+    private String cardStyle = "classic";
+
     @Column(name = "card_back_colour", nullable = false)
     private String cardBackColour = "#1c2333";
 
@@ -42,6 +45,7 @@ public class UserPreferences {
     public int           getUserId()           { return userId; }
     public String        getDrawModeDefault()  { return drawModeDefault; }
     public String        getCardFaceDesign()   { return cardFaceDesign; }
+    public String        getCardStyle()        { return cardStyle; }
     public String        getCardBackColour()   { return cardBackColour; }
     public String        getCardBackPattern()  { return cardBackPattern; }
     public String        getFeltColour()       { return feltColour; }
@@ -50,6 +54,7 @@ public class UserPreferences {
 
     public void setDrawModeDefault(String v)  { this.drawModeDefault = v; this.updatedAt = LocalDateTime.now(); }
     public void setCardFaceDesign(String v)   { this.cardFaceDesign = v;  this.updatedAt = LocalDateTime.now(); }
+    public void setCardStyle(String v)        { this.cardStyle = v;       this.updatedAt = LocalDateTime.now(); }
     public void setCardBackColour(String v)   { this.cardBackColour = v;  this.updatedAt = LocalDateTime.now(); }
     public void setCardBackPattern(String v)  { this.cardBackPattern = v; this.updatedAt = LocalDateTime.now(); }
     public void setFeltColour(String v)       { this.feltColour = v;      this.updatedAt = LocalDateTime.now(); }
