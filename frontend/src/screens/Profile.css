@@ -180,6 +180,113 @@
   color: var(--color-danger, #e05c5c);
 }
 
+.success-text {
+  color: var(--color-success, #4caf50);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ── Danger Zone ─────────────────────────────────────────────────────────── */
+
+.profile-section--danger {
+  gap: 8px;
+}
+
+.danger-desc {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.btn-danger {
+  background: none;
+  border: 1px solid var(--color-danger, #e05c5c);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-danger, #e05c5c);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  align-self: flex-start;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-danger, #e05c5c);
+  color: #fff;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Delete Account Modal ────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-box {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.modal-body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.btn-modal-cancel {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-modal-cancel:hover {
+  border-color: var(--color-text-secondary);
+  color: var(--color-text-primary);
+}
+
 /* ── Appearance: Card Style ───────────────────────────────────────────────── */
 
 .app-card-style-grid {

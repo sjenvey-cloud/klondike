@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../App';
 import { PreferencesContext } from '../contexts/PreferencesContext';
-import { getProfile, patchProfile, getProfileHistory, getProfileStats, getProfileRecords } from '../services/api';
+import { getProfile, patchProfile, getProfileHistory, getProfileStats, getProfileRecords, changePassword, deleteAccount } from '../services/api';
 import { Calendar } from '../components/Calendar/Calendar';
 import { DayDetail } from '../components/DayDetail/DayDetail';
 import './Profile.css';
@@ -26,6 +26,20 @@ export function Profile() {
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [stats, setStats] = useState(null);
   const [records, setRecords] = useState(null);
+
+  // Change password
+  const [currentPw, setCurrentPw]   = useState('');
+  const [newPw, setNewPw]           = useState('');
+  const [confirmPw, setConfirmPw]   = useState('');
+  const [pwError, setPwError]       = useState('');
+  const [pwSuccess, setPwSuccess]   = useState('');
+  const [pwLoading, setPwLoading]   = useState(false);
+
+  // Delete account
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePw, setDeletePw]               = useState('');
+  const [deleteError, setDeleteError]         = useState('');
+  const [deleteLoading, setDeleteLoading]     = useState(false);
 
   // Fetch history whenever the calendar month changes
   const fetchHistory = (y, m) => {
@@ -70,6 +84,38 @@ export function Profile() {
       await login(loginName.trim());
     } catch {
       setLoginError('Could not sign in. Try again.');
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+    if (newPw !== confirmPw) { setPwError('New passwords do not match.'); return; }
+    if (newPw.length < 8)    { setPwError('New password must be at least 8 characters.'); return; }
+    setPwLoading(true);
+    try {
+      await changePassword(currentPw, newPw);
+      setPwSuccess('Password updated.');
+      setCurrentPw(''); setNewPw(''); setConfirmPw('');
+    } catch (err) {
+      setPwError(err.message === '401' ? 'Current password is incorrect.' : 'Could not update password. Try again.');
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePw.trim()) return;
+    setDeleteError('');
+    setDeleteLoading(true);
+    try {
+      await deleteAccount(deletePw);
+      logout();
+    } catch (err) {
+      setDeleteError(err.message === '401' ? 'Incorrect password.' : 'Could not delete account. Try again.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -237,9 +283,90 @@ export function Profile() {
         </div>
       </div>
 
+      {/* ── Change Password ─────────────────────────────────────────── */}
+      <div className="profile-section">
+        <h3 className="profile-section-title">Change Password</h3>
+        <form className="login-form" onSubmit={handleChangePassword}>
+          <input
+            className="text-input"
+            type="password"
+            placeholder="Current password"
+            value={currentPw}
+            onChange={e => setCurrentPw(e.target.value)}
+            autoComplete="current-password"
+          />
+          <input
+            className="text-input"
+            type="password"
+            placeholder="New password"
+            value={newPw}
+            onChange={e => setNewPw(e.target.value)}
+            autoComplete="new-password"
+          />
+          <input
+            className="text-input"
+            type="password"
+            placeholder="Confirm new password"
+            value={confirmPw}
+            onChange={e => setConfirmPw(e.target.value)}
+            autoComplete="new-password"
+          />
+          {pwError   && <p className="error-text">{pwError}</p>}
+          {pwSuccess && <p className="success-text">{pwSuccess}</p>}
+          <button className="btn-primary" type="submit" disabled={pwLoading}>
+            {pwLoading ? 'Saving…' : 'Update Password'}
+          </button>
+        </form>
+      </div>
+
+      {/* ── Danger Zone ─────────────────────────────────────────────── */}
+      <div className="profile-section profile-section--danger">
+        <h3 className="profile-section-title">Danger Zone</h3>
+        <p className="danger-desc">
+          Permanently delete your account and all game data. This cannot be undone.
+        </p>
+        <button className="btn-danger" onClick={() => { setDeleteError(''); setDeletePw(''); setShowDeleteModal(true); }}>
+          Delete Account
+        </button>
+      </div>
+
       <div className="profile-section profile-section--signout">
         <button className="btn-signout" onClick={logout}>Sign Out</button>
       </div>
+
+      {/* ── Delete Account Modal ─────────────────────────────────────── */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">Delete Account</h3>
+            <p className="modal-body">
+              This will permanently delete your account, all game history, stats, and settings.
+              There is no way to recover your data after this.
+            </p>
+            <input
+              className="text-input"
+              type="password"
+              placeholder="Enter your password to confirm"
+              value={deletePw}
+              onChange={e => setDeletePw(e.target.value)}
+              autoComplete="current-password"
+            />
+            {deleteError && <p className="error-text">{deleteError}</p>}
+            <div className="modal-actions">
+              <button className="btn-modal-cancel" onClick={() => setShowDeleteModal(false)}>
+                Cancel
+              </button>
+              <button
+                className="btn-danger"
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading || !deletePw.trim()}
+              >
+                {deleteLoading ? 'Deleting…' : 'Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedDay && (
         <DayDetail

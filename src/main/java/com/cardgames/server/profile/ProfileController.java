@@ -1,18 +1,20 @@
 package com.cardgames.server.profile;
 
+import com.cardgames.server.auth.InvalidCredentialsException;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.session.Session;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/profile")
@@ -20,10 +22,14 @@ public class ProfileController {
 
     private final UserRepository    userRepository;
     private final SessionRepository sessionRepository;
+    private final AccountService    accountService;
 
-    public ProfileController(UserRepository userRepository, SessionRepository sessionRepository) {
+    public ProfileController(UserRepository userRepository,
+                             SessionRepository sessionRepository,
+                             AccountService accountService) {
         this.userRepository    = userRepository;
         this.sessionRepository = sessionRepository;
+        this.accountService    = accountService;
     }
 
     // ── DEV-81: GET /api/v1/profile ───────────────────────────────────────
@@ -46,6 +52,31 @@ public class ProfileController {
         user.setUsername(body.displayName()); // keep username in sync
         userRepository.save(user);
         return ResponseEntity.ok(toResponse(user));
+    }
+
+    // ── Change password: PATCH /api/v1/profile/password ──────────────────
+
+    @PatchMapping("/password")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest body,
+            Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        accountService.changePassword(userId, body.currentPassword(), body.newPassword());
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Delete account: DELETE /api/v1/profile ────────────────────────────
+    // All user data is removed via ON DELETE CASCADE (V14 migration).
+
+    @DeleteMapping
+    public ResponseEntity<Void> deleteAccount(
+            @Valid @RequestBody DeleteAccountRequest body,
+            Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        accountService.deleteAccount(userId, body.password());
+        return ResponseEntity.noContent().build();
     }
 
     // ── DEV-150: GET /api/v1/profile/stats ───────────────────────────────
@@ -88,6 +119,14 @@ public class ProfileController {
         RecordsResponse.PersonalBest fastest = byTime.isEmpty() ? null : toPersonalBest(byTime.get(0));
 
         return ResponseEntity.ok(new RecordsResponse(fewest, fastest));
+    }
+
+    // ── Exception handlers ────────────────────────────────────────────────
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, String>> handleBadCredentials(InvalidCredentialsException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(Map.of("error", e.getMessage()));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -187,3 +187,17 @@ export const getSessionsByDate = (userId, date, tzOffset = 0) =>
 // ── Profile stats / records (DEV-150, DEV-151) ────────────────────────────
 export const getProfileStats   = () => get('/profile/stats');
 export const getProfileRecords = () => get('/profile/records');
+
+// ── Account management ────────────────────────────────────────────────────
+export const changePassword = (currentPassword, newPassword) =>
+  patch('/profile/password', { currentPassword, newPassword });
+
+export const deleteAccount = (password) =>
+  fetch(BASE + '/profile', {
+    method: 'DELETE',
+    headers: authHeaders(),
+    body: JSON.stringify({ password }),
+  }).then(r => {
+    if (!r.ok) throw new Error(r.status);
+    return null;
+  });
