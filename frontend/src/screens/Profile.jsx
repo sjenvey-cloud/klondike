@@ -51,9 +51,9 @@ export function Profile() {
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const CARD_STYLES = [
-    { key: 'classic', label: 'Classic', desc: 'Traditional pip cards',   previewImg: '/cards/A_H.png',              comingSoon: false },
-    { key: 'modern',  label: 'Modern',  desc: 'Coming soon',             previewImg: '/cards/modern/A_H.png',       comingSoon: true  },
-    { key: 'fantasy', label: 'Fantasy', desc: 'Coming soon',             previewImg: '/cards/fantasy/A_D.png',      comingSoon: true  },
+    { key: 'classic', label: 'Classic', desc: 'Traditional pip cards',  previewImg: '/cards/A_H.png',           comingSoon: false },
+    { key: 'modern',  label: 'Modern',  desc: 'Illustrated style',      previewImg: '/cards/modern/A_H.png',    comingSoon: false },
+    { key: 'fantasy', label: 'Fantasy', desc: 'Ornamental style',       previewImg: '/cards/fantasy/A_H.png',   comingSoon: false },
   ];
 
   const BAIZE_COLOURS = [
