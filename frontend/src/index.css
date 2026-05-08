@@ -28,6 +28,11 @@ body {
   position: relative;
 }
 
+/* Game screen: remove max-width so cards can fill the full tablet / large-phone width */
+html.game-fullwidth .app-shell {
+  max-width: none;
+}
+
 .app-main {
   flex: 1;
   min-height: 0;        /* Safari flex-scroll fix: allows flex child to shrink below content height

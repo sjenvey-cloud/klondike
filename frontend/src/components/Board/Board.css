@@ -16,31 +16,21 @@
   }
 }
 
-/* Medium */
-@media (min-width: 480px) and (max-width: 599px) {
-  :root {
-    --card-w: 62px;
-    --card-h: 88px;
-    --tableau-offset: 20px;
-    --tableau-offset-up: 30px;
-  }
-}
-
-/* Large */
-@media (min-width: 600px) {
-  :root {
-    --card-w: 72px;
-    --card-h: 100px;
-    --tableau-offset: 22px;
-    --tableau-offset-up: 32px;
-  }
+/* Game running full-width (tablet / large phone) — cards scale to fill screen.
+   html.game-fullwidth is toggled by Game.jsx on mount/unmount.
+   Specificity (0,1,1) beats :root (0,1,0) so these values win. */
+html.game-fullwidth {
+  --card-w: clamp(44px, calc((100vw - 26px) / 7), 140px);
+  --card-h: calc(var(--card-w) * 1.42);
+  --tableau-offset: calc(var(--card-w) * 0.35);
+  --tableau-offset-up: calc(var(--card-w) * 0.50);
 }
 
 .board {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 8px;
+  padding: 10px 4px;
   min-height: 100%;
   box-sizing: border-box;
   /* none: prevent browser scroll/zoom from intercepting card drags on iOS */
@@ -58,7 +48,7 @@
 .board-top {
   display: flex;
   align-items: flex-start;
-  gap: clamp(3px, 1.2vw, 8px);
+  gap: 3px;
 }
 
 .board-top-spacer {
@@ -98,11 +88,11 @@
   overflow: visible; /* fanned cards extend beyond the box into the spacer */
 }
 
-/* Draw-3: restore the old waste-area width so the top-row layout is unchanged.
-   The top card (left=32) overflows 8 px beyond this box, which is fine because
-   overflow is visible and it lands safely in the flex spacer. */
+/* Draw-3: waste area is wider to accommodate the fanned cards.
+   FAN ≈ card-w × 0.31, max fan offset = 2×FAN ≈ 0.62×card-w.
+   Box = card-w + 1.5×FAN ≈ card-w × 1.46; top card overflows slightly into the spacer. */
 .waste-area--draw3 {
-  width: calc(var(--card-w) + 24px);
+  width: calc(var(--card-w) * 1.46);
 }
 
 .waste-card {
@@ -148,7 +138,7 @@
 /* ── Tableau ── */
 .board-tableau {
   display: flex;
-  gap: clamp(3px, 1.2vw, 8px);
+  gap: 3px;
   align-items: flex-start;
   flex: 1;
 }

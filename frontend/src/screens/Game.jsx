@@ -21,6 +21,12 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
   const [lbData, setLbData]         = useState([]);
   const [lbLoading, setLbLoading]   = useState(false);
 
+  // Remove the app-shell max-width while the game is active so cards can fill the iPad screen
+  useEffect(() => {
+    document.documentElement.classList.add('game-fullwidth');
+    return () => document.documentElement.classList.remove('game-fullwidth');
+  }, []);
+
   // On mount: check for saved session or replay request
   useEffect(() => {
     if (!user) return;

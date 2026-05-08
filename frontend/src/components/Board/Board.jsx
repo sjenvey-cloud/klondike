@@ -348,7 +348,9 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
   if (!tableau) return null;
 
   const isDraw3 = drawMode === 'draw3';
-  const FAN     = 16; // px offset per visible card in the draw-3 fan
+  // FAN scales proportionally with card width so the draw-3 fan looks right at any size
+  const cardW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-w')) || 52;
+  const FAN   = Math.round(cardW * 0.31); // ≈16px at 52px, ≈33px at 106px (iPad)
 
   const wasteTop    = waste.length > 0 ? waste[waste.length - 1] : null;
   const wasteSecond = isDraw3 && waste.length > 1 ? waste[waste.length - 2] : null;
