@@ -89,12 +89,11 @@ public class DailyController {
 
     /**
      * GET /api/v1/leaderboard/daily/{date}/{sort}
-     * Top 50 wins for today's daily hand, deduplicated to one entry per user.
+     * Top 50 wins for the given day's daily hand, deduplicated to one entry per user.
      *
-     * Queries by hand_id from the daily_challenges table rather than the
-     * session.is_daily flag. The is_daily flag was unreliable due to a
-     * Jackson boolean deserialization issue (is-prefix stripping on records)
-     * that caused sessions to be stored with is_daily=false.
+     * Looks up the authoritative hand via daily_challenges, then filters to
+     * sessions that were ranked daily-challenge attempts on that specific date.
+     * This excludes casual (non-daily) replays of the same hand.
      */
     @GetMapping("/leaderboard/daily/{date}/{sort}")
     public ResponseEntity<List<LeaderboardEntry>> getDailyLeaderboard(
@@ -108,7 +107,8 @@ public class DailyController {
         Optional<DailyChallenge> dc = dailyChallengeRepo.findByDateAndMode(localDate, drawMode);
         if (dc.isEmpty()) return ResponseEntity.ok(List.of());
 
-        List<Session> sessions = sessionRepo.findWonSessionsByHandId(dc.get().getHandId());
+        // Only ranked daily-challenge wins for this specific hand + date
+        List<Session> sessions = sessionRepo.findRankedDailyWinsByHand(dc.get().getHandId(), localDate);
 
         if ("time".equals(sort)) {
             sessions = sessions.stream()
@@ -147,7 +147,8 @@ public class DailyController {
         Optional<DailyChallenge> dc = dailyChallengeRepo.findByDateAndMode(localDate, drawMode);
         if (dc.isEmpty()) return ResponseEntity.notFound().build();
 
-        List<Session> sessions = sessionRepo.findWonSessionsByHandId(dc.get().getHandId());
+        // Only ranked daily-challenge wins for this specific hand + date
+        List<Session> sessions = sessionRepo.findRankedDailyWinsByHand(dc.get().getHandId(), localDate);
 
         if ("time".equals(sort)) {
             sessions = sessions.stream()

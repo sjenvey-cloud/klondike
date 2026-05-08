@@ -95,6 +95,15 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "ORDER BY s.moves ASC, s.timeSeconds ASC")
     List<Session> findWonSessionsByHandId(@Param("handId") int handId);
 
+    // Daily leaderboard by hand — only ranked daily wins for the given hand+date.
+    // Uses hand_id (authoritative) rather than relying solely on is_daily,
+    // then adds is_daily/daily_date/is_ranked guards to exclude casual replays.
+    @Query("SELECT s FROM Session s WHERE s.handId = :handId AND s.isDaily = true " +
+           "AND s.dailyDate = :date AND s.isRanked = true AND s.status = 'won' " +
+           "ORDER BY s.moves ASC, s.timeSeconds ASC")
+    List<Session> findRankedDailyWinsByHand(
+        @Param("handId") int handId, @Param("date") LocalDate date);
+
     // Calendar user-status: all sessions for a user across a set of hand IDs
     @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.handId IN :handIds")
     List<Session> findByUserIdAndHandIdIn(
