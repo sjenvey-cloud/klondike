@@ -85,7 +85,7 @@ public class DailyController {
             userHasRankedAttempt = sessionRepo
                 .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
                     userId, today, drawMode,
-                    new String[]{ Session.STATUS_WON, Session.STATUS_ABANDONED });
+                    new String[]{ Session.STATUS_WON });
         }
 
         return ResponseEntity.ok(new DailyHandResponse(handResponse, userHasRankedAttempt));

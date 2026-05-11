@@ -66,7 +66,7 @@ public class SessionController {
             boolean hasRanked = sessionRepository
                 .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
                     body.userId(), date, hand.getDrawMode(),
-                    new String[]{ Session.STATUS_WON, Session.STATUS_ABANDONED });
+                    new String[]{ Session.STATUS_WON });
             log.info("createSession: daily branch — date={} drawMode={} hasRanked={}",
                 date, hand.getDrawMode(), hasRanked);
             if (hasRanked) {
