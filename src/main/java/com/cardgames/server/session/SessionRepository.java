@@ -106,12 +106,14 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     List<Session> findWonSessionsByHandId(@Param("handId") int handId);
 
     // Daily leaderboard by hand — only ranked wins where dailyDate matches.
-    // dailyDate is only ever set when a session is created via the daily challenge
-    // route (isDaily=true), so it is the reliable discriminator; avoiding s.isDaily
-    // in JPQL removes any Hibernate boolean-accessor naming ambiguity.
-    @Query("SELECT s FROM Session s WHERE s.handId = :handId " +
-           "AND s.dailyDate = :date AND s.isRanked = true AND s.status = 'won' " +
-           "ORDER BY s.moves ASC, s.timeSeconds ASC")
+    // Native SQL bypasses JPQL/Hibernate metamodel entirely, avoiding the
+    // boolean-accessor naming ambiguity for is_ranked (isRanked → getter isRanked()
+    // → JavaBean property "ranked", not "isRanked"). dailyDate IS NOT NULL is also
+    // the reliable discriminator that daily sessions were created via the daily route.
+    @Query(value = "SELECT * FROM sessions WHERE hand_id = :handId " +
+                   "AND daily_date = :date AND is_ranked = true AND status = 'won' " +
+                   "ORDER BY moves ASC, time_seconds ASC",
+           nativeQuery = true)
     List<Session> findRankedDailyWinsByHand(
         @Param("handId") int handId, @Param("date") LocalDate date);
 
