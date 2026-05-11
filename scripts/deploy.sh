@@ -41,8 +41,16 @@ deploy_api() {
   IMAGE_TAG=$(git -C "$REPO_ROOT" rev-parse --short HEAD)
   FULL_IMAGE="${ECR_REGISTRY}/${ECR_REPO}"
 
-  info "Building Docker image (tag: ${IMAGE_TAG})..."
-  docker build -t "${FULL_IMAGE}:${IMAGE_TAG}" -t "${FULL_IMAGE}:latest" \
+  info "Building Docker image (tag: ${IMAGE_TAG}) for linux/amd64..."
+  # --platform linux/amd64 : build for Fargate (x86-64) regardless of build host
+  # --provenance=false      : skip BuildKit attestation manifests; ECS platform
+  #                           filtering rejects manifest-list images that lack an
+  #                           amd64 descriptor (happens with attestations on ARM Macs)
+  docker build \
+    --platform linux/amd64 \
+    --provenance=false \
+    -t "${FULL_IMAGE}:${IMAGE_TAG}" \
+    -t "${FULL_IMAGE}:latest" \
     "${REPO_ROOT}/server"
 
   # 2. Push to ECR
