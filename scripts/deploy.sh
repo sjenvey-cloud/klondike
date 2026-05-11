@@ -51,7 +51,7 @@ deploy_api() {
     --provenance=false \
     -t "${FULL_IMAGE}:${IMAGE_TAG}" \
     -t "${FULL_IMAGE}:latest" \
-    "${REPO_ROOT}/server"
+    "${REPO_ROOT}"
 
   # 2. Push to ECR
   info "Logging in to ECR..."
