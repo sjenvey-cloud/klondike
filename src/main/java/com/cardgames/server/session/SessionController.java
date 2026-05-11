@@ -6,6 +6,8 @@ import com.cardgames.server.game.GameState;
 import com.cardgames.server.game.ReplayResult;
 import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -28,6 +30,8 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/v1")
 public class SessionController {
 
+    private static final Logger log = LoggerFactory.getLogger(SessionController.class);
+
     @Autowired SessionRepository   sessionRepository;
     @Autowired HandRepository      handRepository;
     @Autowired ChallengeRepository challengeRepository;
@@ -44,6 +48,9 @@ public class SessionController {
      */
     @PostMapping("/sessions")
     public ResponseEntity<CreateSessionResponse> createSession(@RequestBody CreateSessionRequest body) {
+        log.info("createSession: handId={} userId={} isDaily={} dailyDate={} isRanked={}",
+            body.handId(), body.userId(), body.isDaily(), body.dailyDate(), body.isRanked());
+
         Hand hand = handRepository.findById(body.handId()).orElse(null);
         if (hand == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
@@ -60,6 +67,8 @@ public class SessionController {
                 .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
                     body.userId(), date, hand.getDrawMode(),
                     new String[]{ Session.STATUS_WON, Session.STATUS_ABANDONED });
+            log.info("createSession: daily branch — date={} drawMode={} hasRanked={}",
+                date, hand.getDrawMode(), hasRanked);
             if (hasRanked) {
                 isRanked = false;
                 session.setIsRanked(false);
@@ -67,6 +76,8 @@ public class SessionController {
         }
 
         sessionRepository.save(session);
+        log.info("createSession: saved session id={} isDaily={} dailyDate={} isRanked={} drawMode={}",
+            session.getId(), session.isDaily(), session.getDailyDate(), session.isRanked(), session.getDrawMode());
         return new ResponseEntity<>(new CreateSessionResponse(session, isRanked), HttpStatus.CREATED);
     }
 
@@ -118,6 +129,10 @@ public class SessionController {
         session.setTurns(body.turns());
         session.setCompletedAt(LocalDateTime.now());
         sessionRepository.save(session);
+        log.info("completeSession: saved win — id={} handId={} userId={} isDaily={} dailyDate={} isRanked={} moves={} timeSeconds={}",
+            session.getId(), session.getHandId(), session.getUserId(),
+            session.isDaily(), session.getDailyDate(), session.isRanked(),
+            session.getMoves(), session.getTimeSeconds());
 
         // DEV-166: evict leaderboard cache when a ranked daily win is recorded
         if (session.isDaily() && session.isRanked() && session.getDailyDate() != null) {

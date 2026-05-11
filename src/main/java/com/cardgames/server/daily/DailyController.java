@@ -8,6 +8,8 @@ import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1")
 public class DailyController {
+
+    private static final Logger log = LoggerFactory.getLogger(DailyController.class);
 
     private final HandRepository           handRepo;
     private final SessionRepository        sessionRepo;
@@ -102,13 +106,26 @@ public class DailyController {
             @RequestParam(defaultValue = "draw3") String drawMode) {
 
         LocalDate localDate = LocalDate.parse(date);
+        log.info("getDailyLeaderboard: date={} sort={} drawMode={}", localDate, sort, drawMode);
 
         // Look up the authoritative hand for this date from daily_challenges
         Optional<DailyChallenge> dc = dailyChallengeRepo.findByDateAndMode(localDate, drawMode);
-        if (dc.isEmpty()) return ResponseEntity.ok(List.of());
+        if (dc.isEmpty()) {
+            log.warn("getDailyLeaderboard: no daily_challenges entry for date={} drawMode={}", localDate, drawMode);
+            return ResponseEntity.ok(List.of());
+        }
+        log.info("getDailyLeaderboard: daily_challenges handId={}", dc.get().getHandId());
 
         // Only ranked daily-challenge wins for this specific hand + date
-        List<Session> sessions = sessionRepo.findRankedDailyWinsByHand(dc.get().getHandId(), localDate);
+        int handId = dc.get().getHandId();
+        List<Session> sessions = sessionRepo.findRankedDailyWinsByHand(handId, localDate);
+        log.info("getDailyLeaderboard: findRankedDailyWinsByHand(handId={}, date={}) returned {} sessions",
+            handId, localDate, sessions.size());
+
+        // Diagnostic: count ALL sessions for this hand (no date/ranked filter)
+        long totalForHand = sessionRepo.countByHandId(handId);
+        long withDate     = sessionRepo.countByHandIdAndDate(handId, localDate);
+        log.info("getDailyLeaderboard: diagnostic — totalForHand={} withMatchingDate={}", totalForHand, withDate);
 
         if ("time".equals(sort)) {
             sessions = sessions.stream()

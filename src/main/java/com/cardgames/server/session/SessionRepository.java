@@ -36,23 +36,28 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     // DEV-99: history grouped by day in the user's local timezone — unique hands only.
     // Each hand_id counts once, attributed to the day it was last played.
     // tzOffset = minutes east of UTC (added to stored UTC times before grouping).
-    // Daily-challenge sessions are excluded (is_daily IS NOT TRUE) so they don't
+    // Daily-challenge sessions are excluded (daily_date IS NULL) so they don't
     // pollute the profile activity calendar.
+    //
+    // Wrapped in a second subquery so GROUP BY / ORDER BY reference the computed
+    // 'day' alias rather than repeating the CAST expression with a separate '?'
+    // binding — PostgreSQL strict-GROUP-BY rejects repeated non-identical parameters.
     @Query(value =
-        "SELECT CAST(last_played + :tzOffset * INTERVAL '1 minute' AS date) AS day, " +
-        "COUNT(*) AS played, " +
-        "SUM(CASE WHEN has_won = 1 THEN 1 ELSE 0 END) AS won " +
+        "SELECT day, COUNT(*) AS played, SUM(CASE WHEN has_won = 1 THEN 1 ELSE 0 END) AS won " +
         "FROM (" +
-        "  SELECT hand_id, " +
-        "    MAX(started_at) AS last_played, " +
-        "    MAX(CASE WHEN status = 'won' THEN 1 ELSE 0 END) AS has_won " +
-        "  FROM sessions " +
-        "  WHERE user_id = :userId AND daily_date IS NULL " +
-        "  GROUP BY hand_id" +
-        ") t " +
-        "WHERE last_played >= :since " +
-        "GROUP BY CAST(last_played + :tzOffset * INTERVAL '1 minute' AS date) " +
-        "ORDER BY CAST(last_played + :tzOffset * INTERVAL '1 minute' AS date) ASC",
+        "  SELECT CAST(last_played + :tzOffset * INTERVAL '1 minute' AS date) AS day, has_won " +
+        "  FROM (" +
+        "    SELECT hand_id, " +
+        "      MAX(started_at) AS last_played, " +
+        "      MAX(CASE WHEN status = 'won' THEN 1 ELSE 0 END) AS has_won " +
+        "    FROM sessions " +
+        "    WHERE user_id = :userId AND daily_date IS NULL " +
+        "    GROUP BY hand_id" +
+        "  ) inner_t " +
+        "  WHERE last_played >= :since" +
+        ") outer_t " +
+        "GROUP BY day " +
+        "ORDER BY day ASC",
         nativeQuery = true)
     List<Object[]> findDailyHistory(
         @Param("userId") int userId,
@@ -116,6 +121,14 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            nativeQuery = true)
     List<Session> findRankedDailyWinsByHand(
         @Param("handId") int handId, @Param("date") LocalDate date);
+
+    // Debug: count sessions for a hand — all statuses, no date/ranked filter
+    @Query(value = "SELECT COUNT(*) FROM sessions WHERE hand_id = :handId", nativeQuery = true)
+    long countByHandId(@Param("handId") int handId);
+
+    // Debug: count sessions for a hand+date — all statuses and ranked values
+    @Query(value = "SELECT COUNT(*) FROM sessions WHERE hand_id = :handId AND daily_date = :date", nativeQuery = true)
+    long countByHandIdAndDate(@Param("handId") int handId, @Param("date") LocalDate date);
 
     // Calendar user-status: all sessions for a user across a set of hand IDs
     @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.handId IN :handIds")
