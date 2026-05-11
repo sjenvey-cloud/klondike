@@ -1,0 +1,220 @@
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
+
+.dwm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+  animation: dwm-fade-in 0.3s ease;
+  overflow-y: auto;
+}
+
+@keyframes dwm-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal card ──────────────────────────────────────────────────────────── */
+
+.dwm-modal {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow-surface);
+  padding: 28px 24px 24px;
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: dwm-slide-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes dwm-slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.dwm-trophy {
+  font-size: 52px;
+  line-height: 1;
+}
+
+.dwm-title {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  color: var(--color-accent);
+  margin: 0;
+  text-align: center;
+}
+
+.dwm-date {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: -8px 0 0;
+}
+
+/* ── Stats row ───────────────────────────────────────────────────────────── */
+
+.dwm-stats {
+  display: flex;
+  gap: 28px;
+}
+
+.dwm-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-ui);
+}
+
+.dwm-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.dwm-stat-label {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Leaderboard ─────────────────────────────────────────────────────────── */
+
+.dwm-leaderboard {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dwm-lb-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dwm-lb-title {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dwm-sort-row {
+  display: flex;
+  gap: 4px;
+}
+
+.dwm-sort-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.dwm-sort-btn.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.dwm-lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.dwm-lb-table th {
+  text-align: left;
+  padding: 4px 6px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dwm-lb-table td {
+  padding: 7px 6px;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dwm-lb-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dwm-lb-name {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dwm-lb-table tr.dwm-lb-me td {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.dwm-lb-empty {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin: 8px 0;
+}
+
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+
+.dwm-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dwm-secondary-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dwm-secondary-row .btn-secondary {
+  flex: 1;
+}
+
+/* ── Shared button overrides (scoped to modal) ───────────────────────────── */
+
+.dwm-modal .btn-primary {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 15px;
+}
+
+.dwm-modal .btn-secondary {
+  padding: 9px 12px;
+  font-size: 13px;
+}

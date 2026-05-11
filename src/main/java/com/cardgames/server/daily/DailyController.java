@@ -191,13 +191,15 @@ public class DailyController {
 
         if (challenges.isEmpty()) return ResponseEntity.ok(List.of());
 
-        // Determine the authenticated user's status per hand
+        // Determine the authenticated user's status per hand.
+        // Only daily-challenge sessions (is_daily=true) count — casual replays of the
+        // same hand must not affect the calendar dot / played / won indicator.
         Map<Integer, String> statusByHandId = new HashMap<>();
         if (auth != null) {
             int userId = (Integer) auth.getPrincipal();
             List<Integer> handIds = challenges.stream()
                 .map(DailyChallenge::getHandId).collect(Collectors.toList());
-            List<Session> sessions = sessionRepo.findByUserIdAndHandIdIn(userId, handIds);
+            List<Session> sessions = sessionRepo.findDailySessionsByUserIdAndHandIdIn(userId, handIds);
             for (Session s : sessions) {
                 String cur = statusByHandId.getOrDefault(s.getHandId(), "not_played");
                 if ("won".equals(s.getStatus())) {

@@ -5,6 +5,19 @@
   overflow: hidden;
 }
 
+/* Game wrapper — keeps the Game component mounted across tab switches
+   so the session is not reset when the user views the leaderboard/calendar */
+.daily-board-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.daily-board-wrap--hidden {
+  display: none;
+}
+
 .daily-header {
   display: flex;
   align-items: center;

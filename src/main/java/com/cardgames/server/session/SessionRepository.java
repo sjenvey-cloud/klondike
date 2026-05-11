@@ -35,7 +35,9 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
 
     // DEV-99: history grouped by day in the user's local timezone — unique hands only.
     // Each hand_id counts once, attributed to the day it was last played.
-    // tzOffset = minutes east of UTC (added to stored UTC times before grouping)
+    // tzOffset = minutes east of UTC (added to stored UTC times before grouping).
+    // Daily-challenge sessions are excluded (is_daily IS NOT TRUE) so they don't
+    // pollute the profile activity calendar.
     @Query(value =
         "SELECT CAST(last_played + :tzOffset * INTERVAL '1 minute' AS date) AS day, " +
         "COUNT(*) AS played, " +
@@ -45,7 +47,7 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
         "    MAX(started_at) AS last_played, " +
         "    MAX(CASE WHEN status = 'won' THEN 1 ELSE 0 END) AS has_won " +
         "  FROM sessions " +
-        "  WHERE user_id = :userId " +
+        "  WHERE user_id = :userId AND (is_daily IS NOT TRUE) " +
         "  GROUP BY hand_id" +
         ") t " +
         "WHERE last_played >= :since " +
@@ -56,6 +58,13 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
         @Param("userId") int userId,
         @Param("since") LocalDateTime since,
         @Param("tzOffset") int tzOffset);
+
+    // Daily calendar — sessions played as a genuine daily challenge for a set of hand IDs.
+    // Used by getDailyCalendar to show accurate dot / played / won status.
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.handId IN :handIds AND s.isDaily = true")
+    List<Session> findDailySessionsByUserIdAndHandIdIn(
+        @Param("userId") int userId,
+        @Param("handIds") List<Integer> handIds);
 
     // DEV-100: sessions for a specific calendar day, most recent first
     @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.startedAt >= :from AND s.startedAt < :to ORDER BY s.startedAt DESC")

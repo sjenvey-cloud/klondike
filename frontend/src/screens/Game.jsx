@@ -9,7 +9,7 @@ import { getHand, getHandLeaderboard } from '../services/api';
 import { localDateString } from '../services/dateUtils';
 import './Game.css';
 
-export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null }) {
+export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null, onDailyWin = null }) {
   const { user } = useContext(AuthContext);
   const location = useLocation();
   const game = useGame(user?.id);
@@ -62,9 +62,23 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
   useEffect(() => {
     if (game.isWon && !finishing) {
       setFinishing(true);
+      // Capture moves/time at the moment of win before the async completes
+      const wonMoves = game.moves;
+      const wonTime  = timer.formatted;
       game.finishGame()
-        .then(res => setWinResult(res))
-        .catch(() => setWinResult({}));
+        .then(res => {
+          setWinResult(res);
+          // For daily games, notify Daily.jsx to show the DailyWinModal
+          if (dailyHand && onDailyWin) {
+            onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: res?.rank ?? null });
+          }
+        })
+        .catch(() => {
+          setWinResult({});
+          if (dailyHand && onDailyWin) {
+            onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: null });
+          }
+        });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.isWon, finishing]);
@@ -84,7 +98,7 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
   }, [game, timer, location.state]);
 
   const handleRedeal = useCallback(async () => {
-    const currentHandId  = game.handId;
+    const currentHandId   = game.handId;
     const currentDrawMode = game.drawMode;
     if (!currentHandId) return;
     await game.abandon();
@@ -93,8 +107,18 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
     setLbOpen(false);
     timer.reset();
     const hand = await getHand(currentHandId);
-    game.startGame(hand, currentDrawMode);
-  }, [game, timer]);
+    if (dailyHand) {
+      // Preserve daily context so the redealt session is still tagged correctly.
+      // Backend will force isRanked=false if the user has already used their ranked slot.
+      game.startGame(hand, currentDrawMode, {
+        isDaily:   true,
+        dailyDate: localDateString(new Date()),
+        isRanked:  true,
+      });
+    } else {
+      game.startGame(hand, currentDrawMode);
+    }
+  }, [game, timer, dailyHand]);
 
   const handleOpenLeaderboard = useCallback(() => {
     if (!game.handId) return;
@@ -149,7 +173,8 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
         onRedeal={handleRedeal}
       />
 
-      {game.isWon && winResult !== null && (
+      {/* WinModal only for regular (non-daily) games; daily wins are handled by DailyWinModal in Daily.jsx */}
+      {game.isWon && winResult !== null && !dailyHand && (
         <WinModal
           moves={game.moves}
           timeFormatted={timer.formatted}
