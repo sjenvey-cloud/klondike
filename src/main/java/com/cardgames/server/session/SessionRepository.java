@@ -47,7 +47,7 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
         "    MAX(started_at) AS last_played, " +
         "    MAX(CASE WHEN status = 'won' THEN 1 ELSE 0 END) AS has_won " +
         "  FROM sessions " +
-        "  WHERE user_id = :userId AND (is_daily IS NOT TRUE) " +
+        "  WHERE user_id = :userId AND daily_date IS NULL " +
         "  GROUP BY hand_id" +
         ") t " +
         "WHERE last_played >= :since " +
@@ -60,8 +60,9 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
         @Param("tzOffset") int tzOffset);
 
     // Daily calendar — sessions played as a genuine daily challenge for a set of hand IDs.
-    // Used by getDailyCalendar to show accurate dot / played / won status.
-    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.handId IN :handIds AND s.isDaily = true")
+    // dailyDate IS NOT NULL is the reliable test: it is only populated when the session
+    // was created through the daily challenge flow.
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.handId IN :handIds AND s.dailyDate IS NOT NULL")
     List<Session> findDailySessionsByUserIdAndHandIdIn(
         @Param("userId") int userId,
         @Param("handIds") List<Integer> handIds);
@@ -104,10 +105,11 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "ORDER BY s.moves ASC, s.timeSeconds ASC")
     List<Session> findWonSessionsByHandId(@Param("handId") int handId);
 
-    // Daily leaderboard by hand — only ranked daily wins for the given hand+date.
-    // Uses hand_id (authoritative) rather than relying solely on is_daily,
-    // then adds is_daily/daily_date/is_ranked guards to exclude casual replays.
-    @Query("SELECT s FROM Session s WHERE s.handId = :handId AND s.isDaily = true " +
+    // Daily leaderboard by hand — only ranked wins where dailyDate matches.
+    // dailyDate is only ever set when a session is created via the daily challenge
+    // route (isDaily=true), so it is the reliable discriminator; avoiding s.isDaily
+    // in JPQL removes any Hibernate boolean-accessor naming ambiguity.
+    @Query("SELECT s FROM Session s WHERE s.handId = :handId " +
            "AND s.dailyDate = :date AND s.isRanked = true AND s.status = 'won' " +
            "ORDER BY s.moves ASC, s.timeSeconds ASC")
     List<Session> findRankedDailyWinsByHand(
