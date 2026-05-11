@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Dark rounded background matching the app theme -->
+  <rect width="512" height="512" rx="110" fill="#111111"/>
+  <!-- Gold heart -->
+  <path d="M256 390
+           C240 375 130 305 130 220
+           C130 167 165 128 208 128
+           C232 128 250 142 256 158
+           C262 142 280 128 304 128
+           C347 128 382 167 382 220
+           C382 305 272 375 256 390 Z"
+        fill="#c9a84c"/>
+</svg>

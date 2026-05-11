@@ -2,3 +2,6 @@ target/
 *.md
 .git
 .gitignore
+frontend/node_modules
+frontend/dist
+frontend/.vite
