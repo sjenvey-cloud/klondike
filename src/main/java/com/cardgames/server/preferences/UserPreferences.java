@@ -32,6 +32,9 @@ public class UserPreferences {
     @Column(name = "animations_enabled", nullable = false)
     private boolean animationsEnabled = true;
 
+    @Column(name = "stock_side", nullable = false)
+    private String stockSide = "left";
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
@@ -50,6 +53,7 @@ public class UserPreferences {
     public String        getCardBackPattern()  { return cardBackPattern; }
     public String        getFeltColour()       { return feltColour; }
     public boolean       isAnimationsEnabled() { return animationsEnabled; }
+    public String        getStockSide()        { return stockSide; }
     public LocalDateTime getUpdatedAt()        { return updatedAt; }
 
     public void setDrawModeDefault(String v)  { this.drawModeDefault = v; this.updatedAt = LocalDateTime.now(); }
@@ -59,4 +63,5 @@ public class UserPreferences {
     public void setCardBackPattern(String v)  { this.cardBackPattern = v; this.updatedAt = LocalDateTime.now(); }
     public void setFeltColour(String v)       { this.feltColour = v;      this.updatedAt = LocalDateTime.now(); }
     public void setAnimationsEnabled(boolean v){ this.animationsEnabled = v; this.updatedAt = LocalDateTime.now(); }
+    public void setStockSide(String v)        { this.stockSide = v;       this.updatedAt = LocalDateTime.now(); }
 }

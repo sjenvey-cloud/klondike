@@ -49,6 +49,7 @@ public class PreferencesController {
             body.cardBackPattern().isEmpty() ? null : body.cardBackPattern());
         if (body.feltColour()       != null) prefs.setFeltColour(body.feltColour());
         if (body.animationsEnabled() != null) prefs.setAnimationsEnabled(body.animationsEnabled());
+        if (body.stockSide()         != null) prefs.setStockSide(body.stockSide());
 
         prefsRepo.save(prefs);
         return ResponseEntity.ok(prefs);

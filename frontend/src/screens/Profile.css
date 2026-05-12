@@ -484,3 +484,83 @@
   font-weight: 700;
   filter: drop-shadow(0 0 3px rgba(0,0,0,0.5));
 }
+
+/* ── Profile Tabs ─────────────────────────────────────────────────────────── */
+
+.profile-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 4px;
+}
+
+.profile-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 4px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+
+.profile-tab--active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.profile-tab:hover:not(.profile-tab--active) {
+  color: var(--color-text-primary);
+}
+
+/* ── Draw pile location toggle ────────────────────────────────────────────── */
+
+.stock-side-row {
+  display: flex;
+  gap: 10px;
+}
+
+.stock-side-btn {
+  flex: 1;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 10px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.stock-side-btn--active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.stock-side-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+
+.profile-empty {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin: 24px 0;
+}

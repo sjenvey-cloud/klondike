@@ -9,6 +9,7 @@ const DEFAULTS = {
   animationsEnabled: true,
   cardFaceDesign:   'classic',
   cardStyle:        'classic',   // 'classic' | 'modern' | 'fantasy' — takes precedence over cardFaceDesign when set
+  stockSide:        'left',      // 'left' | 'right' — draw pile position on the board
 };
 
 function applyPreferences(prefs) {

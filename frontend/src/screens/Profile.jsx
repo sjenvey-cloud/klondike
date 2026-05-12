@@ -13,10 +13,25 @@ function formatTime(s) {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
+const CARD_STYLES = [
+  { key: 'classic', label: 'Classic', desc: 'Traditional pip cards',  previewImg: '/cards/A_H.png',           comingSoon: false },
+  { key: 'modern',  label: 'Modern',  desc: 'Illustrated style',      previewImg: '/cards/modern/A_H.png',    comingSoon: false },
+  { key: 'fantasy', label: 'Fantasy', desc: 'Ornamental style',       previewImg: '/cards/fantasy/A_H.png',   comingSoon: false },
+];
+
+const BAIZE_COLOURS = [
+  { key: 'green', label: 'Green', value: '#2d6a4f' },
+  { key: 'blue',  label: 'Blue',  value: '#1a3a5c' },
+  { key: 'gray',  label: 'Gray',  value: '#3d3d4a' },
+];
+
 export function Profile() {
   const { user, login, logout, updateDisplayName } = useContext(AuthContext);
   const { preferences, updatePreference } = useContext(PreferencesContext);
-  const [profile, setProfile] = useState(null);
+
+  const [tab, setTab] = useState('stats');
+
+  // Data
   const [nameInput, setNameInput] = useState('');
   const [loginName, setLoginName] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -41,12 +56,10 @@ export function Profile() {
   const [deleteError, setDeleteError]         = useState('');
   const [deleteLoading, setDeleteLoading]     = useState(false);
 
-  // Fetch history whenever the calendar month changes
   const fetchHistory = (y, m) => {
     if (!user) return;
     const today = new Date();
     const monthStart = new Date(y, m, 1);
-    // Days from start of viewed month to today (minimum 31 to cover the full month)
     const diffDays = Math.max(31, Math.ceil((today - monthStart) / 86400000) + 1);
     const tzOffset = -new Date().getTimezoneOffset();
     getProfileHistory(user.id, diffDays, tzOffset).then(data => {
@@ -56,25 +69,13 @@ export function Profile() {
 
   useEffect(() => {
     if (user) {
-      getProfile(user.id).then(setProfile).catch(() => {});
+      getProfile(user.id).then(() => {}).catch(() => {});
       fetchHistory(calYear, calMonth);
       getProfileStats().then(setStats).catch(() => {});
       getProfileRecords().then(setRecords).catch(() => {});
       setNameInput(user.displayName);
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const CARD_STYLES = [
-    { key: 'classic', label: 'Classic', desc: 'Traditional pip cards',  previewImg: '/cards/A_H.png',           comingSoon: false },
-    { key: 'modern',  label: 'Modern',  desc: 'Illustrated style',      previewImg: '/cards/modern/A_H.png',    comingSoon: false },
-    { key: 'fantasy', label: 'Fantasy', desc: 'Ornamental style',       previewImg: '/cards/fantasy/A_H.png',   comingSoon: false },
-  ];
-
-  const BAIZE_COLOURS = [
-    { key: 'green', label: 'Green', value: '#2d6a4f' },
-    { key: 'blue',  label: 'Blue',  value: '#1a3a5c' },
-    { key: 'gray',  label: 'Gray',  value: '#3d3d4a' },
-  ];
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -150,189 +151,243 @@ export function Profile() {
     <div className="screen profile-screen">
       <h2 className="section-title">{user.displayName}</h2>
 
-      {stats && (
-        <div className="profile-section">
-          <h3 className="profile-section-title">Stats</h3>
-          {['draw1', 'draw3'].map(mode => {
-            const s = stats[mode];
-            if (!s || s.gamesPlayed === 0) return null;
-            return (
-              <div key={mode} className="stats-mode-block">
-                <p className="stats-mode-label">{mode === 'draw1' ? 'Draw 1' : 'Draw 3'}</p>
-                <div className="stats-grid">
-                  {[
-                    ['Played',    s.gamesPlayed],
-                    ['Won',       s.wins],
-                    ['Win Rate',  `${Math.round(s.winRate * 100)}%`],
-                    ['Avg Moves', s.avgMoves  ? Math.round(s.avgMoves)  : '—'],
-                    ['Avg Time',  s.avgTimeSeconds ? formatTime(Math.round(s.avgTimeSeconds)) : '—'],
-                  ].map(([label, value]) => (
-                    <div key={label} className="stat-card">
-                      <span className="stat-card-value">{value}</span>
-                      <span className="stat-card-label">{label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="profile-section">
-        <h3 className="profile-section-title">Activity</h3>
-        <Calendar
-          history={history}
-          onDayClick={setSelectedDay}
-          onMonthChange={(y, m) => {
-            setCalYear(y);
-            setCalMonth(m);
-            fetchHistory(y, m);
-          }}
-        />
-      </div>
-
-      {records && (records.fewestMoves || records.fastestTime) && (
-        <div className="profile-section">
-          <h3 className="profile-section-title">Personal Bests</h3>
-          <div className="records-grid">
-            {records.fewestMoves && (
-              <div className="record-card">
-                <span className="record-card-value">{records.fewestMoves.moves}</span>
-                <span className="record-card-label">Fewest Moves</span>
-                <span className="record-card-meta">
-                  {records.fewestMoves.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'} ·{' '}
-                  {formatTime(records.fewestMoves.timeSeconds)}
-                </span>
-              </div>
-            )}
-            {records.fastestTime && (
-              <div className="record-card">
-                <span className="record-card-value">{formatTime(records.fastestTime.timeSeconds)}</span>
-                <span className="record-card-label">Fastest Time</span>
-                <span className="record-card-meta">
-                  {records.fastestTime.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'} ·{' '}
-                  {records.fastestTime.moves} moves
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Appearance ─────────────────────────────────────────────────── */}
-      <div className="profile-section">
-        <h3 className="profile-section-title">Card Style</h3>
-        <div className="app-card-style-grid">
-          {CARD_STYLES.map(s => {
-            const active = preferences.cardStyle === s.key;
-            return (
-              <button
-                key={s.key}
-                className={`app-style-btn${active ? ' app-style-btn--active' : ''}${s.comingSoon ? ' app-style-btn--disabled' : ''}`}
-                onClick={() => !s.comingSoon && updatePreference('cardStyle', s.key)}
-              >
-                <div className="app-style-preview-wrap">
-                  <img
-                    className={`app-style-preview app-style-preview--img${s.comingSoon ? ' app-style-preview--dim' : ''}`}
-                    src={s.previewImg}
-                    alt={`${s.label} card preview`}
-                    draggable={false}
-                  />
-                  {s.comingSoon && <span className="app-style-coming-soon">Soon</span>}
-                </div>
-                <span className="app-style-label">{s.label}</span>
-                <span className="app-style-desc">{s.desc}</span>
-                {active && <span className="app-style-check">✓</span>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="profile-section">
-        <h3 className="profile-section-title">Table Colour</h3>
-        <div className="app-baize-row">
-          {BAIZE_COLOURS.map(b => {
-            const active = preferences.feltColour === b.value;
-            return (
-              <button
-                key={b.key}
-                className={`app-baize-btn${active ? ' app-baize-btn--active' : ''}`}
-                style={{ background: b.value }}
-                onClick={() => updatePreference('feltColour', b.value)}
-                aria-label={`${b.label} baize`}
-              >
-                <span className="app-baize-label">{b.label}</span>
-                {active && <span className="app-baize-check">✓</span>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="profile-section">
-        <h3 className="profile-section-title">Display Name</h3>
-        <div className="name-row">
-          <input
-            className="text-input"
-            value={nameInput}
-            onChange={e => setNameInput(e.target.value)}
-          />
-          <button className="btn-primary" onClick={handleSaveName}>Save</button>
-        </div>
-      </div>
-
-      {/* ── Change Password ─────────────────────────────────────────── */}
-      <div className="profile-section">
-        <h3 className="profile-section-title">Change Password</h3>
-        <form className="login-form" onSubmit={handleChangePassword}>
-          <input
-            className="text-input"
-            type="password"
-            placeholder="Current password"
-            value={currentPw}
-            onChange={e => setCurrentPw(e.target.value)}
-            autoComplete="current-password"
-          />
-          <input
-            className="text-input"
-            type="password"
-            placeholder="New password"
-            value={newPw}
-            onChange={e => setNewPw(e.target.value)}
-            autoComplete="new-password"
-          />
-          <input
-            className="text-input"
-            type="password"
-            placeholder="Confirm new password"
-            value={confirmPw}
-            onChange={e => setConfirmPw(e.target.value)}
-            autoComplete="new-password"
-          />
-          {pwError   && <p className="error-text">{pwError}</p>}
-          {pwSuccess && <p className="success-text">{pwSuccess}</p>}
-          <button className="btn-primary" type="submit" disabled={pwLoading}>
-            {pwLoading ? 'Saving…' : 'Update Password'}
+      {/* ── Tab bar ──────────────────────────────────────────────────── */}
+      <div className="profile-tabs">
+        {[
+          { key: 'stats',    label: 'Stats'    },
+          { key: 'calendar', label: 'Calendar' },
+          { key: 'display',  label: 'Display'  },
+          { key: 'user',     label: 'Account'  },
+        ].map(t => (
+          <button
+            key={t.key}
+            className={`profile-tab${tab === t.key ? ' profile-tab--active' : ''}`}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
           </button>
-        </form>
+        ))}
       </div>
 
-      {/* ── Danger Zone ─────────────────────────────────────────────── */}
-      <div className="profile-section profile-section--danger">
-        <h3 className="profile-section-title">Danger Zone</h3>
-        <p className="danger-desc">
-          Permanently delete your account and all game data. This cannot be undone.
-        </p>
-        <button className="btn-danger" onClick={() => { setDeleteError(''); setDeletePw(''); setShowDeleteModal(true); }}>
-          Delete Account
-        </button>
-      </div>
+      {/* ── Stats tab ────────────────────────────────────────────────── */}
+      {tab === 'stats' && (
+        <>
+          {stats && (
+            <div className="profile-section">
+              <h3 className="profile-section-title">Stats</h3>
+              {['draw1', 'draw3'].map(mode => {
+                const s = stats[mode];
+                if (!s || s.gamesPlayed === 0) return null;
+                return (
+                  <div key={mode} className="stats-mode-block">
+                    <p className="stats-mode-label">{mode === 'draw1' ? 'Draw 1' : 'Draw 3'}</p>
+                    <div className="stats-grid">
+                      {[
+                        ['Played',    s.gamesPlayed],
+                        ['Won',       s.wins],
+                        ['Win Rate',  `${Math.round(s.winRate * 100)}%`],
+                        ['Avg Moves', s.avgMoves  ? Math.round(s.avgMoves)  : '—'],
+                        ['Avg Time',  s.avgTimeSeconds ? formatTime(Math.round(s.avgTimeSeconds)) : '—'],
+                      ].map(([label, value]) => (
+                        <div key={label} className="stat-card">
+                          <span className="stat-card-value">{value}</span>
+                          <span className="stat-card-label">{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-      <div className="profile-section profile-section--signout">
-        <button className="btn-signout" onClick={logout}>Sign Out</button>
-      </div>
+          {records && (records.fewestMoves || records.fastestTime) && (
+            <div className="profile-section">
+              <h3 className="profile-section-title">Personal Bests</h3>
+              <div className="records-grid">
+                {records.fewestMoves && (
+                  <div className="record-card">
+                    <span className="record-card-value">{records.fewestMoves.moves}</span>
+                    <span className="record-card-label">Fewest Moves</span>
+                    <span className="record-card-meta">
+                      {records.fewestMoves.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'} ·{' '}
+                      {formatTime(records.fewestMoves.timeSeconds)}
+                    </span>
+                  </div>
+                )}
+                {records.fastestTime && (
+                  <div className="record-card">
+                    <span className="record-card-value">{formatTime(records.fastestTime.timeSeconds)}</span>
+                    <span className="record-card-label">Fastest Time</span>
+                    <span className="record-card-meta">
+                      {records.fastestTime.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'} ·{' '}
+                      {records.fastestTime.moves} moves
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {(!stats || (Object.values(stats).every(s => !s || s.gamesPlayed === 0))) && !records && (
+            <p className="profile-empty">Play some games to see your stats here.</p>
+          )}
+        </>
+      )}
+
+      {/* ── Calendar tab ─────────────────────────────────────────────── */}
+      {tab === 'calendar' && (
+        <div className="profile-section">
+          <Calendar
+            history={history}
+            onDayClick={setSelectedDay}
+            onMonthChange={(y, m) => {
+              setCalYear(y);
+              setCalMonth(m);
+              fetchHistory(y, m);
+            }}
+          />
+        </div>
+      )}
+
+      {/* ── Display tab ──────────────────────────────────────────────── */}
+      {tab === 'display' && (
+        <>
+          <div className="profile-section">
+            <h3 className="profile-section-title">Card Style</h3>
+            <div className="app-card-style-grid">
+              {CARD_STYLES.map(s => {
+                const active = preferences.cardStyle === s.key;
+                return (
+                  <button
+                    key={s.key}
+                    className={`app-style-btn${active ? ' app-style-btn--active' : ''}${s.comingSoon ? ' app-style-btn--disabled' : ''}`}
+                    onClick={() => !s.comingSoon && updatePreference('cardStyle', s.key)}
+                  >
+                    <div className="app-style-preview-wrap">
+                      <img
+                        className={`app-style-preview app-style-preview--img${s.comingSoon ? ' app-style-preview--dim' : ''}`}
+                        src={s.previewImg}
+                        alt={`${s.label} card preview`}
+                        draggable={false}
+                      />
+                      {s.comingSoon && <span className="app-style-coming-soon">Soon</span>}
+                    </div>
+                    <span className="app-style-label">{s.label}</span>
+                    <span className="app-style-desc">{s.desc}</span>
+                    {active && <span className="app-style-check">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="profile-section">
+            <h3 className="profile-section-title">Table Colour</h3>
+            <div className="app-baize-row">
+              {BAIZE_COLOURS.map(b => {
+                const active = preferences.feltColour === b.value;
+                return (
+                  <button
+                    key={b.key}
+                    className={`app-baize-btn${active ? ' app-baize-btn--active' : ''}`}
+                    style={{ background: b.value }}
+                    onClick={() => updatePreference('feltColour', b.value)}
+                    aria-label={`${b.label} baize`}
+                  >
+                    <span className="app-baize-label">{b.label}</span>
+                    {active && <span className="app-baize-check">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="profile-section">
+            <h3 className="profile-section-title">Draw Pile Location</h3>
+            <div className="stock-side-row">
+              <button
+                className={`stock-side-btn${(preferences.stockSide || 'left') === 'left' ? ' stock-side-btn--active' : ''}`}
+                onClick={() => updatePreference('stockSide', 'left')}
+              >
+                <span className="stock-side-icon">⬅</span> Left
+              </button>
+              <button
+                className={`stock-side-btn${preferences.stockSide === 'right' ? ' stock-side-btn--active' : ''}`}
+                onClick={() => updatePreference('stockSide', 'right')}
+              >
+                Right <span className="stock-side-icon">➡</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Account tab ──────────────────────────────────────────────── */}
+      {tab === 'user' && (
+        <>
+          <div className="profile-section">
+            <h3 className="profile-section-title">Display Name</h3>
+            <div className="name-row">
+              <input
+                className="text-input"
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+              />
+              <button className="btn-primary" onClick={handleSaveName}>Save</button>
+            </div>
+          </div>
+
+          <div className="profile-section">
+            <h3 className="profile-section-title">Change Password</h3>
+            <form className="login-form" onSubmit={handleChangePassword}>
+              <input
+                className="text-input"
+                type="password"
+                placeholder="Current password"
+                value={currentPw}
+                onChange={e => setCurrentPw(e.target.value)}
+                autoComplete="current-password"
+              />
+              <input
+                className="text-input"
+                type="password"
+                placeholder="New password"
+                value={newPw}
+                onChange={e => setNewPw(e.target.value)}
+                autoComplete="new-password"
+              />
+              <input
+                className="text-input"
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPw}
+                onChange={e => setConfirmPw(e.target.value)}
+                autoComplete="new-password"
+              />
+              {pwError   && <p className="error-text">{pwError}</p>}
+              {pwSuccess && <p className="success-text">{pwSuccess}</p>}
+              <button className="btn-primary" type="submit" disabled={pwLoading}>
+                {pwLoading ? 'Saving…' : 'Update Password'}
+              </button>
+            </form>
+          </div>
+
+          <div className="profile-section profile-section--danger">
+            <h3 className="profile-section-title">Danger Zone</h3>
+            <p className="danger-desc">
+              Permanently delete your account and all game data. This cannot be undone.
+            </p>
+            <button className="btn-danger" onClick={() => { setDeleteError(''); setDeletePw(''); setShowDeleteModal(true); }}>
+              Delete Account
+            </button>
+          </div>
+
+          <div className="profile-section profile-section--signout">
+            <button className="btn-signout" onClick={logout}>Sign Out</button>
+          </div>
+        </>
+      )}
 
       {/* ── Delete Account Modal ─────────────────────────────────────── */}
       {showDeleteModal && (

@@ -5,7 +5,7 @@ import './Board.css';
 
 const SUIT_SYMBOLS = ['♣', '♦', '♥', '♠'];
 
-export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMode }) {
+export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMode, stockSide = 'left' }) {
   const {
     tableau, stock, waste, foundations, draw,
     wasteToTableau, wasteToFoundation,
@@ -415,7 +415,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
       </div>
 
       {/* Top row */}
-      <div className="board-top">
+      <div className={`board-top${stockSide === 'right' ? ' board-top--stock-right' : ''}`}>
         {/* Stock */}
         {stock.length > 0
           ? <div className="stock-pile" onClick={handleStockClick}>

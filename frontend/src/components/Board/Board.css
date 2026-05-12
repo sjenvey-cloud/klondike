@@ -55,6 +55,11 @@ html.game-fullwidth {
   flex: 1;
 }
 
+/* Stock on the right — reverse the entire top row */
+.board-top--stock-right {
+  flex-direction: row-reverse;
+}
+
 /* Stock pile */
 .stock-pile {
   position: relative;

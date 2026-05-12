@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
+import { PreferencesContext } from '../contexts/PreferencesContext';
 import { useGame } from '../hooks/useGame';
 import { useTimer } from '../hooks/useTimer';
 import { Board } from '../components/Board/Board';
@@ -12,6 +13,7 @@ import './Game.css';
 
 export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null, onDailyWin = null }) {
   const { user } = useContext(AuthContext);
+  const { preferences } = useContext(PreferencesContext);
   const location = useLocation();
   const navigate = useNavigate();
   const game = useGame(user?.id);
@@ -194,6 +196,7 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
         onNewGame={handleNewGame}
         onLeaderboard={handleOpenLeaderboard}
         onRedeal={handleRedeal}
+        stockSide={preferences?.stockSide || 'left'}
       />
 
       {/* WinModal for regular (non-daily) games only */}
