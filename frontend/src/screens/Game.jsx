@@ -1,10 +1,11 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { useGame } from '../hooks/useGame';
 import { useTimer } from '../hooks/useTimer';
 import { Board } from '../components/Board/Board';
 import { WinModal } from '../components/WinModal/WinModal';
+import { DailyWinModal } from '../components/DailyWinModal/DailyWinModal';
 import { getHand, getHandLeaderboard } from '../services/api';
 import { localDateString } from '../services/dateUtils';
 import './Game.css';
@@ -12,6 +13,7 @@ import './Game.css';
 export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null, onDailyWin = null }) {
   const { user } = useContext(AuthContext);
   const location = useLocation();
+  const navigate = useNavigate();
   const game = useGame(user?.id);
   const timer = useTimer(!!game.tableau && !game.isWon, game.startTimeRef, game.sessionId);
   const [winResult, setWinResult]   = useState(null);
@@ -20,6 +22,9 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
   const [lbOpen, setLbOpen]         = useState(false);
   const [lbData, setLbData]         = useState([]);
   const [lbLoading, setLbLoading]   = useState(false);
+  // Prior daily replay context (set when navigated from the calendar)
+  const [priorDailyInfo, setPriorDailyInfo] = useState(null); // { date, drawMode }
+  const [dailyWinData,   setDailyWinData]   = useState(null);
 
   // Remove the app-shell max-width while the game is active so cards can fill the iPad screen
   useEffect(() => {
@@ -39,12 +44,25 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
       return;
     }
 
-    const replayHandId  = location.state?.replayHandId;
-    const replayDrawMode = location.state?.replayDrawMode;
+    const replayHandId    = location.state?.replayHandId;
+    const replayDrawMode  = location.state?.replayDrawMode;
+    const replayIsDaily   = location.state?.replayIsDaily   || false;
+    const replayDailyDate = location.state?.replayDailyDate || null;
+    const replayIsRanked  = location.state?.replayIsRanked  ?? true;
     if (replayHandId) {
-      // Replay a specific historical hand
+      // Replay a specific historical hand (may be a prior daily challenge)
       getHand(replayHandId)
-        .then(hand => game.startGame(hand, replayDrawMode || hand.drawMode || 'draw3'))
+        .then(hand => {
+          const mode = replayDrawMode || hand.drawMode || 'draw3';
+          if (replayIsDaily && replayDailyDate) {
+            setPriorDailyInfo({ date: replayDailyDate, drawMode: mode });
+          }
+          game.startGame(hand, mode, {
+            isDaily:   replayIsDaily,
+            dailyDate: replayDailyDate,
+            isRanked:  replayIsRanked,
+          });
+        })
         .catch(() => game.startGame(null, replayDrawMode || 'draw3'));
       return;
     }
@@ -68,15 +86,20 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
       game.finishGame()
         .then(res => {
           setWinResult(res);
-          // For daily games, notify Daily.jsx to show the DailyWinModal
           if (dailyHand && onDailyWin) {
+            // Today's daily — notify Daily.jsx to show DailyWinModal
             onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: res?.rank ?? null });
+          } else if (priorDailyInfo) {
+            // Prior daily replay — show DailyWinModal inline
+            setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: res?.rank ?? null });
           }
         })
         .catch(() => {
           setWinResult({});
           if (dailyHand && onDailyWin) {
             onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: null });
+          } else if (priorDailyInfo) {
+            setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: null });
           }
         });
     }
@@ -173,14 +196,32 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
         onRedeal={handleRedeal}
       />
 
-      {/* WinModal only for regular (non-daily) games; daily wins are handled by DailyWinModal in Daily.jsx */}
-      {game.isWon && winResult !== null && !dailyHand && (
+      {/* WinModal for regular (non-daily) games only */}
+      {game.isWon && winResult !== null && !dailyHand && !dailyWinData && (
         <WinModal
           moves={game.moves}
           timeFormatted={timer.formatted}
           result={winResult}
           onNewGame={handleNewGame}
           onShowLeaderboard={onShowLeaderboard}
+        />
+      )}
+
+      {/* DailyWinModal for prior daily replays launched from the calendar */}
+      {dailyWinData && priorDailyInfo && (
+        <DailyWinModal
+          moves={dailyWinData.moves}
+          timeFormatted={dailyWinData.timeFormatted}
+          rank={dailyWinData.rank}
+          date={priorDailyInfo.date}
+          drawMode={priorDailyInfo.drawMode}
+          userId={user?.id}
+          onNavigate={(dest) => {
+            setDailyWinData(null);
+            // 'leaderboard' and 'calendar' take the user to the daily screen;
+            // 'game', 'home', 'profile' are handled internally by DailyWinModal
+            if (dest === 'leaderboard' || dest === 'calendar') navigate('/daily');
+          }}
         />
       )}
 

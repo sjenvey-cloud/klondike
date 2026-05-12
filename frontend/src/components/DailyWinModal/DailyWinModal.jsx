@@ -82,7 +82,7 @@ export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, user
           {/* ── Leaderboard ────────────────────────────────────────────────── */}
           <div className="dwm-leaderboard">
             <div className="dwm-lb-top">
-              <span className="dwm-lb-title">Today's Leaderboard</span>
+              <span className="dwm-lb-title">Leaderboard</span>
               <div className="dwm-sort-row">
                 <button
                   className={`dwm-sort-btn${sort === 'moves' ? ' active' : ''}`}

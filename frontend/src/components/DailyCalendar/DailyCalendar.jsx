@@ -117,7 +117,13 @@ export function DailyCalendar({ drawMode = 'draw3' }) {
     try {
       const data = await getDailyByDate(selectedDate, drawMode);
       navigate('/game', {
-        state: { replayHandId: data.hand.id, replayDrawMode: data.hand.drawMode },
+        state: {
+          replayHandId:    data.hand.id,
+          replayDrawMode:  data.hand.drawMode,
+          replayIsDaily:   true,
+          replayDailyDate: selectedDate,
+          replayIsRanked:  false,   // prior daily challenges are always unranked
+        },
       });
     } catch {
       setReplaying(false);
