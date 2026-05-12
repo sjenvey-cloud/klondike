@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -92,6 +93,7 @@ public class SessionController {
      * is persisted as status=won. On failure HTTP 422 is returned and the
      * session record is NOT modified.
      */
+    @Transactional
     @PostMapping("/sessions/{id}/complete")
     public ResponseEntity<CompleteSessionResponse> completeSession(
             @PathVariable int id,
@@ -128,6 +130,19 @@ public class SessionController {
         session.setTimeSeconds(body.timeSeconds());
         session.setTurns(body.turns());
         session.setCompletedAt(LocalDateTime.now());
+
+        // Demote any prior abandoned ranked sessions for the same user/date/drawMode
+        // before saving the won session, to avoid violating idx_one_ranked_daily.
+        // (The partial unique index covers both 'won' and 'abandoned' statuses.)
+        if (session.isDaily() && session.isRanked() && session.getDailyDate() != null) {
+            int demoted = sessionRepository.demoteAbandonedRankedSessions(
+                session.getUserId(), session.getDailyDate(), session.getDrawMode(), session.getId());
+            if (demoted > 0) {
+                log.info("completeSession: demoted {} prior abandoned ranked session(s) for userId={} date={} drawMode={}",
+                    demoted, session.getUserId(), session.getDailyDate(), session.getDrawMode());
+            }
+        }
+
         sessionRepository.save(session);
         log.info("completeSession: saved win — id={} handId={} userId={} isDaily={} dailyDate={} isRanked={} moves={} timeSeconds={}",
             session.getId(), session.getHandId(), session.getUserId(),

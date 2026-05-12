@@ -33,6 +33,21 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "WHERE s.handId = :handId AND s.status = 'won'")
     int markWonSessionsAsDaily(@Param("handId") int handId, @Param("date") LocalDate date);
 
+    // Demote prior abandoned ranked sessions before recording a new ranked win.
+    // The unique constraint idx_one_ranked_daily covers (user_id, daily_date, draw_mode)
+    // WHERE is_ranked=true AND status IN ('won','abandoned'). When a user abandons their
+    // first ranked attempt and then wins a subsequent one, the old abandoned row must be
+    // demoted to is_ranked=false so the constraint allows the new won row.
+    @Modifying
+    @Query("UPDATE Session s SET s.isRanked = false " +
+           "WHERE s.userId = :userId AND s.dailyDate = :date AND s.drawMode = :drawMode " +
+           "AND s.isRanked = true AND s.status = 'abandoned' AND s.id != :excludeId")
+    int demoteAbandonedRankedSessions(
+        @Param("userId") int userId,
+        @Param("date") LocalDate date,
+        @Param("drawMode") String drawMode,
+        @Param("excludeId") int excludeId);
+
     // DEV-99: history grouped by day in the user's local timezone — unique hands only.
     // Each hand_id counts once, attributed to the day it was last played.
     // tzOffset = minutes east of UTC (added to stored UTC times before grouping).
