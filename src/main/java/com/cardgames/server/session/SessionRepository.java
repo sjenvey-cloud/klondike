@@ -158,6 +158,81 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
         @Param("userId") int userId,
         @Param("handIds") List<Integer> handIds);
 
+    // ── DEV-222: Global leaderboard ────────────────────────────────────────
+    // One row per user (their best won ranked session) using PostgreSQL DISTINCT ON.
+    // The inner subquery picks the best session per user in the defined order; the
+    // outer query re-sorts that result set globally and applies the LIMIT.
+
+    @Query(value =
+        "SELECT * FROM (" +
+        "  SELECT DISTINCT ON (user_id) * FROM sessions " +
+        "  WHERE draw_mode = :drawMode AND is_ranked = true AND status = 'won' " +
+        "    AND completed_at >= :since " +
+        "  ORDER BY user_id, moves ASC, time_seconds ASC" +
+        ") best ORDER BY moves ASC, time_seconds ASC LIMIT 50",
+        nativeQuery = true)
+    List<Session> findGlobalLeaderboardByMoves(
+        @Param("drawMode") String drawMode, @Param("since") LocalDateTime since);
+
+    @Query(value =
+        "SELECT * FROM (" +
+        "  SELECT DISTINCT ON (user_id) * FROM sessions " +
+        "  WHERE draw_mode = :drawMode AND is_ranked = true AND status = 'won' " +
+        "    AND completed_at >= :since " +
+        "  ORDER BY user_id, time_seconds ASC, moves ASC" +
+        ") best ORDER BY time_seconds ASC, moves ASC LIMIT 50",
+        nativeQuery = true)
+    List<Session> findGlobalLeaderboardByTime(
+        @Param("drawMode") String drawMode, @Param("since") LocalDateTime since);
+
+    // ── DEV-224: Rank computation ──────────────────────────────────────────
+    // Step 1 — fetch the user's best qualifying session for the period+sort.
+
+    @Query(value =
+        "SELECT * FROM sessions WHERE user_id = :userId AND draw_mode = :drawMode " +
+        "AND is_ranked = true AND status = 'won' AND completed_at >= :since " +
+        "ORDER BY moves ASC, time_seconds ASC LIMIT 1",
+        nativeQuery = true)
+    java.util.Optional<Session> findBestSessionByMoves(
+        @Param("userId") int userId, @Param("drawMode") String drawMode,
+        @Param("since") LocalDateTime since);
+
+    @Query(value =
+        "SELECT * FROM sessions WHERE user_id = :userId AND draw_mode = :drawMode " +
+        "AND is_ranked = true AND status = 'won' AND completed_at >= :since " +
+        "ORDER BY time_seconds ASC, moves ASC LIMIT 1",
+        nativeQuery = true)
+    java.util.Optional<Session> findBestSessionByTime(
+        @Param("userId") int userId, @Param("drawMode") String drawMode,
+        @Param("since") LocalDateTime since);
+
+    // Step 2 — count how many distinct users have a strictly better best session.
+    // rank = count + 1.
+
+    @Query(value =
+        "SELECT COUNT(*) FROM (" +
+        "  SELECT DISTINCT ON (user_id) moves, time_seconds FROM sessions " +
+        "  WHERE draw_mode = :drawMode AND is_ranked = true AND status = 'won' " +
+        "    AND completed_at >= :since " +
+        "  ORDER BY user_id, moves ASC, time_seconds ASC" +
+        ") best WHERE moves < :myMoves OR (moves = :myMoves AND time_seconds < :myTime)",
+        nativeQuery = true)
+    long countUsersRankedAboveByMoves(
+        @Param("drawMode") String drawMode, @Param("since") LocalDateTime since,
+        @Param("myMoves") int myMoves, @Param("myTime") int myTime);
+
+    @Query(value =
+        "SELECT COUNT(*) FROM (" +
+        "  SELECT DISTINCT ON (user_id) moves, time_seconds FROM sessions " +
+        "  WHERE draw_mode = :drawMode AND is_ranked = true AND status = 'won' " +
+        "    AND completed_at >= :since " +
+        "  ORDER BY user_id, time_seconds ASC, moves ASC" +
+        ") best WHERE time_seconds < :myTime OR (time_seconds = :myTime AND moves < :myMoves)",
+        nativeQuery = true)
+    long countUsersRankedAboveByTime(
+        @Param("drawMode") String drawMode, @Param("since") LocalDateTime since,
+        @Param("myTime") int myTime, @Param("myMoves") int myMoves);
+
     // DEV-164: league — wins + best moves for a set of userIds within a time window
     @Query("SELECT s.userId, COUNT(s.id), MIN(CASE WHEN s.status = 'won' THEN s.moves ELSE NULL END) " +
            "FROM Session s WHERE s.userId IN :userIds AND s.status = 'won' " +

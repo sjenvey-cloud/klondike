@@ -137,7 +137,7 @@ public class AuthService {
         jtiStore.store(jti);
 
         AuthResponse.UserDto userDto = new AuthResponse.UserDto(
-            (long) user.getId(), user.getEmail(), user.getDisplayName());
+            (long) user.getId(), user.getUuid(), user.getEmail(), user.getDisplayName());
         return new AuthTokenPair(accessToken, buildRefreshCookie(rawToken), userDto);
     }
 

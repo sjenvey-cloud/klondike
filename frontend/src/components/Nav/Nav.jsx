@@ -3,11 +3,12 @@ import { NavLink } from 'react-router-dom';
 import './Nav.css';
 
 const TABS = [
-  { to: '/',        icon: '🏠', label: 'Home',   end: true },
-  { to: '/game',    icon: '🃏', label: 'Game'  },
-  { to: '/daily',   icon: '🌅', label: 'Daily' },
-  { to: '/friends', icon: '👥', label: 'Social', badge: true },
-  { to: '/profile', icon: '👤', label: 'Profile' },
+  { to: '/',            icon: '🏠', label: 'Home',   end: true },
+  { to: '/game',        icon: '🃏', label: 'Game'   },
+  { to: '/daily',       icon: '🌅', label: 'Daily'  },
+  { to: '/leaderboard', icon: '🏆', label: 'Ranks'  },
+  { to: '/friends',     icon: '👥', label: 'Social', badge: true },
+  { to: '/profile',     icon: '👤', label: 'Profile' },
 ];
 
 export function Nav({ challengeBadge = 0 }) {

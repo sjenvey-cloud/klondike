@@ -150,7 +150,7 @@ export function Daily() {
             </thead>
             <tbody>
               {leaderboard.map((row, i) => (
-                <tr key={row.userId} className={user && row.userId === user.id ? 'lb-me' : ''}>
+                <tr key={row.userUuid} className={user && row.userUuid === user.uuid ? 'lb-me' : ''}>
                   <td>{i + 1}</td>
                   <td>{row.displayName}</td>
                   <td>{row.moves}</td>
@@ -178,7 +178,7 @@ export function Daily() {
           rank={dailyWinData.rank}
           date={today}
           drawMode={drawMode}
-          userId={user?.id}
+          userUuid={user?.uuid}
           onNavigate={handleWinNavigate}
         />
       )}

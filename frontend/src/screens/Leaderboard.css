@@ -1,0 +1,215 @@
+/* ── Leaderboard screen (DEV-223) ── */
+
+.lb-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: 24px;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.lb-header {
+  padding: 20px 16px 8px;
+  text-align: center;
+}
+
+.lb-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* ── Filters ────────────────────────────────────────────── */
+
+.lb-filters {
+  padding: 8px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lb-filter-row {
+  display: flex;
+  gap: 8px;
+}
+
+.lb-pill-group {
+  display: flex;
+  background: var(--color-surface-raised);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 0;
+}
+
+.lb-pill-group--sm {
+  border-radius: 16px;
+}
+
+.lb-pill {
+  flex: 1;
+  padding: 7px 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.lb-pill--sm {
+  padding: 5px 12px;
+  font-size: 12px;
+  border-radius: 14px;
+}
+
+.lb-pill--active {
+  background: var(--color-accent);
+  color: #000;
+  font-weight: 700;
+}
+
+/* ── My rank banner ─────────────────────────────────────── */
+
+.lb-my-rank {
+  margin: 0 16px 12px;
+  padding: 10px 14px;
+  background: var(--color-accent-muted);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-surface);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-ui);
+}
+
+.lb-my-rank-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  flex: none;
+}
+
+.lb-my-rank-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-accent);
+  flex: none;
+}
+
+.lb-my-rank-stats {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-left: auto;
+}
+
+.lb-my-rank-footer {
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 12px;
+}
+
+.lb-my-rank-footer strong {
+  color: var(--color-accent);
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+
+.lb-table-wrap {
+  overflow-x: auto;
+  padding: 0 16px;
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.lb-table thead th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lb-table tbody td {
+  padding: 11px 10px;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lb-col-rank {
+  width: 36px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.lb-col-name {
+  font-weight: 500;
+}
+
+.lb-col-num {
+  width: 70px;
+  text-align: right;
+}
+
+.lb-table thead .lb-col-num {
+  text-align: right;
+}
+
+/* Highlight the authenticated user's own row */
+.lb-row-me td {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.lb-row-me .lb-col-rank {
+  color: var(--color-accent);
+}
+
+/* Top 3 rank medal colours */
+.lb-table tbody tr:nth-child(1) .lb-col-rank { color: #ffd700; }
+.lb-table tbody tr:nth-child(2) .lb-col-rank { color: #c0c0c0; }
+.lb-table tbody tr:nth-child(3) .lb-col-rank { color: #cd7f32; }
+
+/* ── Empty / error states ───────────────────────────────── */
+
+.lb-empty {
+  text-align: center;
+  padding: 32px 16px 8px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.lb-error {
+  color: var(--color-danger);
+}
+
+.lb-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lb-empty-sub {
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  text-align: center;
+  padding: 0 16px;
+}

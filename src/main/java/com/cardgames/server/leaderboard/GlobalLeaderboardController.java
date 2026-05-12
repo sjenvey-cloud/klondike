@@ -1,0 +1,137 @@
+package com.cardgames.server.leaderboard;
+
+import com.cardgames.server.session.Session;
+import com.cardgames.server.session.SessionRepository;
+import com.cardgames.server.user.User;
+import com.cardgames.server.user.UserRepository;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * DEV-222: GET /api/v1/leaderboard/global — global ranked win leaderboard.
+ * DEV-224: GET /api/v1/leaderboard/global/{uuid}/rank — caller's rank.
+ *
+ * Returns one entry per user (their best ranked won session) for the requested
+ * period / drawMode / sort. Integer PKs never leave the server.
+ */
+@CrossOrigin(origins = {
+    "http://localhost:4200",
+    "http://localhost:5173",
+    "https://dbk2b6k1kyjsy.cloudfront.net",
+    "https://d2fbehwb6bp7kq.cloudfront.net",
+    "https://klondikepro.app",
+    "https://www.klondikepro.app"
+})
+@RestController
+@RequestMapping("/api/v1")
+public class GlobalLeaderboardController {
+
+    private final SessionRepository sessionRepo;
+    private final UserRepository    userRepo;
+
+    public GlobalLeaderboardController(SessionRepository sessionRepo, UserRepository userRepo) {
+        this.sessionRepo = sessionRepo;
+        this.userRepo    = userRepo;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    /**
+     * Maps a period string to a completed_at lower bound (UTC).
+     * "all-time" uses a far-past sentinel so every won session qualifies.
+     */
+    private LocalDateTime sinceFor(String period) {
+        return switch (period) {
+            case "weekly"  -> LocalDateTime.now().minusDays(7);
+            case "monthly" -> LocalDateTime.now().minusDays(30);
+            default        -> LocalDateTime.of(2000, 1, 1, 0, 0); // all-time
+        };
+    }
+
+    private GlobalLeaderboardEntry toEntry(int rank, Session s) {
+        User user = userRepo.findById(s.getUserId()).orElse(null);
+        String name = (user != null) ? user.getDisplayName() : "Unknown";
+        UUID   uuid = (user != null) ? user.getUuid()        : null;
+        return new GlobalLeaderboardEntry(rank, uuid, name, s.getMoves(), s.getTimeSeconds());
+    }
+
+    // ── DEV-222: Global leaderboard list ─────────────────────────────────
+
+    /**
+     * GET /api/v1/leaderboard/global
+     *
+     * Query params:
+     *   period   = weekly | monthly | all-time  (default: weekly)
+     *   drawMode = draw1  | draw3               (default: draw3)
+     *   sort     = moves  | time                (default: moves)
+     *
+     * Returns up to 50 entries, one per user (their best session).
+     */
+    @GetMapping("/leaderboard/global")
+    public ResponseEntity<List<GlobalLeaderboardEntry>> getGlobalLeaderboard(
+            @RequestParam(defaultValue = "weekly") String period,
+            @RequestParam(defaultValue = "draw3")  String drawMode,
+            @RequestParam(defaultValue = "moves")  String sort) {
+
+        LocalDateTime since = sinceFor(period);
+
+        List<Session> sessions = "time".equals(sort)
+            ? sessionRepo.findGlobalLeaderboardByTime(drawMode, since)
+            : sessionRepo.findGlobalLeaderboardByMoves(drawMode, since);
+
+        List<GlobalLeaderboardEntry> board = new ArrayList<>();
+        int rank = 1;
+        for (Session s : sessions) {
+            board.add(toEntry(rank++, s));
+        }
+        return ResponseEntity.ok(board);
+    }
+
+    // ── DEV-224: Caller's rank ────────────────────────────────────────────
+
+    /**
+     * GET /api/v1/leaderboard/global/{uuid}/rank
+     *
+     * Returns the given user's rank on the global board for the requested
+     * period / drawMode / sort. 404 if the user has no qualifying win.
+     *
+     * Query params: period, drawMode, sort (same defaults as list endpoint).
+     */
+    @GetMapping("/leaderboard/global/{uuid}/rank")
+    public ResponseEntity<GlobalLeaderboardEntry> getGlobalRank(
+            @PathVariable UUID uuid,
+            @RequestParam(defaultValue = "weekly") String period,
+            @RequestParam(defaultValue = "draw3")  String drawMode,
+            @RequestParam(defaultValue = "moves")  String sort,
+            Authentication auth) {
+
+        User user = userRepo.findByUuid(uuid).orElse(null);
+        if (user == null) return ResponseEntity.notFound().build();
+
+        LocalDateTime since = sinceFor(period);
+
+        Optional<Session> best = "time".equals(sort)
+            ? sessionRepo.findBestSessionByTime(user.getId(), drawMode, since)
+            : sessionRepo.findBestSessionByMoves(user.getId(), drawMode, since);
+
+        if (best.isEmpty()) return ResponseEntity.notFound().build();
+
+        Session s = best.get();
+
+        long above = "time".equals(sort)
+            ? sessionRepo.countUsersRankedAboveByTime(drawMode, since, s.getTimeSeconds(), s.getMoves())
+            : sessionRepo.countUsersRankedAboveByMoves(drawMode, since, s.getMoves(), s.getTimeSeconds());
+
+        int rank = (int) above + 1;
+        return ResponseEntity.ok(
+            new GlobalLeaderboardEntry(rank, user.getUuid(), user.getDisplayName(),
+                                       s.getMoves(), s.getTimeSeconds()));
+    }
+}

@@ -28,7 +28,7 @@ function formatTime(s) {
  *   onNavigate    – callback(destination) where destination is one of:
  *                   'leaderboard' | 'calendar' | 'game' | 'home' | 'profile'
  */
-export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, userId, onNavigate }) {
+export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, userUuid, onNavigate }) {
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([]);
   const [sort,        setSort]        = useState('moves');
@@ -106,7 +106,7 @@ export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, user
                 </thead>
                 <tbody>
                   {leaderboard.slice(0, 5).map(row => (
-                    <tr key={row.userId} className={row.userId === userId ? 'dwm-lb-me' : ''}>
+                    <tr key={row.userUuid} className={row.userUuid === userUuid ? 'dwm-lb-me' : ''}>
                       <td>{row.rank}</td>
                       <td className="dwm-lb-name">{row.displayName}</td>
                       <td>{row.moves}</td>

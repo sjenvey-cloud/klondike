@@ -159,6 +159,13 @@ export const addChallengeParticipants = (id, userIds) => post(`/social/challenge
 export const endSocialChallenge       = (id)  => post(`/social/challenges/${id}/end`, {});
 export const resumeSocialChallenge    = (id)  => post(`/social/challenges/${id}/resume`, {});
 
+// ── Global leaderboard (DEV-222 / DEV-224) ────────────────────────────────
+export const getGlobalLeaderboard = (period = 'weekly', drawMode = 'draw3', sort = 'moves') =>
+  get(`/leaderboard/global?period=${period}&drawMode=${drawMode}&sort=${sort}`);
+
+export const getGlobalRank = (userUuid, period = 'weekly', drawMode = 'draw3', sort = 'moves') =>
+  get(`/leaderboard/global/${userUuid}/rank?period=${period}&drawMode=${drawMode}&sort=${sort}`);
+
 // ── League ────────────────────────────────────────────────────────────────
 export const getLeague = (period = 'weekly') =>
   get(`/leagues?period=${period}`);
