@@ -69,6 +69,25 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
       return;
     }
 
+    // DEV-203: app-level resume prompt navigated here with an existing session
+    const resumeSessionId = location.state?.resumeSessionId;
+    const resumeHandId    = location.state?.resumeHandId;
+    const resumeDrawMode  = location.state?.resumeDrawMode;
+    if (resumeSessionId) {
+      if (game.hasSavedSession()) {
+        // sessionStorage still has the game state — let the local resume prompt handle it
+        setResumePrompt(true);
+      } else {
+        // sessionStorage was cleared (browser closed/refreshed) — reload the hand from the
+        // server and reuse the existing session ID so no new session is created
+        const mode = resumeDrawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
+        getHand(resumeHandId)
+          .then(hand => game.startGame(hand, hand.drawMode || mode, { existingSessionId: resumeSessionId }))
+          .catch(() => game.startGame(null, mode));
+      }
+      return;
+    }
+
     if (game.hasSavedSession()) {
       setResumePrompt(true);
     } else {

@@ -1,13 +1,16 @@
 package com.cardgames.server.user;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
 @Table(name = "users")
+@SQLRestriction("deleted_at IS NULL")
 public class User implements Serializable {
 
     private static final long serialVersionUID = 7663960497705998476L;
@@ -78,6 +81,13 @@ public class User implements Serializable {
 
     public Date getlasthand()                { return lasthand; }
     public void setlasthand(Date d)          { this.lasthand = d; }
+
+    // DEV-204: soft-delete timestamp — null means account is active
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    public LocalDateTime getDeletedAt()             { return deletedAt; }
+    public void          setDeletedAt(LocalDateTime v) { this.deletedAt = v; }
 
     static Date getDefaultTime() {
         return new Date(Instant.EPOCH.toEpochMilli());

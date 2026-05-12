@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
 import { usePreferences } from './hooks/usePreferences';
@@ -14,12 +14,43 @@ import { Settings } from './screens/Settings';
 import { Login } from './screens/Login';
 import { AcceptInvite } from './screens/AcceptInvite';
 import { PreferencesContext } from './contexts/PreferencesContext';
-import { getPendingChallengeCount } from './services/api';
+import { ResumeModal } from './components/ResumeModal/ResumeModal';
+import { getPendingChallengeCount, getActiveSession } from './services/api';
 import './styles/tokens.css';
 import './index.css';
 
 export const AuthContext  = createContext({ user: null, loading: true, login: () => {}, register: () => {}, logout: () => {}, updateDisplayName: () => {} });
 export const ThemeContext = createContext({ theme: 'dark', setTheme: () => {} });
+
+/**
+ * DEV-203: Rendered inside <Router> so it can call useNavigate.
+ * Shows the ResumeModal when an active server session is found and handles
+ * navigation to /game with the session context on resume.
+ */
+function ActiveSessionHandler({ activeSession, onDismiss }) {
+  const navigate = useNavigate();
+
+  if (!activeSession) return null;
+
+  const handleResume = () => {
+    onDismiss();
+    navigate('/game', {
+      state: {
+        resumeSessionId: activeSession.id,
+        resumeHandId:    activeSession.handId,
+        resumeDrawMode:  activeSession.drawMode,
+      },
+    });
+  };
+
+  return (
+    <ResumeModal
+      session={activeSession}
+      onResume={handleResume}
+      onStartNew={onDismiss}
+    />
+  );
+}
 
 // Re-export PreferencesContext from here for backwards compatibility with Card.js
 export { PreferencesContext };
@@ -28,6 +59,8 @@ function AppInner() {
   const { user } = useContext(AuthContext);
   const prefsHook = usePreferences();
   const [challengeCount, setChallengeCount] = useState(0);
+  // DEV-203: active session resume modal
+  const [activeSession, setActiveSession] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -44,9 +77,21 @@ function AppInner() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [user]);
 
+  // DEV-203: check for an active (in-progress) session on login
+  useEffect(() => {
+    if (!user) { setActiveSession(null); return; }
+    getActiveSession()
+      .then(session => { if (session) setActiveSession(session); })
+      .catch(() => {}); // silently ignore — no modal is fine
+  }, [user]);
+
   return (
     <PreferencesContext.Provider value={prefsHook}>
       <Router>
+        <ActiveSessionHandler
+          activeSession={activeSession}
+          onDismiss={() => setActiveSession(null)}
+        />
         <Routes>
           {/* Public routes — no AuthGuard, no Nav */}
           <Route path="/login"          element={<Login />} />

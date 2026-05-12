@@ -100,6 +100,9 @@ export const completeSession = (id, moves, timeSeconds, turns) =>
 export const abandonSession = (id, moves, timeSeconds, turns) =>
   post(`/sessions/${id}/abandon`, { moves, timeSeconds, turns });
 
+// GET /api/v1/sessions/active → { id, handId, drawMode, moves, startedAt } | 204
+export const getActiveSession = () => get('/sessions/active');
+
 // ── Daily ─────────────────────────────────────────────────────────────────
 export const getDaily        = (drawMode = 'draw3') => get(`/daily?drawMode=${drawMode}`);
 export const getDailyCalendar = (drawMode = 'draw3', months = 4) => get(`/daily/calendar?drawMode=${drawMode}&months=${months}`);

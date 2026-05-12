@@ -344,15 +344,22 @@ export function useGame(userId) {
   const startGame = useCallback(async (handOverride = null, drawMode = 'draw3', opts = {}) => {
     setLoading(true);
     try {
-      const hand    = handOverride || await createHand(drawMode);
-      const session = await createSession(
-        hand.id, userId,
-        opts.isDaily   || false,
-        opts.dailyDate || null,
-        opts.isRanked  !== undefined ? opts.isRanked : true,
-      );
-      const dealt   = dealKlondike(hand.cards);
-      setSessionId(session?.session?.id ?? session?.id);
+      const hand = handOverride || await createHand(drawMode);
+      let resolvedSessionId;
+      if (opts.existingSessionId) {
+        // DEV-203: resuming a server-side active session — skip session creation
+        resolvedSessionId = opts.existingSessionId;
+      } else {
+        const session = await createSession(
+          hand.id, userId,
+          opts.isDaily   || false,
+          opts.dailyDate || null,
+          opts.isRanked  !== undefined ? opts.isRanked : true,
+        );
+        resolvedSessionId = session?.session?.id ?? session?.id;
+      }
+      const dealt = dealKlondike(hand.cards);
+      setSessionId(resolvedSessionId);
       setHandId(hand.id);
       startTimeRef.current = Date.now();
       clearSavedSession();

@@ -13,6 +13,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.transaction.Transactional;
@@ -37,6 +38,25 @@ public class SessionController {
     @Autowired HandRepository      handRepository;
     @Autowired ChallengeRepository challengeRepository;
     @Autowired CacheManager        cacheManager;
+
+    // ── DEV-202: Active session ───────────────────────────────────────────
+
+    /**
+     * GET /api/v1/sessions/active
+     *
+     * Returns the most recent in-progress session for the authenticated user.
+     * Used by the frontend on app boot to offer a resume-game prompt.
+     * Returns 204 No Content if the user has no active session.
+     */
+    @GetMapping("/sessions/active")
+    public ResponseEntity<ActiveSessionResponse> getActiveSession(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+        return sessionRepository
+            .findFirstByUserIdAndStatusOrderByStartedAtDesc(userId, Session.STATUS_ACTIVE)
+            .map(s -> ResponseEntity.ok(new ActiveSessionResponse(
+                s.getId(), s.getHandId(), s.getDrawMode(), s.getMoves(), s.getStartedAt())))
+            .orElse(ResponseEntity.noContent().build());
+    }
 
     // ── DEV-69: Create session ────────────────────────────────────────────
 

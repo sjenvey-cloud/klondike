@@ -13,6 +13,9 @@ import java.util.List;
 @Repository
 public interface SessionRepository extends JpaRepository<Session, Integer> {
 
+    // DEV-202: most recent active session for a user (for app-boot resume prompt)
+    java.util.Optional<Session> findFirstByUserIdAndStatusOrderByStartedAtDesc(int userId, String status);
+
     // DEV-106: ranked daily attempt check
     boolean existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
         int userId, LocalDate dailyDate, String drawMode, String[] statuses);

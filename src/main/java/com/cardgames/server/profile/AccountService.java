@@ -61,7 +61,7 @@ public class AccountService {
             throw new InvalidCredentialsException();
         }
 
-        // Revoke jti before deleting so in-flight requests are rejected immediately
+        // Revoke jti before soft-deleting so in-flight requests are rejected immediately
         if (bearerToken != null) {
             try {
                 Claims claims = jwtService.parseAndValidateToken(bearerToken);
@@ -74,6 +74,13 @@ public class AccountService {
             }
         }
 
-        userRepository.delete(user);
+        // DEV-204: soft-delete — anonymise PII and set deleted_at.
+        // The user row is retained for 30 days then hard-purged by UserPurgeJob.
+        user.setEmail("deleted_" + userId + "@deleted.invalid");
+        user.setUsername("Deleted User");
+        user.setDisplayName("Deleted User");
+        user.setPasswordHash("");
+        user.setDeletedAt(java.time.LocalDateTime.now());
+        userRepository.save(user);
     }
 }
