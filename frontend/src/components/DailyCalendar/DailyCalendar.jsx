@@ -122,7 +122,8 @@ export function DailyCalendar({ drawMode = 'draw3' }) {
           replayDrawMode:  data.hand.drawMode,
           replayIsDaily:   true,
           replayDailyDate: selectedDate,
-          replayIsRanked:  false,   // prior daily challenges are always unranked
+          // isRanked not forced here — backend applies the same one-ranked-win-per-day
+          // rule as today's daily: ranked if the user hasn't won it yet, unranked if they have.
         },
       });
     } catch {

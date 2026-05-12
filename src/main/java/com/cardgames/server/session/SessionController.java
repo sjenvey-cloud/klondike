@@ -64,24 +64,17 @@ public class SessionController {
             session.setIsDaily(true);
             session.setDailyDate(date);
 
-            if (date.isBefore(LocalDate.now())) {
-                // Prior daily challenges are always unranked — you cannot retroactively
-                // earn a ranked spot on a past day's leaderboard.
+            // Same ranked-slot logic for all daily challenges — today's or historical.
+            // One ranked win per (user, date, drawMode); subsequent replays are unranked practice.
+            boolean hasRanked = sessionRepository
+                .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
+                    body.userId(), date, hand.getDrawMode(),
+                    new String[]{ Session.STATUS_WON });
+            log.info("createSession: daily branch — date={} drawMode={} hasRanked={}",
+                date, hand.getDrawMode(), hasRanked);
+            if (hasRanked) {
                 isRanked = false;
                 session.setIsRanked(false);
-                log.info("createSession: prior daily — date={} drawMode={} → unranked (past date)",
-                    date, hand.getDrawMode());
-            } else {
-                boolean hasRanked = sessionRepository
-                    .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
-                        body.userId(), date, hand.getDrawMode(),
-                        new String[]{ Session.STATUS_WON });
-                log.info("createSession: daily branch — date={} drawMode={} hasRanked={}",
-                    date, hand.getDrawMode(), hasRanked);
-                if (hasRanked) {
-                    isRanked = false;
-                    session.setIsRanked(false);
-                }
             }
         }
 
