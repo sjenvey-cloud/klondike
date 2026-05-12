@@ -72,10 +72,17 @@ public class ProfileController {
     @DeleteMapping
     public ResponseEntity<Void> deleteAccount(
             @Valid @RequestBody DeleteAccountRequest body,
+            @org.springframework.web.bind.annotation.RequestHeader(
+                value = "Authorization", required = false) String authHeader,
             Authentication auth) {
 
         int userId = (Integer) auth.getPrincipal();
-        accountService.deleteAccount(userId, body.password());
+
+        // DEV-201: extract bearer token for jti revocation inside AccountService
+        String bearerToken = (authHeader != null && authHeader.startsWith("Bearer "))
+            ? authHeader.substring(7) : null;
+
+        accountService.deleteAccount(userId, body.password(), bearerToken);
         return ResponseEntity.noContent().build();
     }
 

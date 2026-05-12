@@ -2,6 +2,7 @@ package com.cardgames.server.auth;
 
 import com.cardgames.server.identity.UserIdentity;
 import com.cardgames.server.identity.UserIdentityRepository;
+import com.cardgames.server.security.JtiStore;
 import com.cardgames.server.security.JwtService;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
@@ -27,17 +28,20 @@ public class AuthService {
     private final UserIdentityRepository userIdentityRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService             jwtService;
+    private final JtiStore               jtiStore;
     private final PasswordEncoder        passwordEncoder;
 
     public AuthService(UserRepository userRepository,
                        UserIdentityRepository userIdentityRepository,
                        RefreshTokenRepository refreshTokenRepository,
                        JwtService jwtService,
+                       JtiStore jtiStore,
                        PasswordEncoder passwordEncoder) {
         this.userRepository         = userRepository;
         this.userIdentityRepository = userIdentityRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtService             = jwtService;
+        this.jtiStore               = jtiStore;
         this.passwordEncoder        = passwordEncoder;
     }
 
@@ -94,12 +98,26 @@ public class AuthService {
     // ── Logout ────────────────────────────────────────────────────────────
 
     @Transactional
-    public ResponseCookie logout(String rawToken) {
+    public ResponseCookie logout(String rawToken, String bearerToken) {
         String tokenHash = sha256Hex(rawToken);
         refreshTokenRepository.findByTokenHash(tokenHash).ifPresent(t -> {
             t.setRevoked(true);
             refreshTokenRepository.save(t);
         });
+
+        // DEV-201: revoke the jti from the accompanying access token (best-effort)
+        if (bearerToken != null) {
+            try {
+                io.jsonwebtoken.Claims claims = jwtService.parseAndValidateToken(bearerToken);
+                String jti = jwtService.extractJti(claims);
+                if (jti != null) {
+                    jtiStore.revoke(jti);
+                }
+            } catch (io.jsonwebtoken.JwtException ignored) {
+                // Token already expired or invalid — jti will expire naturally in Redis
+            }
+        }
+
         return clearedCookie();
     }
 
@@ -112,8 +130,11 @@ public class AuthService {
 
         refreshTokenRepository.save(new RefreshToken(user.getId(), tokenHash, expiresAt));
 
+        // DEV-200/201: generate a jti and register it in Redis before returning
+        String jti         = UUID.randomUUID().toString();
         String accessToken = jwtService.generateAccessToken(
-            user.getId(), user.getEmail(), user.getDisplayName());
+            user.getId(), user.getEmail(), user.getDisplayName(), jti);
+        jtiStore.store(jti);
 
         AuthResponse.UserDto userDto = new AuthResponse.UserDto(
             (long) user.getId(), user.getEmail(), user.getDisplayName());

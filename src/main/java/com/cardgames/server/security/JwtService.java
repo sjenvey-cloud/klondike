@@ -39,12 +39,16 @@ public class JwtService {
             new X509EncodedKeySpec(decodePem(publicKeyPem)));
     }
 
-    public String generateAccessToken(int userId, String email, String displayName) {
+    // DEV-200: generateAccessToken now includes a jti (JWT ID) UUID claim.
+    // The caller is responsible for persisting the jti in Redis via JtiStore
+    // immediately after calling this method (DEV-201).
+    public String generateAccessToken(int userId, String email, String displayName, String jti) {
         Instant now = Instant.now();
         return Jwts.builder()
             .subject(String.valueOf(userId))
             .claim("email", email)
             .claim("displayName", displayName)
+            .id(jti)
             .issuedAt(Date.from(now))
             .expiration(Date.from(now.plus(ACCESS_TOKEN_EXPIRY_MINUTES, ChronoUnit.MINUTES)))
             .signWith(privateKey, Jwts.SIG.RS256)
@@ -63,6 +67,11 @@ public class JwtService {
 
     public int extractUserId(Claims claims) {
         return Integer.parseInt(claims.getSubject());
+    }
+
+    /** DEV-201: Extract the jti claim added in DEV-200. */
+    public String extractJti(Claims claims) {
+        return claims.getId();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -64,10 +64,16 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @CookieValue(name = "refresh_token", required = false) String rawToken,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             jakarta.servlet.http.HttpServletResponse response) {
 
+        // DEV-201: extract the bearer token so AuthService can revoke its jti
+        String bearerToken = (authHeader != null && authHeader.startsWith("Bearer "))
+            ? authHeader.substring(7) : null;
+
         if (rawToken != null) {
-            response.addHeader(HttpHeaders.SET_COOKIE, authService.logout(rawToken).toString());
+            response.addHeader(HttpHeaders.SET_COOKIE,
+                authService.logout(rawToken, bearerToken).toString());
         }
         return ResponseEntity.noContent().build();
     }
