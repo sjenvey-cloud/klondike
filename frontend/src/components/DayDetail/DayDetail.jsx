@@ -136,11 +136,16 @@ export function DayDetail({ date, onClose }) {
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
 
-  const handleReplay = useCallback((session) => {
+  const handleRedeal = useCallback((session) => {
     onClose();
     navigate('/game', {
       state: { replayHandId: session.handUuid, replayDrawMode: session.drawMode },
     });
+  }, [onClose, navigate]);
+
+  const handleWatchReplay = useCallback((session) => {
+    onClose();
+    navigate(`/replay/${session.uuid}`);
   }, [onClose, navigate]);
 
   // Open the challenge picker — loads friends + leagues
@@ -287,10 +292,17 @@ export function DayDetail({ date, onClose }) {
               </div>
 
               <div className="day-detail-body">
-                {/* Replay CTA */}
-                <button className="btn-primary day-detail-replay-btn" onClick={() => handleReplay(s)}>
+                {/* Play this hand again */}
+                <button className="btn-primary day-detail-replay-btn" onClick={() => handleRedeal(s)}>
                   ↺ Play This Hand
                 </button>
+
+                {/* Watch step-through replay — only available for won sessions */}
+                {isWon && s.uuid && (
+                  <button className="day-detail-watch-btn" onClick={() => handleWatchReplay(s)}>
+                    ▶ Watch Replay
+                  </button>
+                )}
 
                 {/* Challenge — only for won, non-daily sessions */}
                 {isWon && !isDaily && (

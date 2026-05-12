@@ -159,6 +159,10 @@ export const addChallengeParticipants = (id, userIds) => post(`/social/challenge
 export const endSocialChallenge       = (id)  => post(`/social/challenges/${id}/end`, {});
 export const resumeSocialChallenge    = (id)  => post(`/social/challenges/${id}/resume`, {});
 
+// ── Replay (DEV-219) ──────────────────────────────────────────────────────
+// GET /api/v1/sessions/:uuid/replay → ReplayResponse
+export const getSessionReplay = (sessionUuid) => get(`/sessions/${sessionUuid}/replay`);
+
 // ── Global leaderboard (DEV-222 / DEV-224) ────────────────────────────────
 export const getGlobalLeaderboard = (period = 'weekly', drawMode = 'draw3', sort = 'moves') =>
   get(`/leaderboard/global?period=${period}&drawMode=${drawMode}&sort=${sort}`);

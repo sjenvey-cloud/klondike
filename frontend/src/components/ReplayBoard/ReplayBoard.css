@@ -1,0 +1,128 @@
+/* ── ReplayBoard — read-only Klondike layout (DEV-220) ── */
+/* Shares the same card size variables as Board.css */
+
+.rb-board {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 4px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Top row ── */
+.rb-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.rb-spacer { flex: 1; }
+
+/* Stock */
+.rb-stock {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: var(--radius-card);
+  flex-shrink: 0;
+}
+
+.rb-stock-empty {
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Waste */
+.rb-waste {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.rb-waste--draw3 {
+  width: calc(var(--card-w) * 1.46);
+}
+
+.rb-waste-card {
+  position: absolute;
+  top: 0;
+}
+
+.rb-waste-card--peek {
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.rb-waste-empty {
+  height: var(--card-h);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+/* Foundations */
+.rb-foundation {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  flex-shrink: 0;
+}
+
+.rb-foundation-empty {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: 18px;
+}
+
+/* ── Tableau ── */
+.rb-tableau {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+}
+
+.rb-col {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.rb-col-empty {
+  width: var(--card-w);
+  height: var(--card-h);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+/* Staggered tableau cards — same offsets as Board.css */
+.rb-tableau-card {
+  position: relative;
+  margin-top: calc(-1 * var(--card-h) + var(--tableau-offset));
+  flex-shrink: 0;
+}
+
+.rb-tableau-card:first-child {
+  margin-top: 0;
+}
+
+/* Face-up cards overlap more generously */
+.rb-tableau-card.face-up {
+  margin-top: calc(-1 * var(--card-h) + var(--tableau-offset-up));
+}

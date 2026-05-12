@@ -1,0 +1,155 @@
+/* ── Replay transport controls (DEV-221) ── */
+
+.rc-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 8px;
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ── Move description ── */
+.rc-description {
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  min-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Seek slider ── */
+.rc-seek-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rc-counter {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  min-width: 28px;
+  flex-shrink: 0;
+}
+
+.rc-counter--right {
+  text-align: right;
+}
+
+.rc-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  outline: none;
+  cursor: pointer;
+}
+
+.rc-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+}
+
+.rc-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Controls row ── */
+.rc-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ── Transport buttons ── */
+.rc-transport {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rc-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rc-btn:hover:not(:disabled) {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.rc-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.rc-btn--play {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+  background: var(--color-accent);
+  color: #000;
+  border-radius: 50%;
+}
+
+.rc-btn--play:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  color: #000;
+}
+
+/* ── Speed selector ── */
+.rc-speed {
+  display: flex;
+  gap: 4px;
+}
+
+.rc-speed-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rc-speed-btn--active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #000;
+  font-weight: 700;
+}

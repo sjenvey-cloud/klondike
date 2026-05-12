@@ -12,6 +12,7 @@ import { Friends } from './screens/Friends';
 import { Profile } from './screens/Profile';
 import { Settings } from './screens/Settings';
 import { Leaderboard } from './screens/Leaderboard';
+import { Replay }      from './screens/Replay';
 import { Login } from './screens/Login';
 import { AcceptInvite } from './screens/AcceptInvite';
 import { PreferencesContext } from './contexts/PreferencesContext';
@@ -109,7 +110,8 @@ function AppInner() {
                     <Route path="/daily"   element={<Daily />}    />
                     <Route path="/friends" element={<Friends />}  />
                     <Route path="/profile" element={<Profile />}  />
-                    <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/leaderboard"          element={<Leaderboard />} />
+                    <Route path="/replay/:sessionUuid" element={<Replay />} />
                     <Route path="/settings" element={<Settings />} />
                   </Routes>
                 </main>

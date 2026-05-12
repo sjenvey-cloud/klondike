@@ -1,0 +1,67 @@
+/* ── Replay screen (DEV-220) ── */
+
+.replay-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;           /* fill the .app-main viewport */
+  overflow: hidden;
+  background: var(--color-table);
+}
+
+/* ── Header ── */
+.replay-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 8px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.replay-back-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px 0;
+  flex-shrink: 0;
+}
+
+.replay-title {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.replay-meta {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+/* ── Board container ── */
+.replay-board-wrap {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 4px 16px;
+}
+
+/* ── State messages ── */
+.replay-state-msg {
+  text-align: center;
+  padding: 40px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.replay-state-msg--error {
+  color: var(--color-danger);
+}
