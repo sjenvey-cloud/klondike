@@ -41,9 +41,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/**").authenticated()
                 .anyRequest().permitAll()
             )
-            // DEV-196: rate-limit auth endpoints before JWT processing
-            .addFilterBefore(rateLimitFilter, JwtAuthFilter.class)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            // DEV-196: rate-limit auth endpoints before JWT processing.
+            // Both custom filters are anchored to UsernamePasswordAuthenticationFilter
+            // (a built-in class with a registered order). Insertion order is preserved,
+            // so rateLimitFilter runs first, then jwtAuthFilter.
+            // NOTE: never use a custom Filter class as the reference in addFilterBefore —
+            // Spring Security only accepts classes with a registered order.
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(jwtAuthFilter,   UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

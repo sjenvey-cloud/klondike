@@ -102,6 +102,16 @@ jobs:
               echo "ECS deployment complete"
               exit 0
             fi
+            if [ "$ROLLOUT" = "FAILED" ]; then
+              echo "=== ECS rollout FAILED — dumping recent events ==="
+              aws ecs describe-services \
+                --cluster klondike-cluster \
+                --services klondike-api-service \
+                --region eu-north-1 \
+                --query 'services[0].events[:10]' \
+                --output table
+              exit 1
+            fi
             sleep $DELAY
             ELAPSED=$((ELAPSED + DELAY))
           done
