@@ -1,13 +1,14 @@
 package com.cardgames.server.challenges;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /** DEV-161: one inbox entry */
 public record InboxEntry(
     int           challengeId,
-    int           challengerUserId,
+    UUID          challengerUserUuid,
     String        challengerDisplayName,
-    int           handId,
+    UUID          handUuid,
     int           moves,
     int           timeSeconds,
     LocalDateTime createdAt

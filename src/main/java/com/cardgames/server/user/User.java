@@ -1,5 +1,6 @@
 package com.cardgames.server.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -7,6 +8,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -18,6 +20,10 @@ public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+    /** Public identifier — safe to expose in URLs and API responses. */
+    @Column(name = "uuid", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID uuid;
 
     private String username;
 
@@ -36,7 +42,7 @@ public class User implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     private Date lasthand;
 
-    /** No-arg constructor — used by JPA and legacy code paths. */
+    /** No-arg constructor — used by JPA for loading existing rows. */
     public User() {
         this.id          = 0;
         this.username    = "none";
@@ -46,6 +52,7 @@ public class User implements Serializable {
 
     /** Legacy constructor — retained for backward compatibility. */
     public User(String username, Date datecreated, Date lasthand) {
+        this.uuid        = UUID.randomUUID();
         this.username    = username;
         this.datecreated = datecreated;
         this.lasthand    = lasthand;
@@ -53,6 +60,7 @@ public class User implements Serializable {
 
     /** Auth constructor — creates a user via email/password registration. */
     public User(String email, String passwordHash, String displayName) {
+        this.uuid         = UUID.randomUUID();
         this.email        = email;
         this.passwordHash = passwordHash;
         this.displayName  = displayName;
@@ -61,8 +69,14 @@ public class User implements Serializable {
         this.lasthand     = User.getDefaultTime();
     }
 
-    public int    getId()          { return id; }
-    public void   setId(int id)    { this.id = id; }
+    // ── Public UUID identifier ────────────────────────────────────────────
+
+    public UUID getUuid() { return uuid; }
+
+    // ── Internal integer ID — hidden from JSON (DEV-213) ─────────────────
+
+    @JsonIgnore public int  getId()       { return id; }
+    public        void setId(int id)      { this.id = id; }
 
     public String getUsername()              { return username; }
     public void   setUsername(String u)      { this.username = u; }
@@ -70,6 +84,7 @@ public class User implements Serializable {
     public String getEmail()                 { return email; }
     public void   setEmail(String email)     { this.email = email; }
 
+    @JsonIgnore
     public String getPasswordHash()                    { return passwordHash; }
     public void   setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 
@@ -86,6 +101,7 @@ public class User implements Serializable {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @JsonIgnore
     public LocalDateTime getDeletedAt()             { return deletedAt; }
     public void          setDeletedAt(LocalDateTime v) { this.deletedAt = v; }
 

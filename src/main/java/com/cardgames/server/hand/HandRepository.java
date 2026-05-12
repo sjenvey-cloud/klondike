@@ -7,9 +7,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface HandRepository extends JpaRepository<Hand, Integer> {
+
+    // DEV-209: look up by public UUID (used in URL path params and request bodies)
+    Optional<Hand> findByUuid(UUID uuid);
 
     Optional<Hand> findByShuffleSeed(long shuffleSeed);
 

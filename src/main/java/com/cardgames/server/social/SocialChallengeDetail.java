@@ -2,12 +2,13 @@ package com.cardgames.server.social;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public record SocialChallengeDetail(
     int                        id,
-    int                        creatorUserId,
+    UUID                       creatorUserUuid,
     String                     creatorDisplayName,
-    int                        handId,
+    UUID                       handUuid,
     String                     drawMode,
     String                     status,
     LocalDateTime              createdAt,

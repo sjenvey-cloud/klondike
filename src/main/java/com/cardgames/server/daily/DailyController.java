@@ -76,7 +76,7 @@ public class DailyController {
         Hand hand = dailyGenerator.ensureDaily(today, drawMode);
 
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
-        HandResponse handResponse = new HandResponse(hand.getId(), hand.getShuffleSeed(), cards, drawMode);
+        HandResponse handResponse = new HandResponse(hand.getUuid(), hand.getShuffleSeed(), cards, drawMode);
 
         // Check if authenticated user has used their ranked attempt today
         boolean userHasRankedAttempt = false;
@@ -142,7 +142,7 @@ public class DailyController {
         for (Session s : bestByUser.values()) {
             User user = userRepo.findById(s.getUserId()).orElse(null);
             String name = (user != null) ? user.getDisplayName() : "Unknown";
-            board.add(new LeaderboardEntry(rank++, s.getUserId(), name, s.getMoves(), s.getTimeSeconds()));
+            board.add(new LeaderboardEntry(rank++, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds()));
             if (board.size() == 50) break;
         }
         return ResponseEntity.ok(board);
@@ -184,7 +184,7 @@ public class DailyController {
         Session s = bestByUser.get(userId);
         User user = userRepo.findById(userId).orElse(null);
         String name = (user != null) ? user.getDisplayName() : "Unknown";
-        return ResponseEntity.ok(new LeaderboardEntry(idx + 1, userId, name, s.getMoves(), s.getTimeSeconds()));
+        return ResponseEntity.ok(new LeaderboardEntry(idx + 1, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds()));
     }
 
     /**
@@ -228,11 +228,14 @@ public class DailyController {
         }
 
         List<DailyCalendarEntry> result = challenges.stream()
-            .map(dc -> new DailyCalendarEntry(
-                dc.getChallengeDate().toString(),
-                dc.getHandId(),
-                dc.getDrawMode(),
-                statusByHandId.getOrDefault(dc.getHandId(), "not_played")))
+            .map(dc -> {
+                Hand hand = handRepo.findById(dc.getHandId()).orElse(null);
+                return new DailyCalendarEntry(
+                    dc.getChallengeDate().toString(),
+                    hand != null ? hand.getUuid() : null,
+                    dc.getDrawMode(),
+                    statusByHandId.getOrDefault(dc.getHandId(), "not_played"));
+            })
             .collect(Collectors.toList());
 
         return ResponseEntity.ok(result);
@@ -263,7 +266,7 @@ public class DailyController {
 
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
         HandResponse handResponse = new HandResponse(
-            hand.getId(), hand.getShuffleSeed(), cards, drawMode);
+            hand.getUuid(), hand.getShuffleSeed(), cards, drawMode);
         // Past challenges are always practice (unranked)
         return ResponseEntity.ok(new DailyHandResponse(handResponse, true));
     }

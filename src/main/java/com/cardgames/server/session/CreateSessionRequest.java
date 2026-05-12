@@ -1,6 +1,7 @@
 package com.cardgames.server.session;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.UUID;
 
 /**
  * Request body for POST /api/v1/sessions
@@ -11,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * the JSON field name to match what the frontend sends.
  */
 public record CreateSessionRequest(
-        int handId,
+        UUID handUuid,
         int userId,
         @JsonProperty("isDaily")  boolean isDaily,
         String dailyDate,

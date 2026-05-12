@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 @CrossOrigin(origins = {
@@ -64,37 +65,43 @@ public class HandController {
 
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
         return new ResponseEntity<>(
-            new HandResponse(hand.getId(), hand.getShuffleSeed(), cards, hand.getDrawMode()),
+            new HandResponse(hand.getUuid(), hand.getShuffleSeed(), cards, hand.getDrawMode()),
             HttpStatus.CREATED
         );
     }
 
     /**
-     * GET /api/v1/hands/{id}
+     * GET /api/v1/hands/{uuid}
      *
      * Returns the card order for an existing hand so the client can replay it.
      */
-    @GetMapping("/hands/{id}")
-    public ResponseEntity<HandResponse> getHand(@PathVariable int id) {
-        return handRepository.findById(id)
+    @GetMapping("/hands/{uuid}")
+    public ResponseEntity<HandResponse> getHand(@PathVariable UUID uuid) {
+        return handRepository.findByUuid(uuid)
             .map(h -> {
                 int[] cards = SeededShuffle.shuffle(h.getShuffleSeed());
                 return ResponseEntity.ok(
-                    new HandResponse(h.getId(), h.getShuffleSeed(), cards, h.getDrawMode()));
+                    new HandResponse(h.getUuid(), h.getShuffleSeed(), cards, h.getDrawMode()));
             })
             .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * GET /api/v1/hands/{id}/leaderboard
+     * GET /api/v1/hands/{uuid}/leaderboard
      *
      * All-time leaderboard for a specific deal — any won session counts,
      * deduplicated to one entry per user (their personal best).
      * Sorted by moves ASC, time ASC.
      */
-    @GetMapping("/hands/{id}/leaderboard")
-    public ResponseEntity<List<LeaderboardEntry>> getHandLeaderboard(@PathVariable int id) {
-        List<Session> sessions = sessionRepository.findWonSessionsByHandId(id);
+    @GetMapping("/hands/{uuid}/leaderboard")
+    public ResponseEntity<List<LeaderboardEntry>> getHandLeaderboard(@PathVariable UUID uuid) {
+        Hand hand = handRepository.findByUuid(uuid)
+            .orElse(null);
+        if (hand == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<Session> sessions = sessionRepository.findWonSessionsByHandId(hand.getId());
 
         // Keep best session per user (list already ordered best-first)
         Map<Integer, Session> bestByUser = new LinkedHashMap<>();
@@ -107,7 +114,7 @@ public class HandController {
         for (Session s : bestByUser.values()) {
             User user = userRepository.findById(s.getUserId()).orElse(null);
             String name = (user != null) ? user.getDisplayName() : "Unknown";
-            board.add(new LeaderboardEntry(rank++, s.getUserId(), name, s.getMoves(), s.getTimeSeconds()));
+            board.add(new LeaderboardEntry(rank++, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds()));
             if (board.size() == 50) break;
         }
         return ResponseEntity.ok(board);

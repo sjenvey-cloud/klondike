@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -43,7 +44,7 @@ public class ChallengeController {
 
         int userId = (Integer) auth.getPrincipal();
 
-        Session session = sessionRepository.findById(body.sessionId())
+        Session session = sessionRepository.findByUuid(body.sessionUuid())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
 
         if (session.getUserId() != userId) {
@@ -54,12 +55,15 @@ public class ChallengeController {
         }
 
         Challenge challenge = new Challenge(
-            userId, body.challengedUserId(), session.getHandId(), body.sessionId());
+            userId, body.challengedUserId(), session.getHandId(), session.getId());
         challengeRepository.save(challenge);
+
+        Hand hand = handRepository.findById(challenge.getHandId()).orElse(null);
+        UUID handUuid = hand != null ? hand.getUuid() : null;
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new ChallengeResponse(
             challenge.getId(),
-            challenge.getHandId(),
+            handUuid,
             challenge.getChallengedUserId(),
             challenge.getStatus(),
             challenge.getCreatedAt()
@@ -80,11 +84,14 @@ public class ChallengeController {
             User challenger = userRepository.findById(c.getChallengerUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "User missing"));
 
+            Hand hand = handRepository.findById(c.getHandId()).orElse(null);
+            UUID handUuid = hand != null ? hand.getUuid() : null;
+
             return new InboxEntry(
                 c.getId(),
-                c.getChallengerUserId(),
+                challenger.getUuid(),
                 challenger.getDisplayName(),
-                c.getHandId(),
+                handUuid,
                 challengerSession.getMoves(),
                 challengerSession.getTimeSeconds(),
                 c.getCreatedAt()
@@ -118,6 +125,7 @@ public class ChallengeController {
         // Create a new session for the challenged player on the same hand
         Session session = new Session(hand.getId(), userId);
         session.setDrawMode(hand.getDrawMode());
+        session.setHandUuid(hand.getUuid());
         sessionRepository.save(session);
 
         // Link challenged session and mark accepted
@@ -128,8 +136,8 @@ public class ChallengeController {
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
 
         return ResponseEntity.ok(new PlayResponse(
-            session.getId(),
-            hand.getId(),
+            session.getUuid(),
+            hand.getUuid(),
             hand.getShuffleSeed(),
             cards,
             hand.getDrawMode()

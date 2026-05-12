@@ -1,6 +1,7 @@
 package com.cardgames.server.social;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Summary entry used in the challenges list view.
@@ -9,9 +10,9 @@ import java.time.LocalDateTime;
  */
 public record SocialChallengeListEntry(
     int           id,
-    int           creatorUserId,
+    UUID          creatorUserUuid,
     String        creatorDisplayName,
-    int           handId,
+    UUID          handUuid,
     String        drawMode,
     String        status,
     LocalDateTime createdAt,

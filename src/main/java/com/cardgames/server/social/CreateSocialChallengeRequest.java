@@ -1,6 +1,7 @@
 package com.cardgames.server.social;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Request body for POST /api/v1/social/challenges.
@@ -9,7 +10,7 @@ import java.util.List;
  * invitedLeagueIds — league IDs whose members are expanded and merged into the invite set.
  */
 public record CreateSocialChallengeRequest(
-    int sessionId,
+    UUID sessionUuid,
     List<Integer> invitedUserIds,
     List<Integer> invitedLeagueIds
 ) {}

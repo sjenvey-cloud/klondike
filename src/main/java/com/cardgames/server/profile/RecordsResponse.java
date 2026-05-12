@@ -1,6 +1,7 @@
 package com.cardgames.server.profile;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /** DEV-151: personal best sessions. */
 public record RecordsResponse(
@@ -8,8 +9,8 @@ public record RecordsResponse(
     PersonalBest fastestTime
 ) {
     public record PersonalBest(
-        int           sessionId,
-        int           handId,
+        UUID          sessionUuid,
+        UUID          handUuid,
         String        drawMode,
         int           moves,
         int           timeSeconds,

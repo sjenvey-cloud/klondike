@@ -102,7 +102,7 @@ export function DayDetail({ date, onClose }) {
       .then(data => {
         const list = Array.isArray(data) ? data : [];
         setSessions(list);
-        const uniqueHandIds = [...new Set(list.map(s => s.handId).filter(Boolean))];
+        const uniqueHandIds = [...new Set(list.map(s => s.handUuid).filter(Boolean))];
         if (uniqueHandIds.length > 0) {
           Promise.all(uniqueHandIds.map(id =>
             getHandLeaderboard(id)
@@ -121,12 +121,12 @@ export function DayDetail({ date, onClose }) {
 
   // Load leaderboard when a session is selected
   useEffect(() => {
-    if (!selectedSession?.handId) return;
+    if (!selectedSession?.handUuid) return;
     setLbLoading(true);
     setHandLeaderboard([]);
     setPickerOpen(false);
     setChallengeMsg(null);
-    getHandLeaderboard(selectedSession.handId)
+    getHandLeaderboard(selectedSession.handUuid)
       .then(lb => setHandLeaderboard(Array.isArray(lb) ? lb : []))
       .catch(() => setHandLeaderboard([]))
       .finally(() => setLbLoading(false));
@@ -139,7 +139,7 @@ export function DayDetail({ date, onClose }) {
   const handleReplay = useCallback((session) => {
     onClose();
     navigate('/game', {
-      state: { replayHandId: session.handId, replayDrawMode: session.drawMode },
+      state: { replayHandId: session.handUuid, replayDrawMode: session.drawMode },
     });
   }, [onClose, navigate]);
 
@@ -184,7 +184,7 @@ export function DayDetail({ date, onClose }) {
     setChallengeMsg(null);
     try {
       await createSocialChallenge(
-        selectedSession.id,
+        selectedSession.uuid,
         [...pickerUserIds],
         [...pickerLeagueIds],
       );
@@ -225,7 +225,7 @@ export function DayDetail({ date, onClose }) {
               {!loading && sessions.map((s, i) => {
                 const status = s.status || (s.won ? 'won' : 'abandoned');
                 const isWon  = status === 'won' || status === 'complete';
-                const winCount = handWinCounts[s.handId] ?? null;
+                const winCount = handWinCounts[s.handUuid] ?? null;
                 const othersWon = winCount !== null && winCount > 0;
 
                 return (

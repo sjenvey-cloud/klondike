@@ -3,6 +3,8 @@ package com.cardgames.server.social;
 import com.cardgames.server.customleague.CustomLeagueMemberRepository;
 import com.cardgames.server.friends.Friend;
 import com.cardgames.server.friends.FriendRepository;
+import com.cardgames.server.hand.Hand;
+import com.cardgames.server.hand.HandRepository;
 import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
@@ -28,6 +30,7 @@ public class SocialChallengeController {
     private final UserRepository                       userRepo;
     private final FriendRepository                     friendRepo;
     private final CustomLeagueMemberRepository         leagueMemberRepo;
+    private final HandRepository                       handRepo;
 
     public SocialChallengeController(
             SocialChallengeRepository challengeRepo,
@@ -35,13 +38,15 @@ public class SocialChallengeController {
             SessionRepository sessionRepo,
             UserRepository userRepo,
             FriendRepository friendRepo,
-            CustomLeagueMemberRepository leagueMemberRepo) {
+            CustomLeagueMemberRepository leagueMemberRepo,
+            HandRepository handRepo) {
         this.challengeRepo    = challengeRepo;
         this.participantRepo  = participantRepo;
         this.sessionRepo      = sessionRepo;
         this.userRepo         = userRepo;
         this.friendRepo       = friendRepo;
         this.leagueMemberRepo = leagueMemberRepo;
+        this.handRepo         = handRepo;
     }
 
     /**
@@ -60,7 +65,7 @@ public class SocialChallengeController {
 
         int userId = (Integer) auth.getPrincipal();
 
-        Session session = sessionRepo.findById(req.sessionId())
+        Session session = sessionRepo.findByUuid(req.sessionUuid())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
 
         if (session.getUserId() != userId)
@@ -102,10 +107,12 @@ public class SocialChallengeController {
 
         User creator = userRepo.findById(userId).orElse(null);
         String creatorName = creator != null ? creator.getDisplayName() : "Unknown";
+        UUID creatorUuid = creator != null ? creator.getUuid() : null;
+        UUID handUuid = handRepo.findById(challenge.getHandId()).map(Hand::getUuid).orElse(null);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new SocialChallengeListEntry(
-            challenge.getId(), userId, creatorName,
-            challenge.getHandId(), challenge.getDrawMode(),
+            challenge.getId(), creatorUuid, creatorName,
+            handUuid, challenge.getDrawMode(),
             SocialChallenge.STATUS_ACTIVE,
             challenge.getCreatedAt(), null,
             inviteeIds.size(), 0, true, true
@@ -160,6 +167,8 @@ public class SocialChallengeController {
         for (SocialChallenge c : sorted) {
             User creator = userRepo.findById(c.getCreatorUserId()).orElse(null);
             String creatorName = creator != null ? creator.getDisplayName() : "Unknown";
+            UUID creatorUuid = creator != null ? creator.getUuid() : null;
+            UUID handUuid = handRepo.findById(c.getHandId()).map(Hand::getUuid).orElse(null);
 
             List<SocialChallengeParticipant> participants = participantRepo.findByChallengeId(c.getId());
             boolean isCreator = c.getCreatorUserId() == userId;
@@ -178,8 +187,8 @@ public class SocialChallengeController {
             boolean userHasWon = winners.contains(userId);
 
             result.add(new SocialChallengeListEntry(
-                c.getId(), c.getCreatorUserId(), creatorName,
-                c.getHandId(), c.getDrawMode(),
+                c.getId(), creatorUuid, creatorName,
+                handUuid, c.getDrawMode(),
                 c.getStatus(), c.getCreatedAt(), c.getEndedAt(),
                 participants.size(), winnerCount,
                 userHasWon, isCreator
@@ -210,6 +219,8 @@ public class SocialChallengeController {
 
         User creatorUser = userRepo.findById(challenge.getCreatorUserId()).orElse(null);
         String creatorName = creatorUser != null ? creatorUser.getDisplayName() : "Unknown";
+        UUID creatorUuid = creatorUser != null ? creatorUser.getUuid() : null;
+        UUID handUuid = handRepo.findById(challenge.getHandId()).map(Hand::getUuid).orElse(null);
 
         // Build best-session-per-user map for this hand
         List<Session> wonSessions = sessionRepo.findWonSessionsByHandId(challenge.getHandId());
@@ -259,8 +270,8 @@ public class SocialChallengeController {
         }
 
         return ResponseEntity.ok(new SocialChallengeDetail(
-            challenge.getId(), challenge.getCreatorUserId(), creatorName,
-            challenge.getHandId(), challenge.getDrawMode(),
+            challenge.getId(), creatorUuid, creatorName,
+            handUuid, challenge.getDrawMode(),
             challenge.getStatus(), challenge.getCreatedAt(), challenge.getEndedAt(),
             ranked
         ));

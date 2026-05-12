@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @CrossOrigin(origins = {
     "http://localhost:4200",
@@ -54,7 +55,7 @@ public class SessionController {
         return sessionRepository
             .findFirstByUserIdAndStatusOrderByStartedAtDesc(userId, Session.STATUS_ACTIVE)
             .map(s -> ResponseEntity.ok(new ActiveSessionResponse(
-                s.getId(), s.getHandId(), s.getDrawMode(), s.getMoves(), s.getStartedAt())))
+                s.getUuid(), s.getHandUuid(), s.getDrawMode(), s.getMoves(), s.getStartedAt())))
             .orElse(ResponseEntity.noContent().build());
     }
 
@@ -69,13 +70,14 @@ public class SessionController {
      */
     @PostMapping("/sessions")
     public ResponseEntity<CreateSessionResponse> createSession(@RequestBody CreateSessionRequest body) {
-        log.info("createSession: handId={} userId={} isDaily={} dailyDate={} isRanked={}",
-            body.handId(), body.userId(), body.isDaily(), body.dailyDate(), body.isRanked());
+        log.info("createSession: handUuid={} userId={} isDaily={} dailyDate={} isRanked={}",
+            body.handUuid(), body.userId(), body.isDaily(), body.dailyDate(), body.isRanked());
 
-        Hand hand = handRepository.findById(body.handId()).orElse(null);
+        Hand hand = handRepository.findByUuid(body.handUuid()).orElse(null);
         if (hand == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
-        Session session = new Session(body.handId(), body.userId());
+        Session session = new Session(hand.getId(), body.userId());
+        session.setHandUuid(hand.getUuid());
         session.setDrawMode(hand.getDrawMode());
 
         boolean isRanked = true;
@@ -107,7 +109,7 @@ public class SessionController {
     // ── DEV-71: Complete session (win) ────────────────────────────────────
 
     /**
-     * POST /api/v1/sessions/{id}/complete
+     * POST /api/v1/sessions/{uuid}/complete
      * Body: { "moves": 42, "timeSeconds": 180, "turns": "draw,wt:2,..." }
      *
      * Reproduces the hand from its seed, replays every move server-side,
@@ -116,12 +118,12 @@ public class SessionController {
      * session record is NOT modified.
      */
     @Transactional
-    @PostMapping("/sessions/{id}/complete")
+    @PostMapping("/sessions/{uuid}/complete")
     public ResponseEntity<CompleteSessionResponse> completeSession(
-            @PathVariable int id,
+            @PathVariable UUID uuid,
             @RequestBody EndSessionRequest body) {
 
-        Session session = sessionRepository.findById(id).orElse(null);
+        Session session = sessionRepository.findByUuid(uuid).orElse(null);
         if (session == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
@@ -190,19 +192,19 @@ public class SessionController {
     // ── DEV-72: Abandon session ───────────────────────────────────────────
 
     /**
-     * POST /api/v1/sessions/{id}/abandon
+     * POST /api/v1/sessions/{uuid}/abandon
      * Body: { "moves": 12, "timeSeconds": 60, "turns": "draw,wt:2,..." }
      *
      * Marks the session as abandoned and appends the "abandon" token to the
      * turns string. The move history is stored for analytics but not
      * validated — only completed sessions are replay-checked.
      */
-    @PostMapping("/sessions/{id}/abandon")
+    @PostMapping("/sessions/{uuid}/abandon")
     public ResponseEntity<Session> abandonSession(
-            @PathVariable int id,
+            @PathVariable UUID uuid,
             @RequestBody EndSessionRequest body) {
 
-        Session session = sessionRepository.findById(id).orElse(null);
+        Session session = sessionRepository.findByUuid(uuid).orElse(null);
         if (session == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }

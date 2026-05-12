@@ -816,7 +816,7 @@ export function Friends() {
             <div className="sc-action-row">
               {canPlay && (
                 <button className="btn-primary sc-play-btn"
-                  onClick={() => navigate('/game', { state: { replayHandId: ch.handId, replayDrawMode: ch.drawMode } })}>
+                  onClick={() => navigate('/game', { state: { replayHandId: ch.handUuid, replayDrawMode: ch.drawMode } })}>
                   {userHasWon ? '↺ Replay' : '▶ Play Challenge'}
                 </button>
               )}

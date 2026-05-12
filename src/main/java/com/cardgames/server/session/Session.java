@@ -1,8 +1,10 @@
 package com.cardgames.server.session;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "sessions")
@@ -16,8 +18,19 @@ public class Session {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    /** Public identifier — safe to expose in URLs and API responses. */
+    @Column(name = "uuid", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID uuid;
+
     @Column(name = "hand_id", nullable = false)
     private int handId;
+
+    /**
+     * Denormalised hand UUID — copied from hands.uuid at session-creation time.
+     * Allows API responses to return the hand UUID without an extra join.
+     */
+    @Column(name = "hand_uuid", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID handUuid;
 
     @Column(name = "user_id", nullable = false)
     private int userId;
@@ -55,6 +68,7 @@ public class Session {
     public Session() {}
 
     public Session(int handId, int userId) {
+        this.uuid      = UUID.randomUUID();
         this.handId    = handId;
         this.userId    = userId;
         this.status    = STATUS_ACTIVE;
@@ -63,9 +77,20 @@ public class Session {
         this.startedAt = LocalDateTime.now();
     }
 
-    public int           getId()          { return id; }
-    public int           getHandId()      { return handId; }
-    public int           getUserId()      { return userId; }
+    // ── Public UUID identifiers ───────────────────────────────────────────
+
+    public UUID getUuid()     { return uuid; }
+    public UUID getHandUuid() { return handUuid; }
+    public void setHandUuid(UUID u) { this.handUuid = u; }
+
+    // ── Internal integer IDs — hidden from JSON (DEV-213) ─────────────────
+
+    @JsonIgnore public int getId()     { return id; }
+    @JsonIgnore public int getHandId() { return handId; }
+    @JsonIgnore public int getUserId() { return userId; }
+
+    // ── Game fields ───────────────────────────────────────────────────────
+
     public String        getStatus()      { return status; }
     public int           getMoves()       { return moves; }
     public int           getTimeSeconds() { return timeSeconds; }

@@ -146,13 +146,13 @@ public class ProfileController {
 
     private RecordsResponse.PersonalBest toPersonalBest(Session s) {
         return new RecordsResponse.PersonalBest(
-            s.getId(), s.getHandId(), s.getDrawMode(),
+            s.getUuid(), s.getHandUuid(), s.getDrawMode(),
             s.getMoves(), s.getTimeSeconds(), s.getCompletedAt());
     }
 
     private ProfileResponse toResponse(User user) {
         return new ProfileResponse(
-            user.getId(),
+            user.getUuid(),
             user.getDisplayName(),
             user.getEmail(),
             user.getdatecreated(),

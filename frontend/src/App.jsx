@@ -36,8 +36,8 @@ function ActiveSessionHandler({ activeSession, onDismiss }) {
     onDismiss();
     navigate('/game', {
       state: {
-        resumeSessionId: activeSession.id,
-        resumeHandId:    activeSession.handId,
+        resumeSessionId: activeSession.uuid,
+        resumeHandId:    activeSession.handUuid,
         resumeDrawMode:  activeSession.drawMode,
       },
     });

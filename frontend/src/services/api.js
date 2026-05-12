@@ -83,24 +83,24 @@ export { setAccessToken };
 // POST /api/v1/hands → { id, shuffleSeed, cards: number[] }
 export const createHand = (drawMode = 'draw3') => post('/hands', { drawMode });
 // GET /api/v1/hands/{id} → { id, shuffleSeed, cards: number[], drawMode }
-export const getHand = (handId) => get(`/hands/${handId}`);
+export const getHand = (handUuid) => get(`/hands/${handUuid}`);
 // GET /api/v1/hands/{id}/leaderboard → LeaderboardEntry[]
-export const getHandLeaderboard = (handId) => get(`/hands/${handId}/leaderboard`);
+export const getHandLeaderboard = (handUuid) => get(`/hands/${handUuid}/leaderboard`);
 
 // ── Sessions ──────────────────────────────────────────────────────────────
 // POST /api/v1/sessions → Session
-export const createSession = (handId, userId, isDaily = false, dailyDate = null, isRanked = true) =>
-  post('/sessions', { handId, userId, isDaily, dailyDate, isRanked });
+export const createSession = (handUuid, userId, isDaily = false, dailyDate = null, isRanked = true) =>
+  post('/sessions', { handUuid, userId, isDaily, dailyDate, isRanked });
 
-// POST /api/v1/sessions/{id}/complete → { valid, message, moveCount, session }
-export const completeSession = (id, moves, timeSeconds, turns) =>
-  post(`/sessions/${id}/complete`, { moves, timeSeconds, turns });
+// POST /api/v1/sessions/{uuid}/complete → { valid, message, moveCount, session }
+export const completeSession = (uuid, moves, timeSeconds, turns) =>
+  post(`/sessions/${uuid}/complete`, { moves, timeSeconds, turns });
 
-// POST /api/v1/sessions/{id}/abandon
-export const abandonSession = (id, moves, timeSeconds, turns) =>
-  post(`/sessions/${id}/abandon`, { moves, timeSeconds, turns });
+// POST /api/v1/sessions/{uuid}/abandon
+export const abandonSession = (uuid, moves, timeSeconds, turns) =>
+  post(`/sessions/${uuid}/abandon`, { moves, timeSeconds, turns });
 
-// GET /api/v1/sessions/active → { id, handId, drawMode, moves, startedAt } | 204
+// GET /api/v1/sessions/active → { uuid, handUuid, drawMode, moves, startedAt } | 204
 export const getActiveSession = () => get('/sessions/active');
 
 // ── Daily ─────────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ export const removeLeagueMember     = (id, userId)          => del(`/custom-leag
 
 // ── Challenges (legacy 1-to-1) ────────────────────────────────────────────
 export const getChallengeInbox  = ()                      => get('/challenges/inbox');
-export const createChallenge    = (sessionId, challenged) => post('/challenges', { sessionId, challengedUserId: challenged });
+export const createChallenge    = (sessionUuid, challenged) => post('/challenges', { sessionUuid, challengedUserId: challenged });
 export const playChallenge      = (challengeId)           => post(`/challenges/${challengeId}/play`, {});
 
 // ── Social group challenges ───────────────────────────────────────────────
@@ -153,8 +153,8 @@ export const getSocialChallenges      = ()    => get('/social/challenges');
 export const getSocialChallengeDetail = (id)  => get(`/social/challenges/${id}`);
 export const getPendingChallengeCount = ()    => get('/social/challenges/pending-count');
 // invitedUserIds / invitedLeagueIds: explicit selections from picker, or null to invite all friends
-export const createSocialChallenge    = (sessionId, invitedUserIds = null, invitedLeagueIds = null) =>
-  post('/social/challenges', { sessionId, invitedUserIds, invitedLeagueIds });
+export const createSocialChallenge    = (sessionUuid, invitedUserIds = null, invitedLeagueIds = null) =>
+  post('/social/challenges', { sessionUuid, invitedUserIds, invitedLeagueIds });
 export const addChallengeParticipants = (id, userIds) => post(`/social/challenges/${id}/participants`, { userIds });
 export const endSocialChallenge       = (id)  => post(`/social/challenges/${id}/end`, {});
 export const resumeSocialChallenge    = (id)  => post(`/social/challenges/${id}/resume`, {});

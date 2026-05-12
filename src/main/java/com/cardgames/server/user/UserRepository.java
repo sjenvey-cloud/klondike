@@ -9,9 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer> {
+
+    // DEV-209: look up by public UUID
+    Optional<User> findByUuid(UUID uuid);
 
     Optional<User> findByUsername(String username);
     Optional<User> findByEmail(String email);

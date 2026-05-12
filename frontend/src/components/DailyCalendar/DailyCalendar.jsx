@@ -118,7 +118,7 @@ export function DailyCalendar({ drawMode = 'draw3' }) {
       const data = await getDailyByDate(selectedDate, drawMode);
       navigate('/game', {
         state: {
-          replayHandId:    data.hand.id,
+          replayHandId:    data.hand.uuid,
           replayDrawMode:  data.hand.drawMode,
           replayIsDaily:   true,
           replayDailyDate: selectedDate,

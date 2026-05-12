@@ -9,9 +9,13 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public interface SessionRepository extends JpaRepository<Session, Integer> {
+
+    // DEV-209: look up by public UUID (used in URL path params and request bodies)
+    java.util.Optional<Session> findByUuid(UUID uuid);
 
     // DEV-202: most recent active session for a user (for app-boot resume prompt)
     java.util.Optional<Session> findFirstByUserIdAndStatusOrderByStartedAtDesc(int userId, String status);

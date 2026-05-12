@@ -351,16 +351,16 @@ export function useGame(userId) {
         resolvedSessionId = opts.existingSessionId;
       } else {
         const session = await createSession(
-          hand.id, userId,
+          hand.uuid, userId,
           opts.isDaily   || false,
           opts.dailyDate || null,
           opts.isRanked  !== undefined ? opts.isRanked : true,
         );
-        resolvedSessionId = session?.session?.id ?? session?.id;
+        resolvedSessionId = session?.session?.uuid ?? session?.uuid;
       }
       const dealt = dealKlondike(hand.cards);
       setSessionId(resolvedSessionId);
-      setHandId(hand.id);
+      setHandId(hand.uuid);
       startTimeRef.current = Date.now();
       clearSavedSession();
       dispatch({ type: 'DEAL', payload: { ...dealt, drawMode } });
@@ -369,12 +369,12 @@ export function useGame(userId) {
     }
   }, [userId]);
 
-  // DEV-66: resume from sessionStorage
+  // DEV-66: resume from sessionStorage (sessionId and handId are now UUIDs)
   const resumeGame = useCallback(() => {
     const saved = loadSession();
     if (!saved) return false;
     setSessionId(saved.sessionId);
-    if (saved.handId) setHandId(saved.handId);
+    if (saved.handId) setHandId(saved.handId); // stored value is now a UUID string
     startTimeRef.current = saved.startTime || Date.now();
     dispatch({
       type: 'RESTORE',
