@@ -89,7 +89,9 @@ jobs:
           aws ecs wait services-stable \
             --cluster klondike-cluster \
             --services klondike-api-service \
-            --region eu-north-1 || {
+            --region eu-north-1 \
+            --delay 15 \
+            --max-attempts 80 || {
             echo "=== ECS service did not stabilise — dumping recent events ==="
             aws ecs describe-services \
               --cluster klondike-cluster \
