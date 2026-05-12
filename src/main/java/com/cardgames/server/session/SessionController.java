@@ -125,15 +125,12 @@ public class SessionController {
             );
         }
 
-        session.setStatus(Session.STATUS_WON);
-        session.setMoves(body.moves());
-        session.setTimeSeconds(body.timeSeconds());
-        session.setTurns(body.turns());
-        session.setCompletedAt(LocalDateTime.now());
-
-        // Demote any prior abandoned ranked sessions for the same user/date/drawMode
-        // before saving the won session, to avoid violating idx_one_ranked_daily.
-        // (The partial unique index covers both 'won' and 'abandoned' statuses.)
+        // Demote any prior abandoned ranked sessions BEFORE mutating the session entity.
+        // Hibernate auto-flushes dirty entities before executing a @Modifying JPQL query,
+        // so if we modify the session first (status='won') and then call the demotion query,
+        // Hibernate flushes the 'won' row to the DB first — triggering idx_one_ranked_daily
+        // before the abandoned row has been cleared. Running demotion while the entity is
+        // still clean avoids the flush-ordering problem entirely.
         if (session.isDaily() && session.isRanked() && session.getDailyDate() != null) {
             int demoted = sessionRepository.demoteAbandonedRankedSessions(
                 session.getUserId(), session.getDailyDate(), session.getDrawMode(), session.getId());
@@ -143,6 +140,11 @@ public class SessionController {
             }
         }
 
+        session.setStatus(Session.STATUS_WON);
+        session.setMoves(body.moves());
+        session.setTimeSeconds(body.timeSeconds());
+        session.setTurns(body.turns());
+        session.setCompletedAt(LocalDateTime.now());
         sessionRepository.save(session);
         log.info("completeSession: saved win — id={} handId={} userId={} isDaily={} dailyDate={} isRanked={} moves={} timeSeconds={}",
             session.getId(), session.getHandId(), session.getUserId(),
