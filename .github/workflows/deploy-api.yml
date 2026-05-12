@@ -91,7 +91,7 @@ jobs:
             --services klondike-api-service \
             --region eu-north-1 \
             --delay 15 \
-            --max-attempts 80 || {
+            --max-attempts 120 || {
             echo "=== ECS service did not stabilise — dumping recent events ==="
             aws ecs describe-services \
               --cluster klondike-cluster \
