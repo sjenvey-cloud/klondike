@@ -85,20 +85,32 @@ jobs:
             --service klondike-api-service \
             --force-new-deployment \
             --region eu-north-1
-          echo "Waiting for service to stabilise..."
-          aws ecs wait services-stable \
-            --cluster klondike-cluster \
-            --services klondike-api-service \
-            --region eu-north-1 \
-            --delay 15 \
-            --max-attempts 120 || {
-            echo "=== ECS service did not stabilise — dumping recent events ==="
-            aws ecs describe-services \
+
+          echo "Waiting for service to stabilise (up to 30 min)..."
+          MAX_WAIT=1800
+          ELAPSED=0
+          DELAY=15
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            ROLLOUT=$(aws ecs describe-services \
               --cluster klondike-cluster \
               --services klondike-api-service \
               --region eu-north-1 \
-              --query 'services[0].events[:10]' \
-              --output table
-            exit 1
-          }
-          echo "ECS deployment complete"
+              --query 'services[0].deployments[?status==`PRIMARY`].rolloutState | [0]' \
+              --output text)
+            echo "  rolloutState=${ROLLOUT} (${ELAPSED}s elapsed)"
+            if [ "$ROLLOUT" = "COMPLETED" ]; then
+              echo "ECS deployment complete"
+              exit 0
+            fi
+            sleep $DELAY
+            ELAPSED=$((ELAPSED + DELAY))
+          done
+
+          echo "=== ECS service did not stabilise after ${MAX_WAIT}s — dumping recent events ==="
+          aws ecs describe-services \
+            --cluster klondike-cluster \
+            --services klondike-api-service \
+            --region eu-north-1 \
+            --query 'services[0].events[:10]' \
+            --output table
+          exit 1
