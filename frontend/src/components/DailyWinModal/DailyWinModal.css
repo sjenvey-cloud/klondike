@@ -206,6 +206,27 @@
   flex: 1;
 }
 
+/* ── Replay button ───────────────────────────────────────────────────────── */
+
+.dwm-replay-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-accent-muted);
+  border: 1px solid var(--color-accent);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dwm-replay-btn:hover {
+  background: var(--color-accent);
+  color: #000;
+}
+
 /* ── Shared button overrides (scoped to modal) ───────────────────────────── */
 
 .dwm-modal .btn-primary {

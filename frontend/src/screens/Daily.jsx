@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { getDaily, getDailyLeaderboard, getMyDailyRank } from '../services/api';
@@ -57,7 +57,12 @@ export function Daily() {
     if (dest === 'game')        { navigate('/game');       return; }
     if (dest === 'home')        { navigate('/');           return; }
     if (dest === 'profile')     { navigate('/profile');    return; }
+    // 'replay' is navigated directly by DailyWinModal — nothing extra needed here
   };
+
+  const handleRowReplay = useCallback((sessionUuid) => {
+    if (sessionUuid) navigate(`/replay/${sessionUuid}`);
+  }, [navigate]);
 
   return (
     <div className="screen daily-screen">
@@ -146,7 +151,7 @@ export function Daily() {
 
           <table className="lb-table">
             <thead>
-              <tr><th>#</th><th>Player</th><th>Moves</th><th>Time</th></tr>
+              <tr><th>#</th><th>Player</th><th>Moves</th><th>Time</th><th></th></tr>
             </thead>
             <tbody>
               {leaderboard.map((row, i) => (
@@ -155,10 +160,20 @@ export function Daily() {
                   <td>{row.displayName}</td>
                   <td>{row.moves}</td>
                   <td>{formatTime(row.timeSeconds)}</td>
+                  <td>
+                    {row.sessionUuid && (
+                      <button
+                        className="lb-replay-btn"
+                        onClick={() => handleRowReplay(row.sessionUuid)}
+                        title="Watch replay"
+                        aria-label={`Watch ${row.displayName}'s replay`}
+                      >▶</button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {leaderboard.length === 0 && (
-                <tr><td colSpan={4} className="lb-empty">No entries yet — be the first!</td></tr>
+                <tr><td colSpan={5} className="lb-empty">No entries yet — be the first!</td></tr>
               )}
             </tbody>
           </table>
@@ -179,6 +194,7 @@ export function Daily() {
           date={today}
           drawMode={drawMode}
           userUuid={user?.uuid}
+          sessionUuid={dailyWinData.sessionUuid}
           onNavigate={handleWinNavigate}
         />
       )}

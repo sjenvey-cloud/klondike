@@ -142,7 +142,7 @@ public class DailyController {
         for (Session s : bestByUser.values()) {
             User user = userRepo.findById(s.getUserId()).orElse(null);
             String name = (user != null) ? user.getDisplayName() : "Unknown";
-            board.add(new LeaderboardEntry(rank++, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds()));
+            board.add(new LeaderboardEntry(rank++, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds(), s.getUuid()));
             if (board.size() == 50) break;
         }
         return ResponseEntity.ok(board);
@@ -184,7 +184,7 @@ public class DailyController {
         Session s = bestByUser.get(userId);
         User user = userRepo.findById(userId).orElse(null);
         String name = (user != null) ? user.getDisplayName() : "Unknown";
-        return ResponseEntity.ok(new LeaderboardEntry(idx + 1, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds()));
+        return ResponseEntity.ok(new LeaderboardEntry(idx + 1, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds(), s.getUuid()));
     }
 
     /**

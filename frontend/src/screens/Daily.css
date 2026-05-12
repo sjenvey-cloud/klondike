@@ -207,3 +207,20 @@
 .daily-unavailable-btn:hover {
   opacity: 0.85;
 }
+
+/* Replay button in leaderboard rows */
+.lb-replay-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background 0.12s;
+  line-height: 1;
+}
+
+.lb-replay-btn:hover {
+  background: var(--color-accent-muted);
+}

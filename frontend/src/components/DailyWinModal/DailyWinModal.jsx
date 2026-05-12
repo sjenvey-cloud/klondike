@@ -28,7 +28,7 @@ function formatTime(s) {
  *   onNavigate    – callback(destination) where destination is one of:
  *                   'leaderboard' | 'calendar' | 'game' | 'home' | 'profile'
  */
-export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, userUuid, onNavigate }) {
+export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, userUuid, sessionUuid, onNavigate }) {
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([]);
   const [sort,        setSort]        = useState('moves');
@@ -43,9 +43,12 @@ export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, user
   }, [date, sort, drawMode]);
 
   const handleNavigate = (dest) => {
-    if (dest === 'game')    { onNavigate(dest); navigate('/game');    return; }
-    if (dest === 'home')    { onNavigate(dest); navigate('/');        return; }
-    if (dest === 'profile') { onNavigate(dest); navigate('/profile'); return; }
+    if (dest === 'game')    { onNavigate(dest); navigate('/game');                     return; }
+    if (dest === 'home')    { onNavigate(dest); navigate('/');                         return; }
+    if (dest === 'profile') { onNavigate(dest); navigate('/profile');                  return; }
+    if (dest === 'replay' && sessionUuid) {
+      onNavigate(dest); navigate(`/replay/${sessionUuid}`); return;
+    }
     // 'leaderboard' and 'calendar' stay on the /daily route — handled by Daily.jsx
     onNavigate(dest);
   };
@@ -123,6 +126,11 @@ export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, user
             <button className="btn-primary" onClick={() => handleNavigate('leaderboard')}>
               Full Leaderboard
             </button>
+            {sessionUuid && (
+              <button className="dwm-replay-btn" onClick={() => handleNavigate('replay')}>
+                ▶ Watch My Replay
+              </button>
+            )}
             <div className="dwm-secondary-row">
               <button className="btn-secondary" onClick={() => handleNavigate('calendar')}>Calendar</button>
               <button className="btn-secondary" onClick={() => handleNavigate('game')}>New Game</button>

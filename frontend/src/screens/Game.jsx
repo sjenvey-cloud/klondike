@@ -104,23 +104,24 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
       // Capture moves/time at the moment of win before the async completes
       const wonMoves = game.moves;
       const wonTime  = timer.formatted;
+      const sessionUuid = game.sessionId; // UUID string set before game starts
       game.finishGame()
         .then(res => {
           setWinResult(res);
           if (dailyHand && onDailyWin) {
             // Today's daily — notify Daily.jsx to show DailyWinModal
-            onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: res?.rank ?? null });
+            onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: res?.rank ?? null, sessionUuid });
           } else if (priorDailyInfo) {
             // Prior daily replay — show DailyWinModal inline
-            setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: res?.rank ?? null });
+            setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: res?.rank ?? null, sessionUuid });
           }
         })
         .catch(() => {
           setWinResult({});
           if (dailyHand && onDailyWin) {
-            onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: null });
+            onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: null, sessionUuid });
           } else if (priorDailyInfo) {
-            setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: null });
+            setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: null, sessionUuid });
           }
         });
     }
@@ -237,11 +238,12 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
           rank={dailyWinData.rank}
           date={priorDailyInfo.date}
           drawMode={priorDailyInfo.drawMode}
-          userId={user?.id}
+          userUuid={user?.uuid}
+          sessionUuid={dailyWinData.sessionUuid}
           onNavigate={(dest) => {
             setDailyWinData(null);
             // 'leaderboard' and 'calendar' take the user to the daily screen;
-            // 'game', 'home', 'profile' are handled internally by DailyWinModal
+            // 'game', 'home', 'profile', 'replay' are handled internally by DailyWinModal
             if (dest === 'leaderboard' || dest === 'calendar') navigate('/daily');
           }}
         />

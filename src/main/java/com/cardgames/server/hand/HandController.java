@@ -114,7 +114,7 @@ public class HandController {
         for (Session s : bestByUser.values()) {
             User user = userRepository.findById(s.getUserId()).orElse(null);
             String name = (user != null) ? user.getDisplayName() : "Unknown";
-            board.add(new LeaderboardEntry(rank++, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds()));
+            board.add(new LeaderboardEntry(rank++, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds(), s.getUuid()));
             if (board.size() == 50) break;
         }
         return ResponseEntity.ok(board);
