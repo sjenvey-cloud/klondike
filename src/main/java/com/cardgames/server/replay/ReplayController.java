@@ -71,6 +71,10 @@ public class ReplayController {
         List<ReplayMove> moves = parseTurns(session.getTurns());
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
 
+        log.info("getSessionReplay: returning 200 for uuid={} status={} drawMode={} moveCount={} turnsLength={}",
+            uuid, session.getStatus(), session.getDrawMode(), moves.size(),
+            session.getTurns() != null ? session.getTurns().length() : 0);
+
         return ResponseEntity.ok(new ReplayResponse(
             session.getUuid(),
             hand.getUuid(),
