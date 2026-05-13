@@ -15,8 +15,8 @@ package com.cardgames.server.replay;
  */
 public record ReplayMove(
     String  type,
-    Integer col,       // wt: target column
-    Integer fromCol,   // tt: source column; tf: source column
+    Integer col,       // wt: target column; tf: source column
+    Integer fromCol,   // tt: source column
     Integer fromIdx,   // tt: explicit stack start index (null for legacy tt:from:to tokens)
     Integer toCol,     // tt / ft: destination column
     Integer fi         // ft: foundation pile index (0=clubs 1=diamonds 2=hearts 3=spades)

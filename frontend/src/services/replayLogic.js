@@ -127,7 +127,7 @@ function applyMove(state, move) {
     case 'wt':   return applyWasteToTableau(state, move.col);
     case 'wf':   return applyWasteToFoundation(state);
     case 'tt':   return applyTableauToTableau(state, move.fromCol, move.fromIdx, move.toCol);
-    case 'tf':   return applyTableauToFoundation(state, move.fromCol);
+    case 'tf':   return applyTableauToFoundation(state, move.col);
     case 'ft':   return applyFoundationToTableau(state, move.fi, move.toCol);
     default:     return state;
   }
