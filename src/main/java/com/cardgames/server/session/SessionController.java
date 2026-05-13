@@ -91,7 +91,7 @@ public class SessionController {
             boolean hasRanked = sessionRepository
                 .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
                     body.userId(), date, hand.getDrawMode(),
-                    new String[]{ Session.STATUS_WON });
+                    new String[]{ Session.STATUS_WON, Session.STATUS_ABANDONED });
             log.info("createSession: daily branch — date={} drawMode={} hasRanked={}",
                 date, hand.getDrawMode(), hasRanked);
             if (hasRanked) {
@@ -199,6 +199,7 @@ public class SessionController {
      * turns string. The move history is stored for analytics but not
      * validated — only completed sessions are replay-checked.
      */
+    @Transactional
     @PostMapping("/sessions/{uuid}/abandon")
     public ResponseEntity<Session> abandonSession(
             @PathVariable UUID uuid,
@@ -212,6 +213,19 @@ public class SessionController {
         String turns = (body.turns() != null && !body.turns().isBlank())
             ? body.turns() + ",abandon"
             : "abandon";
+
+        // Demote any prior abandoned ranked sessions BEFORE mutating this session,
+        // using the same flush-ordering discipline as completeSession.
+        // Without this, saving a new ranked 'abandoned' session violates idx_one_ranked_daily
+        // when a previous abandoned ranked session already occupies the same (user,date,drawMode) key.
+        if (session.isDaily() && session.isRanked() && session.getDailyDate() != null) {
+            int demoted = sessionRepository.demoteAbandonedRankedSessions(
+                session.getUserId(), session.getDailyDate(), session.getDrawMode(), session.getId());
+            if (demoted > 0) {
+                log.info("abandonSession: demoted {} prior abandoned ranked session(s) for userId={} date={} drawMode={}",
+                    demoted, session.getUserId(), session.getDailyDate(), session.getDrawMode());
+            }
+        }
 
         session.setStatus(Session.STATUS_ABANDONED);
         session.setMoves(body.moves());
