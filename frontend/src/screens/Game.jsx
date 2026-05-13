@@ -116,12 +116,17 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
             setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: res?.rank ?? null, sessionUuid });
           }
         })
-        .catch(() => {
+        .catch((err) => {
           setWinResult({});
+          // If the server explicitly rejected the win (422), the session is NOT marked
+          // as "won" on the backend, so the replay endpoint would fail. In that case
+          // suppress sessionUuid so the "Watch My Replay" button is hidden.
+          const serverRejected = err?.message === '422';
+          const replayUuid = serverRejected ? null : sessionUuid;
           if (dailyHand && onDailyWin) {
-            onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: null, sessionUuid });
+            onDailyWin({ moves: wonMoves, timeFormatted: wonTime, rank: null, sessionUuid: replayUuid });
           } else if (priorDailyInfo) {
-            setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: null, sessionUuid });
+            setDailyWinData({ moves: wonMoves, timeFormatted: wonTime, rank: null, sessionUuid: replayUuid });
           }
         });
     }

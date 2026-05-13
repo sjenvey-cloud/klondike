@@ -5,6 +5,8 @@ import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
 import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +36,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1")
 public class ReplayController {
 
+    private static final Logger log = LoggerFactory.getLogger(ReplayController.class);
+
     private final SessionRepository sessionRepo;
     private final HandRepository    handRepo;
 
@@ -46,15 +50,23 @@ public class ReplayController {
     public ResponseEntity<ReplayResponse> getSessionReplay(@PathVariable UUID uuid) {
 
         Session session = sessionRepo.findByUuid(uuid).orElse(null);
-        if (session == null) return ResponseEntity.notFound().build();
+        if (session == null) {
+            log.warn("getSessionReplay: session not found for uuid={}", uuid);
+            return ResponseEntity.notFound().build();
+        }
 
         // Only replay completed (won) sessions — they have a validated turns string
         if (!Session.STATUS_WON.equals(session.getStatus())) {
+            log.warn("getSessionReplay: session uuid={} has status={} (not won) — returning 422",
+                uuid, session.getStatus());
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
         }
 
         Hand hand = handRepo.findById(session.getHandId()).orElse(null);
-        if (hand == null) return ResponseEntity.notFound().build();
+        if (hand == null) {
+            log.warn("getSessionReplay: hand not found for session uuid={} handId={}", uuid, session.getHandId());
+            return ResponseEntity.notFound().build();
+        }
 
         List<ReplayMove> moves = parseTurns(session.getTurns());
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
@@ -85,47 +97,52 @@ public class ReplayController {
     }
 
     private ReplayMove parseToken(String token) {
-        String[] p = token.split(":");
-        return switch (p[0]) {
+        try {
+            String[] p = token.split(":");
+            return switch (p[0]) {
 
-            case "draw" -> new ReplayMove("draw", null, null, null, null, null);
+                case "draw" -> new ReplayMove("draw", null, null, null, null, null);
 
-            case "wt"   -> p.length >= 2
-                ? new ReplayMove("wt", Integer.parseInt(p[1]), null, null, null, null)
-                : null;
+                case "wt"   -> p.length >= 2
+                    ? new ReplayMove("wt", Integer.parseInt(p[1]), null, null, null, null)
+                    : null;
 
-            case "wf"   -> new ReplayMove("wf", null, null, null, null, null);
+                case "wf"   -> new ReplayMove("wf", null, null, null, null, null);
 
-            // Current format: tt:fromCol:fromIdx:toCol (explicit stack start)
-            // Legacy format:  tt:fromCol:toCol        (server infers first face-up)
-            case "tt"   -> {
-                if (p.length == 4)
-                    yield new ReplayMove("tt", null,
-                        Integer.parseInt(p[1]),
+                // Current format: tt:fromCol:fromIdx:toCol (explicit stack start)
+                // Legacy format:  tt:fromCol:toCol        (server infers first face-up)
+                case "tt"   -> {
+                    if (p.length == 4)
+                        yield new ReplayMove("tt", null,
+                            Integer.parseInt(p[1]),
+                            Integer.parseInt(p[2]),
+                            Integer.parseInt(p[3]),
+                            null);
+                    else if (p.length == 3)
+                        yield new ReplayMove("tt", null,
+                            Integer.parseInt(p[1]),
+                            null,                    // fromIdx unknown — frontend must infer
+                            Integer.parseInt(p[2]),
+                            null);
+                    else yield null;
+                }
+
+                case "tf"   -> p.length >= 2
+                    ? new ReplayMove("tf", Integer.parseInt(p[1]), null, null, null, null)
+                    : null;
+
+                // ft:fi:toCol
+                case "ft"   -> p.length >= 3
+                    ? new ReplayMove("ft", null, null, null,
                         Integer.parseInt(p[2]),
-                        Integer.parseInt(p[3]),
-                        null);
-                else if (p.length == 3)
-                    yield new ReplayMove("tt", null,
-                        Integer.parseInt(p[1]),
-                        null,                    // fromIdx unknown — frontend must infer
-                        Integer.parseInt(p[2]),
-                        null);
-                else yield null;
-            }
+                        Integer.parseInt(p[1]))
+                    : null;
 
-            case "tf"   -> p.length >= 2
-                ? new ReplayMove("tf", Integer.parseInt(p[1]), null, null, null, null)
-                : null;
-
-            // ft:fi:toCol
-            case "ft"   -> p.length >= 3
-                ? new ReplayMove("ft", null, null, null,
-                    Integer.parseInt(p[2]),
-                    Integer.parseInt(p[1]))
-                : null;
-
-            default -> null; // unknown token — skip gracefully
-        };
+                default -> null; // unknown token — skip gracefully
+            };
+        } catch (NumberFormatException e) {
+            // Malformed token (non-integer index) — skip it rather than crashing with 500
+            return null;
+        }
     }
 }

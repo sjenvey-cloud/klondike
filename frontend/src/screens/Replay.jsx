@@ -44,6 +44,7 @@ export function Replay() {
         setStepIndex(0);
       })
       .catch(err => {
+        console.error('[Replay] failed to load session', sessionUuid, err);
         const status = err?.message;
         if (status === '422') {
           setError('This session cannot be replayed — only completed wins are supported.');
