@@ -195,7 +195,7 @@ export function describeMove(move, prevState) {
       return `${card} → Column ${move.toCol + 1}`;
     }
     case 'tf': {
-      const pile = prevState.tableau[move.fromCol];
+      const pile = prevState.tableau[move.col];
       const card = pile.length ? cardName(pile[pile.length - 1].card) : '';
       return `${card} → Foundation`;
     }
