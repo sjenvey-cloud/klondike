@@ -50,13 +50,24 @@ public class SessionController {
      * Returns 204 No Content if the user has no active session.
      */
     @GetMapping("/sessions/active")
-    public ResponseEntity<ActiveSessionResponse> getActiveSession(Authentication auth) {
+    public ResponseEntity<ActiveSessionsResponse> getActiveSession(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
-        return sessionRepository
-            .findFirstByUserIdAndStatusOrderByStartedAtDesc(userId, Session.STATUS_ACTIVE)
-            .map(s -> ResponseEntity.ok(new ActiveSessionResponse(
-                s.getUuid(), s.getHandUuid(), s.getDrawMode(), s.getMoves(), s.getStartedAt(), s.isDaily())))
-            .orElse(ResponseEntity.noContent().build());
+
+        // Look up daily and random active sessions independently so each screen
+        // can offer its own resume prompt without the two types conflating.
+        ActiveSessionResponse daily = sessionRepository
+            .findFirstByUserIdAndStatusAndIsDailyTrueOrderByStartedAtDesc(userId, Session.STATUS_ACTIVE)
+            .map(s -> new ActiveSessionResponse(
+                s.getUuid(), s.getHandUuid(), s.getDrawMode(), s.getMoves(), s.getStartedAt(), true))
+            .orElse(null);
+
+        ActiveSessionResponse random = sessionRepository
+            .findFirstByUserIdAndStatusAndIsDailyFalseOrderByStartedAtDesc(userId, Session.STATUS_ACTIVE)
+            .map(s -> new ActiveSessionResponse(
+                s.getUuid(), s.getHandUuid(), s.getDrawMode(), s.getMoves(), s.getStartedAt(), false))
+            .orElse(null);
+
+        return ResponseEntity.ok(new ActiveSessionsResponse(daily, random));
     }
 
     // ── DEV-69: Create session ────────────────────────────────────────────

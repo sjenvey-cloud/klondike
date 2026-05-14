@@ -100,7 +100,8 @@ export const completeSession = (uuid, moves, timeSeconds, turns) =>
 export const abandonSession = (uuid, moves, timeSeconds, turns) =>
   post(`/sessions/${uuid}/abandon`, { moves, timeSeconds, turns });
 
-// GET /api/v1/sessions/active → { uuid, handUuid, drawMode, moves, startedAt } | 204
+// GET /api/v1/sessions/active → { daily: ActiveSession|null, random: ActiveSession|null }
+// Always 200 — check each field for null individually.
 export const getActiveSession = () => get('/sessions/active');
 
 // ── Daily ─────────────────────────────────────────────────────────────────

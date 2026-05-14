@@ -26,38 +26,41 @@ export const ThemeContext = createContext({ theme: 'dark', setTheme: () => {} })
 
 /**
  * DEV-203: Rendered inside <Router> so it can call useNavigate / useLocation.
- * Shows the ResumeModal only when the user is on the screen that matches the
- * active session type:
- *   - non-daily session + /game  route → "Resume" / "Start New"
- *   - daily session    + /daily route → "Resume" / "Redeal"
- * All other routes suppress the modal so it doesn't interrupt unrelated screens.
+ *
+ * Daily and random active sessions are tracked independently.
+ * The modal only appears on the screen that matches the session type:
+ *   - daily  session + /daily route → "Resume" / "Redeal"
+ *   - random session + /game  route → "Resume" / "Start New"
+ *
+ * Dismissing one session does not affect the other.
  */
-function ActiveSessionHandler({ activeSession, onDismiss }) {
-  const navigate  = useNavigate();
+function ActiveSessionHandler({ dailySession, randomSession, onDismissDaily, onDismissRandom }) {
+  const navigate     = useNavigate();
   const { pathname } = useLocation();
 
-  if (!activeSession) return null;
+  // Pick the session relevant to the current screen.
+  const isOnDaily  = pathname === '/daily';
+  const isOnGame   = pathname === '/game';
+  const session    = isOnDaily ? dailySession : isOnGame ? randomSession : null;
+  const isDaily    = isOnDaily;
+  const onDismiss  = isOnDaily ? onDismissDaily : onDismissRandom;
 
-  const isDaily       = !!activeSession.isDaily;
-  const expectedRoute = isDaily ? '/daily' : '/game';
-
-  // Only interrupt the user when they are on the relevant screen.
-  if (pathname !== expectedRoute) return null;
+  if (!session) return null;
 
   const handleResume = () => {
     onDismiss();
     navigate('/game', {
       state: {
-        resumeSessionId: activeSession.uuid,
-        resumeHandId:    activeSession.handUuid,
-        resumeDrawMode:  activeSession.drawMode,
+        resumeSessionId: session.uuid,
+        resumeHandId:    session.handUuid,
+        resumeDrawMode:  session.drawMode,
       },
     });
   };
 
   return (
     <ResumeModal
-      session={activeSession}
+      session={session}
       onResume={handleResume}
       onStartNew={onDismiss}
       isDaily={isDaily}
@@ -72,8 +75,11 @@ function AppInner() {
   const { user } = useContext(AuthContext);
   const prefsHook = usePreferences();
   const [challengeCount, setChallengeCount] = useState(0);
-  // DEV-203: active session resume modal
-  const [activeSession, setActiveSession] = useState(null);
+
+  // DEV-203: daily and random active sessions tracked separately so each
+  // screen can show its own resume prompt independently.
+  const [dailySession,  setDailySession]  = useState(null);
+  const [randomSession, setRandomSession] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -90,11 +96,20 @@ function AppInner() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [user]);
 
-  // DEV-203: check for an active (in-progress) session on login
+  // DEV-203: check for active (in-progress) sessions on login.
+  // Server returns { daily, random } — both nullable.
   useEffect(() => {
-    if (!user) { setActiveSession(null); return; }
+    if (!user) {
+      setDailySession(null);
+      setRandomSession(null);
+      return;
+    }
     getActiveSession()
-      .then(session => { if (session) setActiveSession(session); })
+      .then(data => {
+        if (!data) return;
+        setDailySession(data.daily   ?? null);
+        setRandomSession(data.random ?? null);
+      })
       .catch(() => {}); // silently ignore — no modal is fine
   }, [user]);
 
@@ -102,8 +117,10 @@ function AppInner() {
     <PreferencesContext.Provider value={prefsHook}>
       <Router>
         <ActiveSessionHandler
-          activeSession={activeSession}
-          onDismiss={() => setActiveSession(null)}
+          dailySession={dailySession}
+          randomSession={randomSession}
+          onDismissDaily={() => setDailySession(null)}
+          onDismissRandom={() => setRandomSession(null)}
         />
         <Routes>
           {/* Public routes — no AuthGuard, no Nav */}

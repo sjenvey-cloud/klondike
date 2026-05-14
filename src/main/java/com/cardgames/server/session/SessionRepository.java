@@ -17,8 +17,10 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     // DEV-209: look up by public UUID (used in URL path params and request bodies)
     java.util.Optional<Session> findByUuid(UUID uuid);
 
-    // DEV-202: most recent active session for a user (for app-boot resume prompt)
-    java.util.Optional<Session> findFirstByUserIdAndStatusOrderByStartedAtDesc(int userId, String status);
+    // DEV-202: most recent active session for a user — daily and random tracked separately
+    // so both can be resumed independently (daily on /daily, random on /game).
+    java.util.Optional<Session> findFirstByUserIdAndStatusAndIsDailyTrueOrderByStartedAtDesc(int userId, String status);
+    java.util.Optional<Session> findFirstByUserIdAndStatusAndIsDailyFalseOrderByStartedAtDesc(int userId, String status);
 
     // DEV-106: ranked daily attempt check
     boolean existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
