@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../App';
 import {
   getDailyCalendar,
@@ -52,9 +51,12 @@ function HeartIcon({ filled, faint }) {
   );
 }
 
-export function DailyCalendar({ drawMode = 'draw3' }) {
+/**
+ * onPlay(hand, date, userHasRankedAttempt) — called by the parent (Daily.jsx) to
+ * start a past daily challenge inline, keeping the Daily header visible.
+ */
+export function DailyCalendar({ drawMode = 'draw3', onPlay }) {
   const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
 
   const today = useMemo(() => new Date(), []);
   const todayKey = isoDate(today.getFullYear(), today.getMonth(), today.getDate());
@@ -116,20 +118,14 @@ export function DailyCalendar({ drawMode = 'draw3' }) {
     setReplaying(true);
     try {
       const data = await getDailyByDate(selectedDate, drawMode);
-      navigate('/game', {
-        state: {
-          replayHandId:    data.hand.uuid,
-          replayDrawMode:  data.hand.drawMode,
-          replayIsDaily:   true,
-          replayDailyDate: selectedDate,
-          // isRanked not forced here — backend applies the same one-ranked-win-per-day
-          // rule as today's daily: ranked if the user hasn't won it yet, unranked if they have.
-        },
-      });
+      // Let Daily.jsx render the game inline (keeps the header visible).
+      onPlay(data.hand, selectedDate, !!data.userHasRankedAttempt);
     } catch {
+      // fall through
+    } finally {
       setReplaying(false);
     }
-  }, [selectedDate, drawMode, replaying, navigate]);
+  }, [selectedDate, drawMode, replaying, onPlay]);
 
   const navigate_month = useCallback((delta) => {
     let m = month + delta;

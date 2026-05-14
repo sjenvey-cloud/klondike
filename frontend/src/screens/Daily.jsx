@@ -8,6 +8,7 @@ import { DailyCalendar } from '../components/DailyCalendar/DailyCalendar';
 import { DailyWinModal } from '../components/DailyWinModal/DailyWinModal';
 import './Daily.css';
 
+
 function formatTime(s) {
   if (!s) return '—';
   const m   = Math.floor(s / 60);
@@ -25,11 +26,19 @@ export function Daily() {
   const [sort,        setSort]        = useState('moves');
   const [view,        setView]        = useState('board'); // 'board' | 'leaderboard' | 'calendar'
 
-  // Set when the user wins the daily — triggers DailyWinModal
+  // Win data for today's daily
   const [dailyWinData, setDailyWinData] = useState(null);
 
-  const today   = localDateString(new Date());
+  // Prior daily: set when the user selects a past challenge from the calendar.
+  // { hand, date, userHasRankedAttempt }
+  const [priorDailyInfo,    setPriorDailyInfo]    = useState(null);
+  const [priorDailyWinData, setPriorDailyWinData] = useState(null);
+
+  const today    = localDateString(new Date());
   const drawMode = daily?.hand?.drawMode || 'draw3';
+
+  // Which date the leaderboard/rank tabs refer to — prior daily when active, else today.
+  const activeDate = priorDailyInfo?.date ?? today;
 
   // Load today's daily hand once
   useEffect(() => {
@@ -38,26 +47,45 @@ export function Daily() {
       .catch(() => setDailyError(true));
   }, []);
 
-  // Fetch leaderboard whenever the leaderboard tab is active or sort changes
+  // Fetch leaderboard whenever the leaderboard tab is active, sort changes, or active date changes
   useEffect(() => {
     if (view !== 'leaderboard') return;
-    getDailyLeaderboard(today, sort, drawMode).then(setLeaderboard).catch(() => {});
-  }, [today, sort, view, drawMode]);
+    getDailyLeaderboard(activeDate, sort, drawMode).then(setLeaderboard).catch(() => {});
+  }, [activeDate, sort, view, drawMode]);
 
   useEffect(() => {
     if (view !== 'leaderboard') return;
-    if (user) getMyDailyRank(today, user.id, sort, drawMode).then(setMyRank).catch(() => {});
-  }, [today, user, sort, view, drawMode]);
+    if (user) getMyDailyRank(activeDate, user.id, sort, drawMode).then(setMyRank).catch(() => {});
+  }, [activeDate, user, sort, view, drawMode]);
 
-  // Called by DailyWinModal to navigate within or away from the daily screen
+  // Called when the user chooses to play a past daily from the calendar.
+  // Receives pre-fetched hand data from DailyCalendar so no extra fetch is needed.
+  const handlePriorDailyPlay = useCallback((hand, date, userHasRankedAttempt) => {
+    setPriorDailyWinData(null);
+    setPriorDailyInfo({ hand, date, userHasRankedAttempt });
+    setView('board');
+  }, []);
+
+  // Called by DailyWinModal for today's daily
   const handleWinNavigate = (dest) => {
     setDailyWinData(null);
     if (dest === 'leaderboard') { setView('leaderboard'); return; }
     if (dest === 'calendar')    { setView('calendar');    return; }
-    if (dest === 'game')        { navigate('/game');       return; }
+    if (dest === 'game')        { navigate('/game');      return; }
+    if (dest === 'home')        { navigate('/');          return; }
+    if (dest === 'profile')     { navigate('/profile');   return; }
+    // 'replay' navigated directly by DailyWinModal
+  };
+
+  // Called by DailyWinModal for a prior daily
+  const handlePriorWinNavigate = (dest) => {
+    setPriorDailyWinData(null);
+    if (dest === 'leaderboard') { setView('leaderboard'); return; }
+    if (dest === 'calendar')    { setView('calendar');    return; }
+    // 'game' → return to today's board
+    if (dest === 'game')        { setPriorDailyInfo(null); setView('board'); return; }
     if (dest === 'home')        { navigate('/');           return; }
     if (dest === 'profile')     { navigate('/profile');    return; }
-    // 'replay' is navigated directly by DailyWinModal — nothing extra needed here
   };
 
   const handleRowReplay = useCallback((sessionUuid) => {
@@ -71,7 +99,7 @@ export function Daily() {
       <div className="daily-header">
         <div>
           <h2 className="daily-title">Daily Challenge</h2>
-          <p className="daily-date">{today}</p>
+          <p className="daily-date">{activeDate}</p>
         </div>
         <div className="daily-tabs">
           <button
@@ -120,15 +148,39 @@ export function Daily() {
         <div className="daily-loading">Loading today's challenge…</div>
       )}
 
-      {/* Game — mounted once when daily data is ready, hidden (not unmounted)
-          when switching to other tabs so the session is preserved across tab switches. */}
+      {/* Today's daily — mounted once, hidden when prior daily is active or on other tabs.
+          Never unmounted so the session survives tab switches. */}
       {!dailyError && daily && (
-        <div className={view === 'board' ? 'daily-board-wrap' : 'daily-board-wrap daily-board-wrap--hidden'}>
+        <div className={view === 'board' && !priorDailyInfo
+            ? 'daily-board-wrap'
+            : 'daily-board-wrap daily-board-wrap--hidden'}>
           <Game
             dailyHand={daily.hand}
             isRanked={!daily.userHasRankedAttempt}
             onShowLeaderboard={() => setView('leaderboard')}
             onDailyWin={setDailyWinData}
+          />
+        </div>
+      )}
+
+      {/* Prior daily — keyed per date so it remounts for each new past challenge. */}
+      {priorDailyInfo && (
+        <div className={view === 'board' ? 'daily-board-wrap' : 'daily-board-wrap daily-board-wrap--hidden'}>
+          <div className="daily-prior-bar">
+            <button
+              className="daily-prior-back"
+              onClick={() => { setPriorDailyInfo(null); setPriorDailyWinData(null); setView('board'); }}
+            >
+              ← Today's Daily
+            </button>
+            <span className="daily-prior-label">{priorDailyInfo.date}</span>
+          </div>
+          <Game
+            key={priorDailyInfo.date}
+            dailyHand={priorDailyInfo.hand}
+            isRanked={!priorDailyInfo.userHasRankedAttempt}
+            onShowLeaderboard={() => setView('leaderboard')}
+            onDailyWin={setPriorDailyWinData}
           />
         </div>
       )}
@@ -182,10 +234,10 @@ export function Daily() {
 
       {/* ── Calendar tab ────────────────────────────────────────────────── */}
       {view === 'calendar' && (
-        <DailyCalendar drawMode={drawMode} />
+        <DailyCalendar drawMode={drawMode} onPlay={handlePriorDailyPlay} />
       )}
 
-      {/* ── Daily win modal ─────────────────────────────────────────────── */}
+      {/* ── Win modal: today's daily ─────────────────────────────────────── */}
       {dailyWinData && (
         <DailyWinModal
           moves={dailyWinData.moves}
@@ -196,6 +248,20 @@ export function Daily() {
           userUuid={user?.uuid}
           sessionUuid={dailyWinData.sessionUuid}
           onNavigate={handleWinNavigate}
+        />
+      )}
+
+      {/* ── Win modal: prior daily ───────────────────────────────────────── */}
+      {priorDailyWinData && priorDailyInfo && (
+        <DailyWinModal
+          moves={priorDailyWinData.moves}
+          timeFormatted={priorDailyWinData.timeFormatted}
+          rank={priorDailyWinData.rank}
+          date={priorDailyInfo.date}
+          drawMode={priorDailyInfo.hand.drawMode}
+          userUuid={user?.uuid}
+          sessionUuid={priorDailyWinData.sessionUuid}
+          onNavigate={handlePriorWinNavigate}
         />
       )}
 
