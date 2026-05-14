@@ -83,14 +83,15 @@ export function Game({ dailyHand = null, dailyDate = null, isRanked = true, onSh
       return;
     }
 
-    // DEV-203: app-level resume prompt navigated here with an existing session
+    // DEV-203: app-level modal navigated here — user already chose "Resume".
+    // Resume immediately without a second prompt regardless of sessionStorage state.
     const resumeSessionId = location.state?.resumeSessionId;
     const resumeHandId    = location.state?.resumeHandId;
     const resumeDrawMode  = location.state?.resumeDrawMode;
     if (resumeSessionId) {
       if (game.hasSavedSession()) {
-        // sessionStorage still has the game state — let the local resume prompt handle it
-        setResumePrompt(true);
+        // sessionStorage intact — restore directly, no need to fetch from server
+        game.resumeGame();
       } else {
         // sessionStorage was cleared (browser closed/refreshed) — reload the hand from the
         // server and reuse the existing session ID so no new session is created

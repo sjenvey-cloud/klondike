@@ -27,10 +27,10 @@ export const ThemeContext = createContext({ theme: 'dark', setTheme: () => {} })
 /**
  * DEV-203: Rendered inside <Router> so it can call useNavigate / useLocation.
  *
- * Daily and random active sessions are tracked independently.
- * The modal only appears on the screen that matches the session type:
- *   - daily  session + /daily route → "Resume" / "Redeal"
- *   - random session + /game  route → "Resume" / "Start New"
+ * The app-level resume modal surfaces active sessions when the user is browsing
+ * screens OTHER than the relevant game screen. /game and /daily manage their
+ * own resume prompts inside Game.jsx — showing the modal there too would cause
+ * a double-prompt on page refresh.
  *
  * Dismissing one session does not affect the other.
  */
@@ -38,31 +38,47 @@ function ActiveSessionHandler({ dailySession, randomSession, onDismissDaily, onD
   const navigate     = useNavigate();
   const { pathname } = useLocation();
 
-  // Pick the session relevant to the current screen.
-  const isOnDaily  = pathname === '/daily';
-  const isOnGame   = pathname === '/game';
-  const session    = isOnDaily ? dailySession : isOnGame ? randomSession : null;
-  const isDaily    = isOnDaily;
-  const onDismiss  = isOnDaily ? onDismissDaily : onDismissRandom;
+  const isOnDaily = pathname === '/daily';
+  const isOnGame  = pathname === '/game';
 
+  // Never show on the game screens — they own their resume UX.
+  if (isOnDaily || isOnGame) return null;
+
+  // Prefer the daily session when both are active; fall back to random.
+  const session = dailySession ?? randomSession;
   if (!session) return null;
+
+  const isDaily   = session === dailySession;
+  const onDismiss = isDaily ? onDismissDaily : onDismissRandom;
 
   const handleResume = () => {
     onDismiss();
-    navigate('/game', {
-      state: {
-        resumeSessionId: session.uuid,
-        resumeHandId:    session.handUuid,
-        resumeDrawMode:  session.drawMode,
-      },
-    });
+    if (isDaily) {
+      // Daily screen will auto-resume from sessionStorage (or start fresh if cleared).
+      navigate('/daily');
+    } else {
+      navigate('/game', {
+        state: {
+          resumeSessionId: session.uuid,
+          resumeHandId:    session.handUuid,
+          resumeDrawMode:  session.drawMode,
+        },
+      });
+    }
+  };
+
+  const handleStartNew = () => {
+    // Clear sessionStorage for this game type so Game.jsx won't surface another
+    // resume prompt if the user subsequently navigates to the game screen.
+    sessionStorage.removeItem(isDaily ? 'klondike_daily_session' : 'klondike_session');
+    onDismiss();
   };
 
   return (
     <ResumeModal
       session={session}
       onResume={handleResume}
-      onStartNew={onDismiss}
+      onStartNew={handleStartNew}
       isDaily={isDaily}
     />
   );
