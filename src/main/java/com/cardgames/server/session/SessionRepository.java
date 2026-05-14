@@ -137,16 +137,31 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
            "ORDER BY s.moves ASC, s.timeSeconds ASC")
     List<Session> findWonSessionsByHandId(@Param("handId") int handId);
 
-    // Daily leaderboard by hand — only ranked wins where dailyDate matches.
-    // Native SQL bypasses JPQL/Hibernate metamodel entirely, avoiding the
-    // boolean-accessor naming ambiguity for is_ranked (isRanked → getter isRanked()
-    // → JavaBean property "ranked", not "isRanked"). dailyDate IS NOT NULL is also
-    // the reliable discriminator that daily sessions were created via the daily route.
-    @Query(value = "SELECT * FROM sessions WHERE hand_id = :handId " +
-                   "AND daily_date = :date AND is_ranked = true AND status = 'won' " +
-                   "ORDER BY moves ASC, time_seconds ASC",
-           nativeQuery = true)
-    List<Session> findRankedDailyWinsByHand(
+    // Daily leaderboard — best session per user for a specific hand+date, by moves.
+    // Uses DISTINCT ON to select each user's fewest-move win across ALL their daily
+    // sessions for this challenge (ranked first attempt AND unranked replays).
+    // is_daily = true distinguishes daily-challenge sessions from random-hand plays
+    // of the same physical hand; is_ranked is intentionally NOT filtered so that a
+    // user who replays and beats their own time/moves gets credit for both metrics.
+    @Query(value =
+        "SELECT * FROM (" +
+        "  SELECT DISTINCT ON (user_id) * FROM sessions " +
+        "  WHERE hand_id = :handId AND daily_date = :date AND status = 'won' AND is_daily = true " +
+        "  ORDER BY user_id, moves ASC, time_seconds ASC" +
+        ") best ORDER BY moves ASC, time_seconds ASC LIMIT 50",
+        nativeQuery = true)
+    List<Session> findDailyWinsByHandForMoves(
+        @Param("handId") int handId, @Param("date") LocalDate date);
+
+    // Daily leaderboard — best session per user for a specific hand+date, by time.
+    @Query(value =
+        "SELECT * FROM (" +
+        "  SELECT DISTINCT ON (user_id) * FROM sessions " +
+        "  WHERE hand_id = :handId AND daily_date = :date AND status = 'won' AND is_daily = true " +
+        "  ORDER BY user_id, time_seconds ASC, moves ASC" +
+        ") best ORDER BY time_seconds ASC, moves ASC LIMIT 50",
+        nativeQuery = true)
+    List<Session> findDailyWinsByHandForTime(
         @Param("handId") int handId, @Param("date") LocalDate date);
 
     // Debug: count sessions for a hand — all statuses, no date/ranked filter

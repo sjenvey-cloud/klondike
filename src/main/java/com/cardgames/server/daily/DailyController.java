@@ -17,7 +17,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 // Note: deterministicSeed() has been moved to DailyGeneratorService.
@@ -95,9 +100,11 @@ public class DailyController {
      * GET /api/v1/leaderboard/daily/{date}/{sort}
      * Top 50 wins for the given day's daily hand, deduplicated to one entry per user.
      *
-     * Looks up the authoritative hand via daily_challenges, then filters to
-     * sessions that were ranked daily-challenge attempts on that specific date.
-     * This excludes casual (non-daily) replays of the same hand.
+     * Looks up the authoritative hand via daily_challenges, then selects each
+     * user's best session (fewest moves or fastest time depending on sort mode)
+     * across ALL their daily-challenge wins for that date — both ranked first
+     * attempts and unranked replays. Non-daily plays of the same hand are excluded
+     * via the is_daily = true filter.
      */
     @GetMapping("/leaderboard/daily/{date}/{sort}")
     public ResponseEntity<List<LeaderboardEntry>> getDailyLeaderboard(
@@ -116,34 +123,21 @@ public class DailyController {
         }
         log.info("getDailyLeaderboard: daily_challenges handId={}", dc.get().getHandId());
 
-        // Only ranked daily-challenge wins for this specific hand + date
+        // DISTINCT ON queries return one row per user (their best session for the
+        // requested sort mode) already sorted for the leaderboard — no Java-level
+        // dedup or re-sort needed.
         int handId = dc.get().getHandId();
-        List<Session> sessions = sessionRepo.findRankedDailyWinsByHand(handId, localDate);
-        log.info("getDailyLeaderboard: findRankedDailyWinsByHand(handId={}, date={}) returned {} sessions",
-            handId, localDate, sessions.size());
-
-        // Diagnostic: count ALL sessions for this hand (no date/ranked filter)
-        long totalForHand = sessionRepo.countByHandId(handId);
-        long withDate     = sessionRepo.countByHandIdAndDate(handId, localDate);
-        log.info("getDailyLeaderboard: diagnostic — totalForHand={} withMatchingDate={}", totalForHand, withDate);
-
-        if ("time".equals(sort)) {
-            sessions = sessions.stream()
-                .sorted(Comparator.comparingInt(Session::getTimeSeconds)
-                                  .thenComparingInt(Session::getMoves))
-                .toList();
-        }
-
-        Map<Integer, Session> bestByUser = new LinkedHashMap<>();
-        for (Session s : sessions) bestByUser.putIfAbsent(s.getUserId(), s);
+        List<Session> sessions = "time".equals(sort)
+            ? sessionRepo.findDailyWinsByHandForTime(handId, localDate)
+            : sessionRepo.findDailyWinsByHandForMoves(handId, localDate);
+        log.info("getDailyLeaderboard: sort={} returned {} entries", sort, sessions.size());
 
         List<LeaderboardEntry> board = new ArrayList<>();
         int rank = 1;
-        for (Session s : bestByUser.values()) {
+        for (Session s : sessions) {
             User user = userRepo.findById(s.getUserId()).orElse(null);
             String name = (user != null) ? user.getDisplayName() : "Unknown";
             board.add(new LeaderboardEntry(rank++, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds(), s.getUuid()));
-            if (board.size() == 50) break;
         }
         return ResponseEntity.ok(board);
     }
@@ -164,24 +158,19 @@ public class DailyController {
         Optional<DailyChallenge> dc = dailyChallengeRepo.findByDateAndMode(localDate, drawMode);
         if (dc.isEmpty()) return ResponseEntity.notFound().build();
 
-        // Only ranked daily-challenge wins for this specific hand + date
-        List<Session> sessions = sessionRepo.findRankedDailyWinsByHand(dc.get().getHandId(), localDate);
+        // Re-use the same DISTINCT ON query as the leaderboard so rank is consistent
+        List<Session> sessions = "time".equals(sort)
+            ? sessionRepo.findDailyWinsByHandForTime(dc.get().getHandId(), localDate)
+            : sessionRepo.findDailyWinsByHandForMoves(dc.get().getHandId(), localDate);
 
-        if ("time".equals(sort)) {
-            sessions = sessions.stream()
-                .sorted(Comparator.comparingInt(Session::getTimeSeconds)
-                                  .thenComparingInt(Session::getMoves))
-                .toList();
+        // Linear scan: daily leaderboards have few participants, no need for a separate COUNT query
+        int idx = -1;
+        for (int i = 0; i < sessions.size(); i++) {
+            if (sessions.get(i).getUserId() == userId) { idx = i; break; }
         }
-
-        Map<Integer, Session> bestByUser = new LinkedHashMap<>();
-        for (Session s : sessions) bestByUser.putIfAbsent(s.getUserId(), s);
-
-        List<Integer> ranked = new ArrayList<>(bestByUser.keySet());
-        int idx = ranked.indexOf(userId);
         if (idx < 0) return ResponseEntity.notFound().build();
 
-        Session s = bestByUser.get(userId);
+        Session s = sessions.get(idx);
         User user = userRepo.findById(userId).orElse(null);
         String name = (user != null) ? user.getDisplayName() : "Unknown";
         return ResponseEntity.ok(new LeaderboardEntry(idx + 1, user != null ? user.getUuid() : null, name, s.getMoves(), s.getTimeSeconds(), s.getUuid()));
