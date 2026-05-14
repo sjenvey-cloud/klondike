@@ -11,7 +11,7 @@ import { getHand, getHandLeaderboard } from '../services/api';
 import { localDateString } from '../services/dateUtils';
 import './Game.css';
 
-export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = null, onDailyWin = null }) {
+export function Game({ dailyHand = null, dailyDate = null, isRanked = true, onShowLeaderboard = null, onDailyWin = null }) {
   const { user } = useContext(AuthContext);
   const { preferences } = useContext(PreferencesContext);
   const location = useLocation();
@@ -39,10 +39,13 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
     if (!user) return;
 
     if (dailyHand) {
-      // Daily games always start fresh
-      const drawMode = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
-      const today = localDateString(new Date());
-      game.startGame(dailyHand, drawMode, { isDaily: true, dailyDate: today, isRanked });
+      // Daily games always start fresh.
+      // dailyDate prop is the canonical date for this challenge (past date for prior dailies,
+      // null/today for today's daily). Using the wrong date causes sessions to be tagged with
+      // today's date and then silently excluded from the correct day's leaderboard.
+      const drawMode  = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
+      const dateToUse = dailyDate || localDateString(new Date());
+      game.startGame(dailyHand, drawMode, { isDaily: true, dailyDate: dateToUse, isRanked });
       return;
     }
 

@@ -178,6 +178,7 @@ export function Daily() {
           <Game
             key={priorDailyInfo.date}
             dailyHand={priorDailyInfo.hand}
+            dailyDate={priorDailyInfo.date}
             isRanked={!priorDailyInfo.userHasRankedAttempt}
             onShowLeaderboard={() => setView('leaderboard')}
             onDailyWin={setPriorDailyWinData}
