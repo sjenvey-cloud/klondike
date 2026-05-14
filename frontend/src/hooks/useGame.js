@@ -6,11 +6,15 @@ import {
 import { createHand, createSession, completeSession, abandonSession } from '../services/api';
 
 // ── DEV-66: Session persistence ────────────────────────────────────────────
-const SESSION_KEY = 'klondike_session';
+// Two separate keys so the daily challenge and random hand never share state.
+// 'klondike_session'       → random hand (standalone /game screen)
+// 'klondike_daily_session' → any daily challenge (today's or prior)
+const SESSION_KEY       = 'klondike_session';
+const DAILY_SESSION_KEY = 'klondike_daily_session';
 
-function saveSession(sessionId, handId, gameState, moves, turns, startTime) {
+function saveSession(sessionId, handId, gameState, moves, turns, startTime, key = SESSION_KEY) {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+    sessionStorage.setItem(key, JSON.stringify({
       sessionId,
       handId,
       gameState: {
@@ -26,10 +30,15 @@ function saveSession(sessionId, handId, gameState, moves, turns, startTime) {
   } catch { /* storage full — ignore */ }
 }
 
-function loadSession() {
-  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
+function loadSession(key = SESSION_KEY) {
+  try { return JSON.parse(sessionStorage.getItem(key)); } catch { return null; }
 }
 
+function clearSession(key = SESSION_KEY) {
+  sessionStorage.removeItem(key);
+}
+
+// Kept for any external callers (currently none, but exported for safety).
 export function clearSavedSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
@@ -317,7 +326,7 @@ function checkCanAutoComplete(state) {
 
 // ── Hook ──────────────────────────────────────────────────────────────────
 
-export function useGame(userId) {
+export function useGame(userId, sessionKey = SESSION_KEY) {
   const [state, dispatch]   = useReducer(historyReducer, initial);
   const [sessionId, setSessionId] = useState(null);
   const [handId, setHandId]       = useState(null);
@@ -328,11 +337,11 @@ export function useGame(userId) {
   const stateRef = useRef(state);
   useEffect(() => { stateRef.current = state; }, [state]);
 
-  // DEV-66: save to sessionStorage after every move
+  // DEV-66: save to sessionStorage after every move, using the key for this game type
   useEffect(() => {
     if (!state.tableau || !sessionId) return;
-    saveSession(sessionId, handId, state, state.moves, state.turns, startTimeRef.current);
-  }, [state, sessionId, handId]);
+    saveSession(sessionId, handId, state, state.moves, state.turns, startTimeRef.current, sessionKey);
+  }, [state, sessionId, handId, sessionKey]);
 
   // DEV-62: canAutoComplete flag
   const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
@@ -362,7 +371,7 @@ export function useGame(userId) {
       setSessionId(resolvedSessionId);
       setHandId(hand.uuid);
       startTimeRef.current = Date.now();
-      clearSavedSession();
+      clearSession(sessionKey);
       dispatch({ type: 'DEAL', payload: { ...dealt, drawMode } });
     } finally {
       setLoading(false);
@@ -371,7 +380,7 @@ export function useGame(userId) {
 
   // DEV-66: resume from sessionStorage (sessionId and handId are now UUIDs)
   const resumeGame = useCallback(() => {
-    const saved = loadSession();
+    const saved = loadSession(sessionKey);
     if (!saved) return false;
     setSessionId(saved.sessionId);
     if (saved.handId) setHandId(saved.handId); // stored value is now a UUID string
@@ -388,7 +397,7 @@ export function useGame(userId) {
     return true;
   }, []);
 
-  const hasSavedSession = useCallback(() => !!loadSession(), []);
+  const hasSavedSession = useCallback(() => !!loadSession(sessionKey), [sessionKey]);
 
   const draw               = useCallback(() => dispatch({ type: 'DRAW' }), []);
   const wasteToTableau     = useCallback((col)              => dispatch({ type: 'WASTE_TO_TABLEAU', col }), []);
@@ -415,16 +424,16 @@ export function useGame(userId) {
   const finishGame = useCallback(async () => {
     const timeSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
     const result = await completeSession(sessionId, state.moves, timeSeconds, state.turns.join(','));
-    clearSavedSession();
+    clearSession(sessionKey);
     return result;
-  }, [sessionId, state.moves, state.turns]);
+  }, [sessionId, state.moves, state.turns, sessionKey]);
 
   const abandon = useCallback(async () => {
     if (!sessionId) return;
     const timeSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
-    clearSavedSession();
+    clearSession(sessionKey);
     return abandonSession(sessionId, state.moves, timeSeconds, state.turns.join(','));
-  }, [sessionId, state.moves, state.turns]);
+  }, [sessionId, state.moves, state.turns, sessionKey]);
 
   return {
     ...state,
