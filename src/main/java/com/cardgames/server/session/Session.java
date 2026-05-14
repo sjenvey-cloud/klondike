@@ -94,7 +94,7 @@ public class Session {
     public String        getStatus()      { return status; }
     public int           getMoves()       { return moves; }
     public int           getTimeSeconds() { return timeSeconds; }
-    public String        getTurns()       { return turns; }
+    @JsonIgnore public String getTurns()   { return turns; }
     public String        getDrawMode()    { return drawMode; }
     public boolean       isDaily()        { return isDaily; }
     public LocalDate     getDailyDate()   { return dailyDate; }

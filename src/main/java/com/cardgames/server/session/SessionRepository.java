@@ -94,9 +94,11 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
         @Param("userId") int userId,
         @Param("handIds") List<Integer> handIds);
 
-    // DEV-100: non-daily sessions for a specific calendar day, most recent first.
+    // DEV-100: non-daily sessions for a specific calendar day.
     // Daily challenges are excluded — they have their own calendar on the daily screen.
-    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.isDaily = false AND s.startedAt >= :from AND s.startedAt < :to ORDER BY s.startedAt DESC")
+    // Won sessions sort first so putIfAbsent deduplication (by hand) always keeps the win
+    // even if the user redealt and abandoned the same hand later the same day.
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.isDaily = false AND s.startedAt >= :from AND s.startedAt < :to ORDER BY CASE WHEN s.status = 'won' THEN 0 ELSE 1 END ASC, s.startedAt DESC")
     List<Session> findByUserIdAndStartedAtBetween(
         @Param("userId") int userId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
