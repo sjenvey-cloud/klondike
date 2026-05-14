@@ -166,24 +166,42 @@ export function Game({ dailyHand = null, dailyDate = null, isRanked = true, onSh
     const currentHandId   = game.handId;
     const currentDrawMode = game.drawMode;
     if (!currentHandId) return;
+
+    // abandon() is now fire-and-forget internally (swallows network errors),
+    // but we still await so local sessionStorage is cleared before we proceed.
     await game.abandon();
+
+    // Reset UI state immediately so no stale modal/overlay is visible while
+    // the new session is being created, even if the network call below fails.
     setWinResult(null);
     setFinishing(false);
     setLbOpen(false);
     timer.reset();
-    const hand = await getHand(currentHandId);
-    if (dailyHand) {
-      // Preserve daily context so the redealt session is still tagged correctly.
-      // Backend will force isRanked=false if the user has already used their ranked slot.
-      game.startGame(hand, currentDrawMode, {
-        isDaily:   true,
-        dailyDate: localDateString(new Date()),
-        isRanked:  true,
-      });
-    } else {
-      game.startGame(hand, currentDrawMode);
+
+    try {
+      const hand = await getHand(currentHandId);
+      if (dailyHand) {
+        // Preserve daily context so the redealt session is still tagged correctly.
+        // Backend will force isRanked=false if the user has already used their ranked slot.
+        await game.startGame(hand, currentDrawMode, {
+          isDaily:   true,
+          dailyDate: localDateString(new Date()),
+          isRanked:  true,
+        });
+      } else {
+        await game.startGame(hand, currentDrawMode);
+      }
+    } catch {
+      // Network failure fetching the hand or creating the session. Fall back to a
+      // completely fresh deal so the user is never left staring at a frozen board.
+      try {
+        await game.startGame(null, currentDrawMode);
+      } catch {
+        // Even a brand-new deal failed — severe network issue. Go home gracefully.
+        navigate('/');
+      }
     }
-  }, [game, timer, dailyHand]);
+  }, [game, timer, dailyHand, navigate]);
 
   const handleOpenLeaderboard = useCallback(() => {
     if (!game.handId) return;

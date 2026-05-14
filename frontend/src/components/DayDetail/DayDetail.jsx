@@ -261,6 +261,9 @@ export function DayDetail({ date, onClose }) {
                         <span className="day-detail-mode-badge">
                           {s.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
                         </span>
+                        <span className="day-detail-session-time">
+                          {formatTimestamp(s.startedAt)}
+                        </span>
                         {s.moves != null && (
                           <span className="day-detail-session-meta">
                             {s.moves} moves · {formatTime(s.timeSeconds ?? s.duration)}

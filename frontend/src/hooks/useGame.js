@@ -161,90 +161,99 @@ function reducer(state, action) {
       };
     }
 
-    // DEV-62: move one card to foundation
+    // DEV-62: move one card toward completion.
+    // Precondition (enforced by checkCanAutoComplete): stock and waste are empty,
+    // every tableau card is face-up.
+    //
+    // Phase 1 — direct foundation move: scan top cards of every tableau pile,
+    //   pick the one with the lowest rank (safest order), send it to its foundation.
+    //
+    // Phase 2 — unblock: when no direct foundation move is available, find the
+    //   lowest-rank card still needed by any foundation suit, locate it buried in
+    //   the tableau, and move the single top card of that pile to any valid column
+    //   to expose it. The stepper will call again to continue peeling.
+    //
+    // Returns state unchanged when truly stuck (signals the stepper to stop).
     case 'AUTO_COMPLETE_STEP': {
-      const tableau = state.tableau.map(p => [...p]);
+      const tableau    = state.tableau.map(p => [...p]);
       const foundations = state.foundations.map(p => [...p]);
 
-      // Collect all face-up top cards from waste + tableau, pick lowest rank that can go to foundation
-      const candidates = [];
-      if (state.waste.length > 0) {
-        const c = state.waste[state.waste.length - 1];
-        const fi = foundationIndex(c.card);
-        if (canPlaceOnFoundation(c.card, foundations[fi])) {
-          candidates.push({ source: 'waste', rank: getRank(c.card) });
-        }
-      }
+      // ── Phase 1: direct foundation moves ──────────────────────────────────
+      let best = null;
       for (let col = 0; col < tableau.length; col++) {
         const pile = tableau[col];
         if (!pile.length) continue;
         const top = pile[pile.length - 1];
-        if (!top.faceUp) continue;
-        const fi = foundationIndex(top.card);
+        const fi  = foundationIndex(top.card);
         if (canPlaceOnFoundation(top.card, foundations[fi])) {
-          candidates.push({ source: 'tableau', col, rank: getRank(top.card) });
-        }
-      }
-
-      // No direct foundation move — draw from stock/waste to advance
-      if (candidates.length === 0) {
-        const stockEmpty = state.stock.length === 0;
-        const wasteEmpty = state.waste.length === 0;
-        if (stockEmpty && wasteEmpty) return state;
-
-        let stock = [...state.stock];
-        let waste = [...state.waste];
-        if (stock.length === 0) {
-          // Flip waste back to stock (same order as DRAW action)
-          stock = waste.map(c => ({ card: c.card, faceUp: false }));
-          waste = [];
-        } else {
-          const drawCount = Math.min(state.drawMode === 'draw1' ? 1 : 3, stock.length);
-          for (let i = 0; i < drawCount; i++) {
-            const c = stock.shift();
-            waste.push({ card: c.card, faceUp: true });
+          const rank = getRank(top.card);
+          if (best === null || rank < best.rank) {
+            best = { col, fi, rank };
           }
         }
-        return { ...state, stock, waste, moves: state.moves + 1, turns: [...state.turns, 'draw'] };
       }
 
-      // Pick the candidate with the lowest rank (safest move)
-      candidates.sort((a, b) => a.rank - b.rank);
-      const pick = candidates[0];
-
-      let waste = state.waste;
-      let turns = [...state.turns];
-
-      if (pick.source === 'waste') {
-        const top = waste[waste.length - 1];
-        const fi = foundationIndex(top.card);
+      if (best !== null) {
+        const { col, fi } = best;
+        const top = tableau[col][tableau[col].length - 1];
         foundations[fi].push(top.card);
-        waste = waste.slice(0, -1);
-        turns.push('wf');
-      } else {
-        const pile = tableau[pick.col];
-        const top = pile[pile.length - 1];
-        const fi = foundationIndex(top.card);
-        foundations[fi].push(top.card);
-        tableau[pick.col] = pile.slice(0, -1);
-        if (tableau[pick.col].length > 0) {
-          const last = tableau[pick.col].length - 1;
-          if (!tableau[pick.col][last].faceUp) {
-            tableau[pick.col][last] = { ...tableau[pick.col][last], faceUp: true };
+        tableau[col] = tableau[col].slice(0, -1);
+        return {
+          ...state,
+          tableau,
+          foundations,
+          isWon: isGameWon(foundations),
+          moves: state.moves + 1,
+          turns: [...state.turns, `tf:${col}`],
+        };
+      }
+
+      // ── Phase 2: expose a buried needed card ──────────────────────────────
+      // Card encoding: clubs 1-13, diamonds 14-26, hearts 27-39, spades 40-52.
+      // The card number for suit fi at rank r  =  suitOffset[fi] + r.
+      const suitOffset = [0, 13, 26, 39];
+
+      // Build list of (suit, neededCard) sorted by rank ascending (lowest first).
+      const needed = [0, 1, 2, 3]
+        .map(fi => ({
+          fi,
+          rank: foundations[fi].length + 1,
+          card: suitOffset[fi] + foundations[fi].length + 1,
+        }))
+        .filter(n => n.rank <= 13)
+        .sort((a, b) => a.rank - b.rank);
+
+      for (const { card: neededCard } of needed) {
+        // Find the pile that contains this card somewhere below its top.
+        for (let col = 0; col < tableau.length; col++) {
+          const pile = tableau[col];
+          const idx  = pile.findIndex(c => c.card === neededCard);
+          // Skip: not in this pile, or already at the top (Phase 1 would have moved it).
+          if (idx < 0 || idx === pile.length - 1) continue;
+
+          // Move the single top card of this pile to any valid destination.
+          const topCard = pile[pile.length - 1];
+          const fromIdx = pile.length - 1;
+          for (let toCol = 0; toCol < tableau.length; toCol++) {
+            if (toCol === col) continue;
+            if (canPlaceOnTableau(topCard.card, tableau[toCol])) {
+              tableau[col]  = pile.slice(0, fromIdx);
+              tableau[toCol] = [...tableau[toCol], { card: topCard.card, faceUp: true }];
+              return {
+                ...state,
+                tableau,
+                moves: state.moves + 1,
+                turns: [...state.turns, `tt:${col}:${fromIdx}:${toCol}`],
+              };
+            }
           }
+          // Top card of this pile has nowhere to go — try the next needed suit.
+          break;
         }
-        turns.push(`tf:${pick.col}`);
       }
 
-      return {
-        ...state,
-        tableau,
-        waste,
-        foundations,
-        isWon: isGameWon(foundations),
-        moves: state.moves + 1,
-        turns,
-      };
+      // No progress — return state unchanged so the stepper detects a stall and stops.
+      return state;
     }
 
     case 'FOUNDATION_TO_TABLEAU': {
@@ -317,10 +326,13 @@ function historyReducer(state, action) {
 }
 
 // ── canAutoComplete helper ─────────────────────────────────────────────────
-// True when all tableau cards are face-up (stock/waste are drained by the
-// auto-complete stepper itself, so they don't need to be empty first).
+// True only when stock AND waste are fully empty AND every tableau card is
+// face-up. All three conditions must hold before the auto-complete button is
+// shown — the stepper does not draw from stock, so lingering cards there would
+// cause it to get stuck immediately.
 function checkCanAutoComplete(state) {
   if (!state.tableau) return false;
+  if (state.stock.length > 0 || state.waste.length > 0) return false;
   return state.tableau.every(pile => pile.every(c => c.faceUp));
 }
 
@@ -413,16 +425,24 @@ export function useGame(userId, sessionKey = SESSION_KEY) {
     dispatch({ type: 'TABLEAU_TO_TABLEAU', fromCol, fromIdx, toCol }), []);
   const foundationToTableau = useCallback((fi, toCol)       => dispatch({ type: 'FOUNDATION_TO_TABLEAU', fi, toCol }), []);
 
-  // DEV-62: auto-complete — dispatch steps until won or no progress
+  // DEV-62: auto-complete — dispatch steps until won or no progress.
+  // maxSteps is a hard safety cap (52 foundation moves + generous room for
+  // tableau-to-tableau unblocking moves). The primary stop condition is the
+  // moves-before check: if a dispatch makes no progress the reducer returned
+  // state unchanged, so we stop immediately rather than flickering.
   const autoComplete = useCallback(() => {
-    let maxSteps = 52; // safety cap
+    let maxSteps = 300;
     const step = () => {
-      // peek at current state via ref
       const s = stateRef.current;
       if (s.isWon || maxSteps-- <= 0) return;
+      const movesBefore = s.moves;
       dispatch({ type: 'AUTO_COMPLETE_STEP' });
-      // schedule next step with a small delay for visual effect
-      setTimeout(step, 80);
+      setTimeout(() => {
+        // If the move count didn't increase the reducer returned the same state
+        // (Phase 2 found nothing). Stop to avoid an infinite flickering loop.
+        if (stateRef.current.moves === movesBefore) return;
+        step();
+      }, 80);
     };
     step();
   }, []);
@@ -438,7 +458,9 @@ export function useGame(userId, sessionKey = SESSION_KEY) {
     if (!sessionId) return;
     const timeSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
     clearSession(sessionKey);
-    return abandonSession(sessionId, state.moves, timeSeconds, state.turns.join(','));
+    // Fire-and-forget: a network failure here must never block the UI.
+    // The server treats sessions idle for a long time as abandoned anyway.
+    return abandonSession(sessionId, state.moves, timeSeconds, state.turns.join(',')).catch(() => {});
   }, [sessionId, state.moves, state.turns, sessionKey]);
 
   return {
