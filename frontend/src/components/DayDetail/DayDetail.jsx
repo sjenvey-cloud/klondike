@@ -74,6 +74,10 @@ export function DayDetail({ date, onClose }) {
   const [sessions, setSessions]             = useState([]);
   const [loading, setLoading]               = useState(true);
   const [handWinCounts, setHandWinCounts]   = useState({});
+  // handUuids where the current user appears in the all-time leaderboard.
+  // Used to show a ✓ even when the specific session on this day was abandoned
+  // (e.g. user won the same hand on a different day).
+  const [userWonHands, setUserWonHands]     = useState(new Set());
   const [selectedSession, setSelectedSession] = useState(null);
 
   // Panel 2 state
@@ -106,12 +110,23 @@ export function DayDetail({ date, onClose }) {
         if (uniqueHandIds.length > 0) {
           Promise.all(uniqueHandIds.map(id =>
             getHandLeaderboard(id)
-              .then(lb => ({ id, count: Array.isArray(lb) ? lb.length : 0 }))
-              .catch(() => ({ id, count: 0 }))
+              .then(lb => ({
+                id,
+                count:   Array.isArray(lb) ? lb.length : 0,
+                // Check if the current user appears in the all-time leaderboard
+                // for this hand (their win may be from a different calendar day).
+                userWon: Array.isArray(lb) && lb.some(e => e.userUuid === user?.uuid),
+              }))
+              .catch(() => ({ id, count: 0, userWon: false }))
           )).then(results => {
-            const map = {};
-            results.forEach(({ id, count }) => { map[id] = count; });
-            setHandWinCounts(map);
+            const countMap = {};
+            const wonSet   = new Set();
+            results.forEach(({ id, count, userWon }) => {
+              countMap[id] = count;
+              if (userWon) wonSet.add(id);
+            });
+            setHandWinCounts(countMap);
+            setUserWonHands(wonSet);
           });
         }
       })
@@ -229,7 +244,9 @@ export function DayDetail({ date, onClose }) {
               )}
               {!loading && sessions.map((s, i) => {
                 const status = s.status || (s.won ? 'won' : 'abandoned');
-                const isWon  = status === 'won' || status === 'complete';
+                // Show ✓ if this session was won, OR if the user has any all-time
+                // win for this hand (they may have won it on a different calendar day).
+                const isWon  = status === 'won' || status === 'complete' || userWonHands.has(s.handUuid);
                 const winCount = handWinCounts[s.handUuid] ?? null;
                 const othersWon = winCount !== null && winCount > 0;
 
