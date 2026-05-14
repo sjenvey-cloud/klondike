@@ -94,8 +94,9 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
         @Param("userId") int userId,
         @Param("handIds") List<Integer> handIds);
 
-    // DEV-100: sessions for a specific calendar day, most recent first
-    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.startedAt >= :from AND s.startedAt < :to ORDER BY s.startedAt DESC")
+    // DEV-100: non-daily sessions for a specific calendar day, most recent first.
+    // Daily challenges are excluded — they have their own calendar on the daily screen.
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.isDaily = false AND s.startedAt >= :from AND s.startedAt < :to ORDER BY s.startedAt DESC")
     List<Session> findByUserIdAndStartedAtBetween(
         @Param("userId") int userId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
