@@ -12,6 +12,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
     tableauToTableau, tableauToFoundation, foundationToTableau,
     canAutoComplete, autoComplete,
     canUndo, undo,
+    isWon,
   } = game;
 
   const [selected, setSelected] = useState(null);
@@ -365,6 +366,20 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
       <div className="board-stats">
         <span className="board-stat-item">Moves: {game.moves}</span>
         <span className="board-stat-item">{timer?.formatted || '0:00'}</span>
+        {/* Pause button — only while a game is in progress */}
+        {!isWon && timer && (
+          <button
+            className="board-pause-btn"
+            onClick={() => timer.pause()}
+            aria-label="Pause game"
+            title="Pause"
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <rect x="2.5" y="2" width="4" height="12" rx="1.2"/>
+              <rect x="9.5" y="2" width="4" height="12" rx="1.2"/>
+            </svg>
+          </button>
+        )}
         <div className="board-stat-actions">
           {canAutoComplete && (
             <button className="autocomplete-btn" onClick={autoComplete}>
@@ -486,6 +501,23 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
           </div>
         ))}
       </div>
+
+      {/* Pause overlay */}
+      {timer?.isPaused && (
+        <div className="pause-overlay" onClick={() => timer.resume()}>
+          <div className="pause-modal" onClick={e => e.stopPropagation()}>
+            <div className="pause-modal-title">Game Paused</div>
+            <div className="pause-modal-stats">
+              <span>{timer.formatted}</span>
+              <span className="pause-modal-dot">·</span>
+              <span>{game.moves} moves</span>
+            </div>
+            <button className="pause-modal-resume" onClick={() => timer.resume()}>
+              ▶&ensp;Resume
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tableau */}
       <div className="board-tableau">

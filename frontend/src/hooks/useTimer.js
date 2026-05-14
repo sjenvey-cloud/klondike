@@ -4,67 +4,108 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 // sessionId: changes whenever a new session/game is created. Used as a dependency
 //   so the timer restarts correctly even when `running` stays true across a redeal.
 export function useTimer(running, sessionStartRef, sessionId) {
-  const [elapsed, setElapsed] = useState(0);
-  const startRef = useRef(null);    // epoch-ms anchor: elapsed = Date.now() - startRef.current
+  const [elapsed, setElapsed]   = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const startRef    = useRef(null);   // epoch-ms anchor: elapsed = Date.now() - startRef.current
   const intervalRef = useRef(null);
-  const pausedAtRef = useRef(null); // epoch-ms when the tab was hidden
+  const pausedAtRef = useRef(null);   // epoch-ms when paused (manual pause or tab hidden)
+  const isPausedRef = useRef(false);  // stable mirror of isPaused for use inside event listeners
 
-  // Start/stop the interval when running changes OR when a new session begins
+  // Keep the ref in sync with state (one render behind, which is fine for the listener)
+  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+
+  const stopTick = useCallback(() => {
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }, []);
+
+  const startTick = useCallback(() => {
+    if (intervalRef.current) return;
+    intervalRef.current = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
+    }, 1000);
+  }, []);
+
+  // Effect 1: Start/stop based on running + sessionId.
+  // Does NOT depend on isPaused — pause/resume manage the interval directly.
   useEffect(() => {
     if (running) {
       // Use the session's real start time so a resumed game shows total elapsed,
       // not just time since the resume click.
       startRef.current = sessionStartRef?.current ?? Date.now();
-      intervalRef.current = setInterval(() => {
-        setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
-      }, 1000);
+      startTick();
     } else {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+      // Game ended (won, abandoned, etc.) — clear everything including any pause state
+      stopTick();
+      pausedAtRef.current = null;
+      isPausedRef.current = false;
+      setIsPaused(false);
     }
-    return () => {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    };
+    return () => stopTick();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, sessionId]);
 
-  // Pause/resume when the tab is hidden (screen lock, app switch, etc.)
+  // Effect 2: Pause/resume when the tab is hidden (screen lock, app switch, etc.).
+  // Uses isPausedRef so it never needs to re-register when isPaused changes.
   useEffect(() => {
     if (!running) return;
 
     function handleVisibilityChange() {
       if (document.hidden) {
-        // Going hidden: stop the clock and note when
-        pausedAtRef.current = Date.now();
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      } else if (pausedAtRef.current !== null) {
-        // Becoming visible after a real pause: shift the anchor forward so
-        // elapsed stays accurate, then restart the interval
+        // Going hidden: stop the clock (don't override an existing manual pause)
+        if (pausedAtRef.current === null) {
+          pausedAtRef.current = Date.now();
+          stopTick();
+        }
+      } else if (pausedAtRef.current !== null && !isPausedRef.current) {
+        // Becoming visible after a visibility-only pause: shift the anchor forward
+        // so elapsed stays accurate, then restart the interval.
+        // If the user manually paused, leave it paused — they'll click Resume.
         const pausedDuration = Date.now() - pausedAtRef.current;
         startRef.current += pausedDuration;
         pausedAtRef.current = null;
-        intervalRef.current = setInterval(() => {
-          setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
-        }, 1000);
+        startTick();
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     // Cleanup only removes the listener; Effect 1 owns the interval lifecycle
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, sessionId]);
+
+  // Manual pause — stops the tick and records when, so resume can compensate
+  const pause = useCallback(() => {
+    if (pausedAtRef.current === null) {
+      pausedAtRef.current = Date.now();
+      stopTick();
+    }
+    isPausedRef.current = true;
+    setIsPaused(true);
+  }, [stopTick]);
+
+  // Manual resume — shifts the anchor forward by the paused duration and restarts
+  const resume = useCallback(() => {
+    if (pausedAtRef.current !== null) {
+      const pausedDuration = Date.now() - pausedAtRef.current;
+      startRef.current += pausedDuration;
+      pausedAtRef.current = null;
+    }
+    startTick();
+    isPausedRef.current = false;
+    setIsPaused(false);
+  }, [startTick]);
 
   // Clears the display and stops the current interval immediately.
   // Effect 1 will start a fresh interval when the next session begins.
   const reset = useCallback(() => {
-    clearInterval(intervalRef.current);
-    intervalRef.current = null;
+    stopTick();
     pausedAtRef.current = null;
     startRef.current = null;
+    isPausedRef.current = false;
+    setIsPaused(false);
     setElapsed(0);
-  }, []);
+  }, [stopTick]);
 
   const format = (s) => {
     const m = Math.floor(s / 60);
@@ -72,5 +113,5 @@ export function useTimer(running, sessionStartRef, sessionId) {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  return { elapsed, formatted: format(elapsed), reset };
+  return { elapsed, formatted: format(elapsed), reset, isPaused, pause, resume };
 }

@@ -287,3 +287,84 @@ html.game-fullwidth {
     padding: 5px 6px;
   }
 }
+
+/* ── Pause button (inline with timer) ── */
+.board-pause-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px 5px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.board-pause-btn:hover {
+  color: var(--color-accent);
+}
+
+/* ── Pause overlay ── */
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.60);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pause-modal {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 36px 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  min-width: 220px;
+}
+
+.pause-modal-title {
+  font-family: var(--font-ui);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.01em;
+}
+
+.pause-modal-stats {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pause-modal-dot {
+  opacity: 0.45;
+}
+
+.pause-modal-resume {
+  background: var(--color-accent);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 36px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: 4px;
+}
+
+.pause-modal-resume:hover {
+  background: var(--color-accent-hover);
+}
