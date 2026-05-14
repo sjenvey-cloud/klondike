@@ -42,12 +42,20 @@ export function Game({ dailyHand = null, dailyDate = null, isRanked = true, onSh
     if (!user) return;
 
     if (dailyHand) {
-      // Daily games always start fresh.
       // dailyDate prop is the canonical date for this challenge (past date for prior dailies,
       // null/today for today's daily). Using the wrong date causes sessions to be tagged with
       // today's date and then silently excluded from the correct day's leaderboard.
       const drawMode  = location.state?.drawMode || localStorage.getItem('klondike_draw_mode') || 'draw3';
       const dateToUse = dailyDate || localDateString(new Date());
+
+      // If the user navigated away and back (e.g. daily → /game → daily), the game
+      // state is still in klondike_daily_session. Resume it rather than creating a
+      // new session, as long as the saved hand matches the current daily hand.
+      if (game.hasSavedSession(dailyHand.uuid)) {
+        game.resumeGame();
+        return;
+      }
+
       game.startGame(dailyHand, drawMode, { isDaily: true, dailyDate: dateToUse, isRanked });
       return;
     }

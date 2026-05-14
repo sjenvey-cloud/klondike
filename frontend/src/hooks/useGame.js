@@ -397,7 +397,13 @@ export function useGame(userId, sessionKey = SESSION_KEY) {
     return true;
   }, []);
 
-  const hasSavedSession = useCallback(() => !!loadSession(sessionKey), [sessionKey]);
+  // Pass forHandId to also verify the saved session is for the same hand.
+  const hasSavedSession = useCallback((forHandId = null) => {
+    const saved = loadSession(sessionKey);
+    if (!saved) return false;
+    if (forHandId && saved.handId !== forHandId) return false;
+    return true;
+  }, [sessionKey]);
 
   const draw               = useCallback(() => dispatch({ type: 'DRAW' }), []);
   const wasteToTableau     = useCallback((col)              => dispatch({ type: 'WASTE_TO_TABLEAU', col }), []);
