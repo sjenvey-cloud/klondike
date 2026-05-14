@@ -230,8 +230,9 @@ export function Game({ dailyHand = null, isRanked = true, onShowLeaderboard = nu
           moves={game.moves}
           timeFormatted={timer.formatted}
           result={winResult}
+          sessionUuid={game.sessionId}
           onNewGame={handleNewGame}
-          onShowLeaderboard={onShowLeaderboard}
+          onShowLeaderboard={handleOpenLeaderboard}
         />
       )}
 

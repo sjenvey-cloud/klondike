@@ -112,3 +112,100 @@
   color: var(--color-text-primary);
   border-color: var(--color-text-secondary);
 }
+
+/* ── Challenge picker view ────────────────────────────────────────────── */
+
+.win-modal--challenge {
+  align-items: stretch;
+  padding: 24px 20px;
+  max-height: 80vh;
+}
+
+.win-challenge-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.win-back-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.win-back-btn:hover { color: var(--color-text-primary); }
+
+.win-challenge-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.win-picker-empty {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 16px 0;
+}
+
+.win-picker-list {
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.win-picker-section {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 12px 0 4px;
+}
+
+.win-picker-section:first-child { margin-top: 0; }
+
+.win-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.win-picker-row:hover { background: var(--color-surface-hover, rgba(255,255,255,0.05)); }
+
+.win-picker-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.win-challenge-msg {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-accent);
+  text-align: center;
+  margin: 8px 0 0;
+}
+
+.win-send-btn {
+  margin-top: 12px;
+  flex-shrink: 0;
+}
