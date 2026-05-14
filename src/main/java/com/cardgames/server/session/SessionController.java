@@ -55,7 +55,7 @@ public class SessionController {
         return sessionRepository
             .findFirstByUserIdAndStatusOrderByStartedAtDesc(userId, Session.STATUS_ACTIVE)
             .map(s -> ResponseEntity.ok(new ActiveSessionResponse(
-                s.getUuid(), s.getHandUuid(), s.getDrawMode(), s.getMoves(), s.getStartedAt())))
+                s.getUuid(), s.getHandUuid(), s.getDrawMode(), s.getMoves(), s.getStartedAt(), s.isDaily())))
             .orElse(ResponseEntity.noContent().build());
     }
 

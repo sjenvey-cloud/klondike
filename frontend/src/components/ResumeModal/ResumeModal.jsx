@@ -3,9 +3,11 @@ import './ResumeModal.css';
 
 /**
  * DEV-203: App-level modal shown on boot when the server reports an active session.
- * Displayed before any game screen so the user can decide to resume or start fresh.
+ * Only displayed when the user is on the screen matching the session type:
+ *   - /game  → random hand  → "Resume Game" / "Start New"
+ *   - /daily → daily session → "Resume" / "Redeal"
  */
-export function ResumeModal({ session, onResume, onStartNew }) {
+export function ResumeModal({ session, onResume, onStartNew, isDaily = false }) {
   return (
     <div className="resume-overlay">
       <div className="resume-modal">
@@ -18,10 +20,10 @@ export function ResumeModal({ session, onResume, onStartNew }) {
         </p>
         <div className="resume-buttons">
           <button className="resume-btn resume-btn--primary" onClick={onResume}>
-            Resume Game
+            Resume
           </button>
           <button className="resume-btn resume-btn--secondary" onClick={onStartNew}>
-            Start New
+            {isDaily ? 'Redeal' : 'Start New'}
           </button>
         </div>
       </div>

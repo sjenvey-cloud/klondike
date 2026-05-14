@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
 import { usePreferences } from './hooks/usePreferences';
@@ -25,14 +25,24 @@ export const AuthContext  = createContext({ user: null, loading: true, login: ()
 export const ThemeContext = createContext({ theme: 'dark', setTheme: () => {} });
 
 /**
- * DEV-203: Rendered inside <Router> so it can call useNavigate.
- * Shows the ResumeModal when an active server session is found and handles
- * navigation to /game with the session context on resume.
+ * DEV-203: Rendered inside <Router> so it can call useNavigate / useLocation.
+ * Shows the ResumeModal only when the user is on the screen that matches the
+ * active session type:
+ *   - non-daily session + /game  route → "Resume" / "Start New"
+ *   - daily session    + /daily route → "Resume" / "Redeal"
+ * All other routes suppress the modal so it doesn't interrupt unrelated screens.
  */
 function ActiveSessionHandler({ activeSession, onDismiss }) {
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const { pathname } = useLocation();
 
   if (!activeSession) return null;
+
+  const isDaily       = !!activeSession.isDaily;
+  const expectedRoute = isDaily ? '/daily' : '/game';
+
+  // Only interrupt the user when they are on the relevant screen.
+  if (pathname !== expectedRoute) return null;
 
   const handleResume = () => {
     onDismiss();
@@ -50,6 +60,7 @@ function ActiveSessionHandler({ activeSession, onDismiss }) {
       session={activeSession}
       onResume={handleResume}
       onStartNew={onDismiss}
+      isDaily={isDaily}
     />
   );
 }
