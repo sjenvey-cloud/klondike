@@ -19,7 +19,7 @@ function formatTimestamp(isoString) {
   try {
     const utc = isoString.endsWith('Z') ? isoString : isoString + 'Z';
     const d = new Date(utc);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch {
     return '—';
   }
