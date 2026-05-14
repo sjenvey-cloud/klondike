@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { PreferencesContext } from '../contexts/PreferencesContext';
 import { getProfile, patchProfile, getProfileHistory, getProfileStats, getProfileRecords, changePassword, deleteAccount } from '../services/api';
@@ -25,11 +26,18 @@ const BAIZE_COLOURS = [
   { key: 'gray',  label: 'Gray',  value: '#3d3d4a' },
 ];
 
+const VALID_TABS = new Set(['stats', 'calendar', 'display', 'user']);
+
 export function Profile() {
   const { user, login, logout, updateDisplayName } = useContext(AuthContext);
   const { preferences, updatePreference } = useContext(PreferencesContext);
 
-  const [tab, setTab] = useState('stats');
+  // Persist active tab in URL (?tab=calendar) so the browser back button
+  // restores the correct tab when the user navigates away and returns.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab');
+  const tab    = VALID_TABS.has(rawTab) ? rawTab : 'stats';
+  const setTab = (t) => setSearchParams({ tab: t }, { replace: true });
 
   // Data
   const [nameInput, setNameInput] = useState('');
