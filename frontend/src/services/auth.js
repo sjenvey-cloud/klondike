@@ -54,6 +54,11 @@ export async function refresh() {
   }
   const data = await r.json();
   accessToken = data.accessToken;
+  // Persist the fresh user payload so callers always have an up-to-date user
+  // object (e.g. uuid added in V17) even for sessions predating the migration.
+  if (data.user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+  }
   return data.accessToken;
 }
 

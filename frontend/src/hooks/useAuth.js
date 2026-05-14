@@ -20,7 +20,9 @@ export function useAuth() {
     }
     authService.refresh()
       .then(() => {
-        setUser(storedUser);
+        // refresh() writes a fresh user payload (including uuid) to localStorage;
+        // re-read it so we don't clobber the update with the stale storedUser.
+        setUser(loadStoredUser() || storedUser);
       })
       .catch(() => {
         // Refresh failed — clear stale user
