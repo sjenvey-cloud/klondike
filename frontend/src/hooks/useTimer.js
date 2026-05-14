@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// sessionStartRef: ref whose .current is the epoch-ms when the current session began.
 // sessionId: changes whenever a new session/game is created. Used as a dependency
 //   so the timer restarts correctly even when `running` stays true across a redeal.
-export function useTimer(running, sessionStartRef, sessionId) {
+export function useTimer(running, sessionId) {
   const [elapsed, setElapsed]   = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const startRef    = useRef(null);   // epoch-ms anchor: elapsed = Date.now() - startRef.current
@@ -30,9 +29,11 @@ export function useTimer(running, sessionStartRef, sessionId) {
   // Does NOT depend on isPaused — pause/resume manage the interval directly.
   useEffect(() => {
     if (running) {
-      // Use the session's real start time so a resumed game shows total elapsed,
-      // not just time since the resume click.
-      startRef.current = sessionStartRef?.current ?? Date.now();
+      // Always anchor the display timer to now so it resets to ~0:00 on every
+      // new deal or resume. The server-side elapsed time used for the leaderboard
+      // is tracked separately in useGame via startTimeRef (which stays anchored
+      // to the original session creation time across resumes).
+      startRef.current = Date.now();
       startTick();
     } else {
       // Game ended (won, abandoned, etc.) — clear everything including any pause state

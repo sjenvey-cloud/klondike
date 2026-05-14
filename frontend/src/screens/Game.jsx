@@ -20,7 +20,7 @@ export function Game({ dailyHand = null, dailyDate = null, isRanked = true, onSh
   // the random-hand session. Without this, navigating from an active daily to
   // /game would show the daily session as a random-hand resume candidate.
   const game = useGame(user?.id, dailyHand ? 'klondike_daily_session' : 'klondike_session');
-  const timer = useTimer(!!game.tableau && !game.isWon, game.startTimeRef, game.sessionId);
+  const timer = useTimer(!!game.tableau && !game.isWon, game.sessionId);
   const [winResult, setWinResult]   = useState(null);
   const [finishing, setFinishing]   = useState(false);
   const [resumePrompt, setResumePrompt] = useState(false);
