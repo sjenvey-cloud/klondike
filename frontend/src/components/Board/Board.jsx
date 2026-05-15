@@ -15,9 +15,6 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
     isWon,
   } = game;
 
-  const [selected, setSelected] = useState(null);
-  // selected: { source: 'waste' | 'tableau', col?: number, idx?: number }
-
   // DEV-65: shake state
   const [shaking, setShaking] = useState(null); // col number | 'waste' | 'foundationN' | null
 
@@ -38,108 +35,20 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
     setTimeout(() => setShaking(null), 400);
   }, []);
 
-  const clearSelected = () => setSelected(null);
-
-  // ── Click handlers (existing + shake on invalid) ──────────────────────────
+  // ── Click handlers — single click performs the best available move ─────────
 
   const handleStockClick = useCallback(() => {
-    clearSelected();
     draw();
   }, [draw]);
 
+  // Waste: foundation first, then leftmost legal tableau column
   const handleWasteClick = useCallback(() => {
     if (!waste || !waste.length) return;
-    if (selected && selected.source === 'waste') {
-      clearSelected();
-    } else {
-      setSelected({ source: 'waste' });
-    }
-  }, [waste, selected]);
-
-  const handleFoundationClick = useCallback((fi) => {
-    if (!selected) {
-      // Select the top foundation card for moving back to tableau
-      if (foundations[fi].length > 0) setSelected({ source: 'foundation', fi });
-      return;
-    }
-    if (selected.source === 'foundation' && selected.fi === fi) {
-      clearSelected();
-      return;
-    }
-    if (selected.source === 'waste') {
-      wasteToFoundation();
-    } else if (selected.source === 'tableau') {
-      tableauToFoundation(selected.col);
-    }
-    // foundation→foundation: ignore
-    clearSelected();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, foundations, wasteToFoundation, tableauToFoundation]);
-
-  const handleTableauClick = useCallback((col, idx) => {
-    const pile = tableau[col];
-
-    // Clicking an empty col or the top-of-pile area
-    if (idx === -1) {
-      if (!selected) return;
-      if (selected.source === 'waste') wasteToTableau(col);
-      else if (selected.source === 'tableau') tableauToTableau(selected.col, selected.idx, col);
-      else if (selected.source === 'foundation') foundationToTableau(selected.fi, col);
-      clearSelected();
-      return;
-    }
-
-    const card = pile[idx];
-    if (!card.faceUp) return;
-
-    if (!selected) {
-      setSelected({ source: 'tableau', col, idx });
-      return;
-    }
-
-    if (selected.source === 'waste') {
-      const top = waste[waste.length - 1];
-      if (canPlaceOnTableau(top.card, pile.slice(0, idx + 1))) {
-        wasteToTableau(col);
-        clearSelected();
-        return;
-      }
-    } else if (selected.source === 'tableau') {
-      const selCard = tableau[selected.col][selected.idx];
-      if (canPlaceOnTableau(selCard.card, pile.slice(0, idx + 1))) {
-        tableauToTableau(selected.col, selected.idx, col);
-        clearSelected();
-        return;
-      }
-    } else if (selected.source === 'foundation') {
-      const fi = selected.fi;
-      const topCard = foundations[fi][foundations[fi].length - 1];
-      if (canPlaceOnTableau(topCard, pile.slice(0, idx + 1))) {
-        foundationToTableau(fi, col);
-        clearSelected();
-        return;
-      }
-    }
-
-    // Invalid target — shake and reselect
-    triggerShake(col);
-    if (selected.source !== 'foundation') setSelected({ source: 'tableau', col, idx });
-    else clearSelected();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableau, waste, foundations, selected, wasteToTableau, tableauToTableau, foundationToTableau, triggerShake]);
-
-  // ── DEV-21: Double-click to foundation ───────────────────────────────────
-
-  const handleWasteDblClick = useCallback(() => {
-    if (!waste || !waste.length) return;
-    clearSelected();
     const card = waste[waste.length - 1].card;
-    // 1. Try foundation
     if (canPlaceOnFoundation(card, foundations[foundationIndex(card)])) {
       wasteToFoundation();
       return;
     }
-    // 2. Leftmost legal tableau column
     for (let col = 0; col < tableau.length; col++) {
       if (canPlaceOnTableau(card, tableau[col])) {
         wasteToTableau(col);
@@ -149,19 +58,31 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
     triggerShake('waste');
   }, [waste, foundations, tableau, wasteToFoundation, wasteToTableau, triggerShake]);
 
-  const handleTableauDblClick = useCallback((col, idx, e) => {
+  // Foundation: move top card back to the leftmost legal tableau column
+  const handleFoundationClick = useCallback((fi) => {
+    if (foundations[fi].length === 0) return;
+    const topCard = foundations[fi][foundations[fi].length - 1];
+    for (let col = 0; col < tableau.length; col++) {
+      if (canPlaceOnTableau(topCard, tableau[col])) {
+        foundationToTableau(fi, col);
+        return;
+      }
+    }
+    triggerShake(`foundation${fi}`);
+  }, [foundations, tableau, foundationToTableau, triggerShake]);
+
+  // Tableau: top card → foundation first, then leftmost legal other column;
+  // sub-stack → leftmost legal other column only
+  const handleTableauClick = useCallback((col, idx, e) => {
     e.stopPropagation();
     const pile = tableau[col];
     if (!pile || !pile[idx] || !pile[idx].faceUp) return;
-    clearSelected();
     const card = pile[idx].card;
     const isTop = idx === pile.length - 1;
-    // 1. Top card → try foundation
     if (isTop && canPlaceOnFoundation(card, foundations[foundationIndex(card)])) {
       tableauToFoundation(col);
       return;
     }
-    // 2. Leftmost legal tableau column (skip source column)
     for (let toCol = 0; toCol < tableau.length; toCol++) {
       if (toCol !== col && canPlaceOnTableau(card, tableau[toCol])) {
         tableauToTableau(col, idx, toCol);
@@ -443,7 +364,6 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
         <div
           className={`waste-area${shaking === 'waste' ? ' shake' : ''}${isDraw3 ? ' waste-area--draw3' : ''}`}
           onClick={handleWasteClick}
-          onDoubleClick={handleWasteDblClick}
           data-drop="waste"
         >
           {wasteThird && (
@@ -465,7 +385,6 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
               <Card
                 card={wasteTop.card}
                 faceUp={true}
-                selected={selected?.source === 'waste'}
               />
             </div>
           )}
@@ -494,7 +413,6 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
                   <Card
                     card={pile[pile.length - 1]}
                     faceUp={true}
-                    selected={selected?.source === 'foundation' && selected.fi === fi}
                   />
                 </div>
             }
@@ -529,19 +447,17 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
             data-col={col}
           >
             {pile.length === 0
-              ? <div className="tableau-col-empty" onClick={() => handleTableauClick(col, -1)} />
+              ? <div className="tableau-col-empty" />
               : pile.map((c, idx) => (
                   <div
                     key={idx}
                     className={`tableau-card${idx > 0 && pile[idx - 1].faceUp ? ' face-up' : ''}${dragRef.current?.source === 'tableau' && dragRef.current?.col === col && dragRef.current?.idx === idx ? ' dragging' : ''}`}
-                    onClick={(e) => { e.stopPropagation(); handleTableauClick(col, idx); }}
-                    onDoubleClick={(e) => handleTableauDblClick(col, idx, e)}
+                    onClick={(e) => handleTableauClick(col, idx, e)}
                     onPointerDown={c.faceUp ? (e) => handleCardPointerDown(e, 'tableau', col, idx) : undefined}
                   >
                     <Card
                       card={c.card}
                       faceUp={c.faceUp}
-                      selected={selected?.source === 'tableau' && selected.col === col && selected.idx <= idx && c.faceUp}
                     />
                   </div>
                 ))
