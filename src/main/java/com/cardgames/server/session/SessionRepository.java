@@ -75,7 +75,7 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
         "      MAX(started_at) AS last_played, " +
         "      MAX(CASE WHEN status = 'won' THEN 1 ELSE 0 END) AS has_won " +
         "    FROM sessions " +
-        "    WHERE user_id = :userId AND daily_date IS NULL " +
+        "    WHERE user_id = :userId AND daily_date IS NULL AND moves >= 2 " +
         "    GROUP BY hand_id" +
         "  ) inner_t " +
         "  WHERE last_played >= :since" +
@@ -100,7 +100,7 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     // Daily challenges are excluded — they have their own calendar on the daily screen.
     // Won sessions sort first so putIfAbsent deduplication (by hand) always keeps the win
     // even if the user redealt and abandoned the same hand later the same day.
-    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.isDaily = false AND s.startedAt >= :from AND s.startedAt < :to ORDER BY CASE WHEN s.status = 'won' THEN 0 ELSE 1 END ASC, s.startedAt DESC")
+    @Query("SELECT s FROM Session s WHERE s.userId = :userId AND s.isDaily = false AND s.moves >= 2 AND s.startedAt >= :from AND s.startedAt < :to ORDER BY CASE WHEN s.status = 'won' THEN 0 ELSE 1 END ASC, s.startedAt DESC")
     List<Session> findByUserIdAndStartedAtBetween(
         @Param("userId") int userId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
