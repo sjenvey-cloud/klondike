@@ -129,7 +129,7 @@ public class SocialChallengeController {
         int userId = (Integer) auth.getPrincipal();
 
         List<SocialChallenge> participating =
-            challengeRepo.findChallengesWhereParticipant(userId);
+            challengeRepo.findVisibleChallengesWhereParticipant(userId);
 
         long count = participating.stream()
             .filter(c -> SocialChallenge.STATUS_ACTIVE.equals(c.getStatus()))
@@ -156,7 +156,7 @@ public class SocialChallengeController {
         Map<Integer, SocialChallenge> allMap = new LinkedHashMap<>();
         challengeRepo.findByCreatorUserId(userId)
             .forEach(c -> allMap.put(c.getId(), c));
-        challengeRepo.findChallengesWhereParticipant(userId)
+        challengeRepo.findVisibleChallengesWhereParticipant(userId)
             .forEach(c -> allMap.putIfAbsent(c.getId(), c));
 
         List<SocialChallenge> sorted = allMap.values().stream()
@@ -351,6 +351,46 @@ public class SocialChallengeController {
         challenge.setStatus(SocialChallenge.STATUS_ACTIVE);
         challenge.setEndedAt(null);
         challengeRepo.save(challenge);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * DELETE /api/v1/social/challenges/{id}
+     * Creator permanently deletes a challenge and all participant records.
+     * The ON DELETE CASCADE constraint handles participant cleanup in the DB.
+     */
+    @Transactional
+    @DeleteMapping("/challenges/{id}")
+    public ResponseEntity<Void> deleteChallenge(@PathVariable int id, Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+        SocialChallenge challenge = challengeRepo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Challenge not found"));
+        if (challenge.getCreatorUserId() != userId)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can delete this challenge");
+
+        challengeRepo.delete(challenge);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * POST /api/v1/social/challenges/{id}/hide
+     * A participant hides a challenge from their own list.
+     * The challenge remains visible to all other participants and the creator.
+     */
+    @Transactional
+    @PostMapping("/challenges/{id}/hide")
+    public ResponseEntity<Void> hideChallenge(@PathVariable int id, Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+        SocialChallenge challenge = challengeRepo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Challenge not found"));
+        if (challenge.getCreatorUserId() == userId)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Use delete to remove your own challenge");
+
+        SocialChallengeParticipant participant = participantRepo.findByChallengeIdAndUserId(id, userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not a participant"));
+
+        participant.setHidden(true);
+        participantRepo.save(participant);
         return ResponseEntity.noContent().build();
     }
 }

@@ -20,6 +20,9 @@ public class SocialChallengeParticipant {
     @Column(name = "added_at", nullable = false)
     private LocalDateTime addedAt;
 
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden = false;
+
     public SocialChallengeParticipant() {}
 
     public SocialChallengeParticipant(int challengeId, int userId) {
@@ -32,4 +35,6 @@ public class SocialChallengeParticipant {
     public int           getChallengeId() { return challengeId; }
     public int           getUserId()      { return userId; }
     public LocalDateTime getAddedAt()     { return addedAt; }
+    public boolean       isHidden()       { return hidden; }
+    public void          setHidden(boolean hidden) { this.hidden = hidden; }
 }

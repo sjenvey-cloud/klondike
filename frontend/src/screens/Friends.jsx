@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from 'react';
+import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import {
@@ -11,6 +11,7 @@ import {
   getCustomLeaderboard, deleteCustomLeague, addLeagueMembers, removeLeagueMember,
   getSocialChallenges, getSocialChallengeDetail,
   addChallengeParticipants, endSocialChallenge, resumeSocialChallenge,
+  deleteSocialChallenge, hideSocialChallenge,
 } from '../services/api';
 import { getPendingInviteToken, clearPendingInviteToken } from './AcceptInvite';
 import './Friends.css';
@@ -84,6 +85,10 @@ export function Friends() {
   // Add-participants picker (shown inside detail view)
   const [addPaxOpen, setAddPaxOpen]             = useState(false);
   const [addPaxSelected, setAddPaxSelected]     = useState(new Set());
+  // Swipe-to-action state
+  const [swipedChallengeId, setSwipedChallengeId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId]     = useState(null);
+  const swipeTouchRef = useRef({ startX: 0, startY: 0 });
 
   // ── Initial data loads ─────────────────────────────────────────────────
   useEffect(() => {
@@ -316,6 +321,27 @@ export function Friends() {
     } catch {} finally { setActionBusy(false); }
   }, [addPaxSelected, actionBusy]);
 
+  const handleDeleteChallenge = useCallback(async (id) => {
+    if (actionBusy) return;
+    setActionBusy(true);
+    try {
+      await deleteSocialChallenge(id);
+      setChallenges(prev => prev.filter(c => c.id !== id));
+      setDeleteConfirmId(null);
+      setSwipedChallengeId(null);
+    } catch {} finally { setActionBusy(false); }
+  }, [actionBusy]);
+
+  const handleHideChallenge = useCallback(async (id) => {
+    if (actionBusy) return;
+    setActionBusy(true);
+    try {
+      await hideSocialChallenge(id);
+      setChallenges(prev => prev.filter(c => c.id !== id));
+      setSwipedChallengeId(null);
+    } catch {} finally { setActionBusy(false); }
+  }, [actionBusy]);
+
   const newChallengeCount = challenges.filter(
     c => c.status === 'active' && !c.isCreator && !c.userHasWon
   ).length;
@@ -350,6 +376,8 @@ export function Friends() {
             onClick={() => {
               setTab(t);
               setSelectedChallenge(null);
+              setSwipedChallengeId(null);
+              setDeleteConfirmId(null);
               if (t === 'Leagues') {
                 setLeagueView('list');
                 setSelectedLeague(null);
@@ -761,22 +789,70 @@ export function Friends() {
             <p className="empty-state">No challenges yet. Win a deal and tap ⚔ Challenge Friends.</p>
           )}
           {challenges.map(c => {
-            const isNew = !c.isCreator && !c.userHasWon && c.status === 'active';
+            const isNew    = !c.isCreator && !c.userHasWon && c.status === 'active';
+            const isSwiped = swipedChallengeId === c.id;
             return (
-              <button key={c.id} className="sc-card" onClick={() => openChallenge(c.id)}>
-                <div className="sc-card-top">
-                  <span className="sc-mode-badge">{c.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}</span>
-                  <span className={`sc-status-badge sc-status-badge--${c.status}`}>
-                    {c.status === 'active' ? 'Active' : 'Ended'}
-                  </span>
-                  {isNew && <span className="sc-new-badge">New</span>}
+              <div key={c.id} className="sc-swipe-outer">
+                <div
+                  className={`sc-swipe-inner${isSwiped ? ' swiped' : ''}`}
+                  onTouchStart={e => {
+                    swipeTouchRef.current = {
+                      startX: e.touches[0].clientX,
+                      startY: e.touches[0].clientY,
+                    };
+                  }}
+                  onTouchEnd={e => {
+                    const dx = swipeTouchRef.current.startX - e.changedTouches[0].clientX;
+                    const dy = Math.abs(swipeTouchRef.current.startY - e.changedTouches[0].clientY);
+                    if (dx > 50 && dy < 40) {
+                      setSwipedChallengeId(c.id);
+                    } else if (dx < -20) {
+                      setSwipedChallengeId(null);
+                    }
+                  }}
+                >
+                  <button
+                    className="sc-card"
+                    onClick={() => {
+                      if (isSwiped) { setSwipedChallengeId(null); return; }
+                      openChallenge(c.id);
+                    }}
+                  >
+                    <div className="sc-card-top">
+                      <span className="sc-mode-badge">{c.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}</span>
+                      <span className={`sc-status-badge sc-status-badge--${c.status}`}>
+                        {c.status === 'active' ? 'Active' : 'Ended'}
+                      </span>
+                      {isNew && <span className="sc-new-badge">New</span>}
+                    </div>
+                    <div className="sc-card-mid">
+                      <span className="sc-creator">{c.isCreator ? 'You' : c.creatorDisplayName}</span>
+                      <span className="sc-date">{formatDate(c.createdAt)}</span>
+                    </div>
+                    <div className="sc-card-bot">{c.winnerCount}/{c.participantCount + 1} completed · ›</div>
+                  </button>
                 </div>
-                <div className="sc-card-mid">
-                  <span className="sc-creator">{c.isCreator ? 'You' : c.creatorDisplayName}</span>
-                  <span className="sc-date">{formatDate(c.createdAt)}</span>
+                <div className={`sc-swipe-action${isSwiped ? ' visible' : ''}`}>
+                  {c.isCreator
+                    ? (
+                      <button
+                        className="sc-action-btn sc-action-btn--delete"
+                        onClick={() => setDeleteConfirmId(c.id)}
+                      >
+                        Delete
+                      </button>
+                    ) : (
+                      <button
+                        className="sc-action-btn sc-action-btn--hide"
+                        onClick={() => handleHideChallenge(c.id)}
+                        disabled={actionBusy}
+                      >
+                        Hide
+                      </button>
+                    )
+                  }
                 </div>
-                <div className="sc-card-bot">{c.winnerCount}/{c.participantCount + 1} completed · ›</div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -901,6 +977,33 @@ export function Friends() {
 
       {tab === 'Challenges' && detailLoading && (
         <div className="tab-content"><p className="empty-state">Loading challenge…</p></div>
+      )}
+
+      {/* ── Delete challenge confirmation modal ───────────────────────────── */}
+      {deleteConfirmId != null && (
+        <div className="sc-delete-backdrop" onClick={() => setDeleteConfirmId(null)}>
+          <div className="sc-delete-modal" onClick={e => e.stopPropagation()}>
+            <h3 className="sc-delete-modal-title">Delete Challenge?</h3>
+            <p className="sc-delete-modal-body">
+              This will permanently delete the challenge and all its data for every player. This cannot be undone.
+            </p>
+            <div className="sc-delete-modal-actions">
+              <button
+                className="sc-delete-confirm-btn"
+                onClick={() => handleDeleteChallenge(deleteConfirmId)}
+                disabled={actionBusy}
+              >
+                {actionBusy ? 'Deleting…' : 'Delete'}
+              </button>
+              <button
+                className="sc-delete-cancel-btn"
+                onClick={() => { setDeleteConfirmId(null); setSwipedChallengeId(null); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

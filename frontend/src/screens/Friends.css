@@ -947,3 +947,156 @@
 .league-delete-btn:hover {
   background: color-mix(in srgb, var(--color-danger) 10%, transparent);
 }
+
+/* ── Swipe-to-action on challenge cards ──────────────────────────────────── */
+
+.sc-swipe-outer {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.sc-swipe-inner {
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.sc-swipe-inner.swiped {
+  transform: translateX(-80px);
+}
+
+/* Remove the card's own bottom margin so the outer controls spacing */
+.sc-swipe-inner .sc-card {
+  margin-bottom: 0;
+}
+
+.sc-swipe-action {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 80px;
+  display: flex;
+  align-items: stretch;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.sc-swipe-action.visible {
+  transform: translateX(0);
+}
+
+.sc-action-btn {
+  flex: 1;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  transition: filter 0.15s;
+}
+
+.sc-action-btn--delete {
+  background: var(--color-danger);
+}
+
+.sc-action-btn--delete:hover {
+  filter: brightness(0.88);
+}
+
+.sc-action-btn--hide {
+  background: #888;
+}
+
+.sc-action-btn--hide:hover:not(:disabled) {
+  filter: brightness(0.88);
+}
+
+.sc-action-btn--hide:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Delete challenge confirmation modal ─────────────────────────────────── */
+
+.sc-delete-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.sc-delete-modal {
+  background: var(--color-surface);
+  border-radius: 14px;
+  padding: 24px 20px;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.sc-delete-modal-title {
+  margin: 0 0 10px;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.sc-delete-modal-body {
+  margin: 0 0 20px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+
+.sc-delete-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.sc-delete-confirm-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-danger);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.sc-delete-confirm-btn:hover:not(:disabled) {
+  filter: brightness(0.88);
+}
+
+.sc-delete-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sc-delete-cancel-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sc-delete-cancel-btn:hover {
+  background: color-mix(in srgb, var(--color-border) 40%, transparent);
+}

@@ -159,6 +159,8 @@ export const createSocialChallenge    = (sessionUuid, invitedUserIds = null, inv
 export const addChallengeParticipants = (id, userIds) => post(`/social/challenges/${id}/participants`, { userIds });
 export const endSocialChallenge       = (id)  => post(`/social/challenges/${id}/end`, {});
 export const resumeSocialChallenge    = (id)  => post(`/social/challenges/${id}/resume`, {});
+export const deleteSocialChallenge    = (id)  => del(`/social/challenges/${id}`);
+export const hideSocialChallenge      = (id)  => post(`/social/challenges/${id}/hide`, {});
 
 // ── Replay (DEV-219) ──────────────────────────────────────────────────────
 // GET /api/v1/sessions/:uuid/replay → ReplayResponse

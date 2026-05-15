@@ -17,4 +17,11 @@ public interface SocialChallengeRepository extends JpaRepository<SocialChallenge
            "(SELECT p.challengeId FROM SocialChallengeParticipant p WHERE p.userId = :userId) " +
            "ORDER BY c.createdAt DESC")
     List<SocialChallenge> findChallengesWhereParticipant(@Param("userId") int userId);
+
+    /** Same as above but excludes challenges the user has hidden from their list. */
+    @Query("SELECT c FROM SocialChallenge c WHERE c.id IN " +
+           "(SELECT p.challengeId FROM SocialChallengeParticipant p " +
+           " WHERE p.userId = :userId AND p.hidden = false) " +
+           "ORDER BY c.createdAt DESC")
+    List<SocialChallenge> findVisibleChallengesWhereParticipant(@Param("userId") int userId);
 }
