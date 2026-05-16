@@ -8,5 +8,7 @@ public record PatchPreferencesRequest(
     String  cardBackPattern,
     String  feltColour,
     Boolean animationsEnabled,
-    String  stockSide
+    String  stockSide,
+    String  animationSpeed,
+    String  winAnimation
 ) {}

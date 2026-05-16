@@ -9,5 +9,6 @@ public record ProfileResponse(
     String displayName,
     String email,
     Date   createdAt,
-    Date   lastHand
+    Date   lastHand,
+    String avatarUrl
 ) {}

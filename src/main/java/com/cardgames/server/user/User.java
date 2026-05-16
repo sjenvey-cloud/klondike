@@ -97,6 +97,13 @@ public class User implements Serializable {
     public Date getlasthand()                { return lasthand; }
     public void setlasthand(Date d)          { this.lasthand = d; }
 
+    // DEV-228: optional avatar URL (S3 CDN link)
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
+    public String getAvatarUrl()             { return avatarUrl; }
+    public void   setAvatarUrl(String url)   { this.avatarUrl = url; }
+
     // DEV-204: soft-delete timestamp — null means account is active
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

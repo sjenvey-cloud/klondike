@@ -156,7 +156,8 @@ public class ProfileController {
             user.getDisplayName(),
             user.getEmail(),
             user.getdatecreated(),
-            user.getlasthand()
+            user.getlasthand(),
+            user.getAvatarUrl()
         );
     }
 }

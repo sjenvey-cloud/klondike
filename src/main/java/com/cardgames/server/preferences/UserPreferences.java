@@ -35,6 +35,12 @@ public class UserPreferences {
     @Column(name = "stock_side", nullable = false)
     private String stockSide = "left";
 
+    @Column(name = "animation_speed", nullable = false)
+    private String animationSpeed = "normal";
+
+    @Column(name = "win_animation", nullable = false)
+    private String winAnimation = "confetti";
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
@@ -54,6 +60,8 @@ public class UserPreferences {
     public String        getFeltColour()       { return feltColour; }
     public boolean       isAnimationsEnabled() { return animationsEnabled; }
     public String        getStockSide()        { return stockSide; }
+    public String        getAnimationSpeed()   { return animationSpeed; }
+    public String        getWinAnimation()     { return winAnimation; }
     public LocalDateTime getUpdatedAt()        { return updatedAt; }
 
     public void setDrawModeDefault(String v)  { this.drawModeDefault = v; this.updatedAt = LocalDateTime.now(); }
@@ -64,4 +72,6 @@ public class UserPreferences {
     public void setFeltColour(String v)       { this.feltColour = v;      this.updatedAt = LocalDateTime.now(); }
     public void setAnimationsEnabled(boolean v){ this.animationsEnabled = v; this.updatedAt = LocalDateTime.now(); }
     public void setStockSide(String v)        { this.stockSide = v;       this.updatedAt = LocalDateTime.now(); }
+    public void setAnimationSpeed(String v)   { this.animationSpeed = v;  this.updatedAt = LocalDateTime.now(); }
+    public void setWinAnimation(String v)     { this.winAnimation = v;    this.updatedAt = LocalDateTime.now(); }
 }

@@ -50,6 +50,8 @@ public class PreferencesController {
         if (body.feltColour()       != null) prefs.setFeltColour(body.feltColour());
         if (body.animationsEnabled() != null) prefs.setAnimationsEnabled(body.animationsEnabled());
         if (body.stockSide()         != null) prefs.setStockSide(body.stockSide());
+        if (body.animationSpeed()    != null) prefs.setAnimationSpeed(body.animationSpeed());
+        if (body.winAnimation()      != null) prefs.setWinAnimation(body.winAnimation());
 
         prefsRepo.save(prefs);
         return ResponseEntity.ok(prefs);
