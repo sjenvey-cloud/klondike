@@ -21,7 +21,7 @@
   justify-content: space-between;
   padding: 3px 4px;
   box-sizing: border-box;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: transform var(--anim-duration, 150ms) ease, box-shadow var(--anim-duration, 150ms) ease;
   position: relative;
   overflow: hidden;
 }
@@ -481,7 +481,7 @@
   user-select: none;
   -webkit-user-drag: none;
   box-shadow: var(--shadow-card);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: transform var(--anim-duration, 150ms) ease, box-shadow var(--anim-duration, 150ms) ease;
 }
 
 .card-image--selected {

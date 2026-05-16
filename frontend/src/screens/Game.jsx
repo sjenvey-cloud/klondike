@@ -266,6 +266,7 @@ export function Game({ dailyHand = null, dailyDate = null, isRanked = true, onSh
           sessionUuid={game.sessionId}
           onNewGame={handleNewGame}
           onShowLeaderboard={handleOpenLeaderboard}
+          winAnimation={preferences?.winAnimation || 'confetti'}
         />
       )}
 
@@ -279,6 +280,7 @@ export function Game({ dailyHand = null, dailyDate = null, isRanked = true, onSh
           drawMode={priorDailyInfo.drawMode}
           userUuid={user?.uuid}
           sessionUuid={dailyWinData.sessionUuid}
+          winAnimation={preferences?.winAnimation || 'confetti'}
           onNavigate={(dest) => {
             setDailyWinData(null);
             // 'leaderboard' and 'calendar' take the user to the daily screen;

@@ -431,6 +431,8 @@ export function useGame(userId, sessionKey = SESSION_KEY) {
   // moves-before check: if a dispatch makes no progress the reducer returned
   // state unchanged, so we stop immediately rather than flickering.
   const autoComplete = useCallback(() => {
+    const speed = document.documentElement.dataset.animSpeed || 'normal';
+    const delay = speed === 'slow' ? 250 : speed === 'fast' ? 30 : 80;
     let maxSteps = 300;
     const step = () => {
       const s = stateRef.current;
@@ -442,7 +444,7 @@ export function useGame(userId, sessionKey = SESSION_KEY) {
         // (Phase 2 found nothing). Stop to avoid an infinite flickering loop.
         if (stateRef.current.moves === movesBefore) return;
         step();
-      }, 80);
+      }, delay);
     };
     step();
   }, []);

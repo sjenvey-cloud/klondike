@@ -16,7 +16,7 @@ import './WinModal.css';
  *   onNewGame       – callback to start a fresh random hand
  *   onShowLeaderboard – callback to open the in-game leaderboard panel
  */
-export function WinModal({ moves, timeFormatted, result, sessionUuid, onNewGame, onShowLeaderboard }) {
+export function WinModal({ moves, timeFormatted, result, sessionUuid, onNewGame, onShowLeaderboard, winAnimation = 'confetti' }) {
   const navigate = useNavigate();
   const rank = result?.rank || null;
 
@@ -165,7 +165,7 @@ export function WinModal({ moves, timeFormatted, result, sessionUuid, onNewGame,
 
   return (
     <>
-      <Confetti />
+      {winAnimation === 'confetti' && <Confetti />}
       <div className="win-overlay">
         <div className="win-modal">
           <div className="win-trophy">🏆</div>

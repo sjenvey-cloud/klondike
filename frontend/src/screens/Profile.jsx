@@ -328,6 +328,43 @@ export function Profile() {
               </button>
             </div>
           </div>
+
+          <div className="profile-section">
+            <h3 className="profile-section-title">Animation Speed</h3>
+            <div className="stock-side-row">
+              {[
+                { key: 'slow',   label: 'Slow' },
+                { key: 'normal', label: 'Normal' },
+                { key: 'fast',   label: 'Fast' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`stock-side-btn${(preferences.animationSpeed || 'normal') === key ? ' stock-side-btn--active' : ''}`}
+                  onClick={() => updatePreference('animationSpeed', key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="profile-section">
+            <h3 className="profile-section-title">Win Celebration</h3>
+            <div className="stock-side-row">
+              <button
+                className={`stock-side-btn${(preferences.winAnimation || 'confetti') === 'confetti' ? ' stock-side-btn--active' : ''}`}
+                onClick={() => updatePreference('winAnimation', 'confetti')}
+              >
+                🎉 Confetti
+              </button>
+              <button
+                className={`stock-side-btn${preferences.winAnimation === 'simple' ? ' stock-side-btn--active' : ''}`}
+                onClick={() => updatePreference('winAnimation', 'simple')}
+              >
+                Simple
+              </button>
+            </div>
+          </div>
         </>
       )}
 

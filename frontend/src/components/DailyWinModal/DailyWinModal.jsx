@@ -28,7 +28,7 @@ function formatTime(s) {
  *   onNavigate    – callback(destination) where destination is one of:
  *                   'leaderboard' | 'calendar' | 'game' | 'home' | 'profile'
  */
-export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, userUuid, sessionUuid, onNavigate }) {
+export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, userUuid, sessionUuid, onNavigate, winAnimation = 'confetti' }) {
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([]);
   const [sort,        setSort]        = useState('moves');
@@ -55,7 +55,7 @@ export function DailyWinModal({ moves, timeFormatted, rank, date, drawMode, user
 
   return (
     <>
-      <Confetti />
+      {winAnimation === 'confetti' && <Confetti />}
       <div className="dwm-overlay">
         <div className="dwm-modal">
 

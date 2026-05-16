@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
+import { PreferencesContext } from '../contexts/PreferencesContext';
 import { getDaily, getDailyLeaderboard, getMyDailyRank } from '../services/api';
 import { localDateString } from '../services/dateUtils';
 import { Game } from './Game';
@@ -17,7 +18,8 @@ function formatTime(s) {
 }
 
 export function Daily() {
-  const { user }   = useContext(AuthContext);
+  const { user }             = useContext(AuthContext);
+  const { preferences }      = useContext(PreferencesContext);
   const navigate   = useNavigate();
   const [daily,      setDaily]      = useState(null);
   const [dailyError, setDailyError] = useState(false);
@@ -248,6 +250,7 @@ export function Daily() {
           drawMode={drawMode}
           userUuid={user?.uuid}
           sessionUuid={dailyWinData.sessionUuid}
+          winAnimation={preferences?.winAnimation || 'confetti'}
           onNavigate={handleWinNavigate}
         />
       )}
@@ -262,6 +265,7 @@ export function Daily() {
           drawMode={priorDailyInfo.hand.drawMode}
           userUuid={user?.uuid}
           sessionUuid={priorDailyWinData.sessionUuid}
+          winAnimation={preferences?.winAnimation || 'confetti'}
           onNavigate={handlePriorWinNavigate}
         />
       )}

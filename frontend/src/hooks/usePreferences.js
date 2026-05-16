@@ -10,7 +10,11 @@ const DEFAULTS = {
   cardFaceDesign:   'classic',
   cardStyle:        'classic',   // 'classic' | 'modern' | 'fantasy' — takes precedence over cardFaceDesign when set
   stockSide:        'left',      // 'left' | 'right' — draw pile position on the board
+  animationSpeed:   'normal',    // 'slow' | 'normal' | 'fast'
+  winAnimation:     'confetti',  // 'confetti' | 'simple'
 };
+
+const ANIM_DURATION = { slow: '300ms', normal: '150ms', fast: '50ms' };
 
 function applyPreferences(prefs) {
   const html = document.documentElement;
@@ -31,6 +35,9 @@ function applyPreferences(prefs) {
   } else {
     html.classList.remove('animations-off');
   }
+  const speed = prefs.animationSpeed || 'normal';
+  html.dataset.animSpeed = speed;
+  html.style.setProperty('--anim-duration', ANIM_DURATION[speed] || ANIM_DURATION.normal);
 }
 
 export function usePreferences() {
