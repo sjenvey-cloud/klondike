@@ -166,10 +166,9 @@ export interface DailyHandResponse {
 
 export interface DailyCalendarEntry {
   date: string;
-  played: boolean;
-  won: boolean;
-  moves: number | null;
-  timeSeconds: number | null;
+  handUuid: string | null;
+  drawMode: string;
+  userStatus: 'won' | 'played' | 'not_played';
 }
 
 export interface DayHistory {

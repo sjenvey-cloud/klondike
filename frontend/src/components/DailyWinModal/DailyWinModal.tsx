@@ -54,7 +54,7 @@ export function DailyWinModal({
   useEffect(() => {
     setLbLoading(true);
     getDailyLeaderboard(date, sort, drawMode)
-      .then(data => setLeaderboard(Array.isArray(data?.items) ? data.items : []))
+      .then(data => setLeaderboard(Array.isArray(data) ? data : []))
       .catch(() => setLeaderboard([]))
       .finally(() => setLbLoading(false));
   }, [date, sort, drawMode]);

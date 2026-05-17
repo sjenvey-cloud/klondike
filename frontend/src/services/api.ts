@@ -166,8 +166,8 @@ export const getDailyLeaderboard = (
   date: string,
   sort = 'moves',
   drawMode = 'draw3',
-): Promise<PagedResponse<DailyLeaderboardEntry>> =>
-  get(`/leaderboard/daily/${date}/${sort}?drawMode=${drawMode}`) as Promise<PagedResponse<DailyLeaderboardEntry>>;
+): Promise<DailyLeaderboardEntry[]> =>
+  get(`/leaderboard/daily/${date}/${sort}?drawMode=${drawMode}`) as Promise<DailyLeaderboardEntry[]>;
 
 export const getMyDailyRank = (
   date: string,

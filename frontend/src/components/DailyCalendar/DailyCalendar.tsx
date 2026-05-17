@@ -96,7 +96,7 @@ export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps
     setLeaderboard([]);
     setMyRank(null);
     getDailyLeaderboard(selectedDate, sort, drawMode)
-      .then(data => setLeaderboard(Array.isArray(data?.items) ? data.items : []))
+      .then(data => setLeaderboard(Array.isArray(data) ? data : []))
       .catch(() => setLeaderboard([]))
       .finally(() => setLbLoading(false));
     if (user) {
@@ -155,7 +155,7 @@ export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps
           <span className="dc-detail-date">{label}</span>
         </div>
 
-        {entry?.won && myRank && (
+        {entry?.userStatus === 'won' && myRank && (
           <div className="dc-my-rank-bar">
             Your rank: <strong>#{myRank.rank}</strong>
             {myRank.moves && (
@@ -250,8 +250,8 @@ export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps
                 const entry   = entryMap[key];
                 const isToday = key === todayKey;
                 const isFuture = key > todayKey;
-                const won    = entry?.won;
-                const played = entry?.played;
+                const won    = entry?.userStatus === 'won';
+                const played = entry?.userStatus === 'played';
 
                 const cls = [
                   'dc-cell',

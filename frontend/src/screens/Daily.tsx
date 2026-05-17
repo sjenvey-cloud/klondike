@@ -68,7 +68,7 @@ export function Daily(): React.JSX.Element {
   useEffect(() => {
     if (view !== 'leaderboard') return;
     getDailyLeaderboard(activeDate, sort, drawMode)
-      .then(data => setLeaderboard(data?.items ?? []))
+      .then(data => setLeaderboard(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [activeDate, sort, view, drawMode]);
 
