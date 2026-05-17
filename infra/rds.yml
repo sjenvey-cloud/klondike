@@ -21,6 +21,16 @@ Parameters:
     MinLength: 8
     Description: Must be at least 8 characters
 
+  CreateReadReplica:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+Conditions:
+  ShouldCreateReplica: !Equals [!Ref CreateReadReplica, 'true']
+
 Resources:
 
   DBSubnetGroup:
@@ -59,6 +69,20 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvironmentName}-postgres
 
+  ReadReplica:
+    Type: AWS::RDS::DBInstance
+    Condition: ShouldCreateReplica
+    DeletionPolicy: Delete
+    Properties:
+      DBInstanceIdentifier: !Sub ${EnvironmentName}-postgres-replica
+      DBInstanceClass: db.t3.micro
+      SourceDBInstanceIdentifier: !Ref DBInstance
+      MultiAZ: false
+      PubliclyAccessible: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-postgres-replica
+
 Outputs:
 
   DBEndpoint:
@@ -78,4 +102,11 @@ Outputs:
     Value: !Ref DBName
     Export:
       Name: !Sub ${EnvironmentName}-DBName
+
+  ReadReplicaEndpoint:
+    Condition: ShouldCreateReplica
+    Description: RDS read replica endpoint
+    Value: !GetAtt ReadReplica.Endpoint.Address
+    Export:
+      Name: !Sub ${EnvironmentName}-DBReadReplicaEndpoint
 

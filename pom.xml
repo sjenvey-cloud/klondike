@@ -75,6 +75,24 @@
 			<version>2.26.31</version>
 		</dependency>
 
+		<!-- AWS SDK CloudWatch — custom application metrics (DEV-216) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>cloudwatch</artifactId>
+			<version>2.26.31</version>
+		</dependency>
+
+		<!-- AWS X-Ray — distributed tracing (DEV-218)
+		     Note: only aws-xray-recorder-sdk-core is included.
+		     The -spring module is omitted because it bundles javax.servlet
+		     which conflicts with Spring Boot 3.x / Jakarta EE 9+.
+		     Tracing is wired via a native jakarta.servlet.Filter in XRayConfig. -->
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-xray-recorder-sdk-core</artifactId>
+			<version>2.15.3</version>
+		</dependency>
+
 		<!-- Springdoc OpenAPI / Swagger UI (DEV-231) -->
 		<dependency>
 			<groupId>org.springdoc</groupId>

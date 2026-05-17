@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Klondike CloudWatch alarms and SNS alert topic
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: klondike
+
+  AlertEmail:
+    Type: String
+    Description: Email address for SNS alarm notifications
+
+Resources:
+
+  # ---------- SNS Topic ----------
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${EnvironmentName}-alarms'
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
+
+  # ---------- ALB p95 Latency Alarm ----------
+  ApiLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${EnvironmentName}-api-p95-latency'
+      AlarmDescription: ALB p95 response time exceeds 500ms for 3 consecutive minutes
+      Namespace: AWS/ApplicationELB
+      MetricName: TargetResponseTime
+      ExtendedStatistic: p95
+      Dimensions:
+        - Name: LoadBalancer
+          Value: !Select [1, !Split ['loadbalancer/', !ImportValue klondike-ALBArn]]
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 0.5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+  # ---------- ECS CPU Alarm ----------
+  EcsCpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${EnvironmentName}-ecs-cpu-high'
+      AlarmDescription: ECS CPU utilisation exceeds 80% for 5 consecutive minutes
+      Namespace: AWS/ECS
+      MetricName: CPUUtilization
+      Statistic: Average
+      Dimensions:
+        - Name: ClusterName
+          Value: !Sub '${EnvironmentName}-cluster'
+        - Name: ServiceName
+          Value: !ImportValue klondike-ECSServiceName
+      Period: 60
+      EvaluationPeriods: 5
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+Outputs:
+  AlarmTopicArn:
+    Description: SNS topic ARN for alarms
+    Value: !Ref AlarmTopic
+    Export:
+      Name: !Sub '${EnvironmentName}-AlarmTopicArn'

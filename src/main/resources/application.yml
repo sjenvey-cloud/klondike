@@ -17,6 +17,14 @@ spring:
           enabled: false
         shutdown-timeout: 100ms
 
+aws:
+  cloudwatch:
+    region: eu-north-1
+    environment: production
+
+xray:
+  enabled: false   # overridden to true via ECS task env var XRAY_ENABLED=true
+
 # Exclude ALL health indicators except the basic liveness check.
 # Redis / cache blips must never cause ECS to kill the container.
 management:

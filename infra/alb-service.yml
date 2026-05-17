@@ -8,7 +8,7 @@ Parameters:
 
   DesiredCount:
     Type: Number
-    Default: 1
+    Default: 2
     Description: Number of ECS tasks to run
 
 Resources:
@@ -86,6 +86,32 @@ Resources:
         MinimumHealthyPercent: 50
         MaximumPercent: 200
       HealthCheckGracePeriodSeconds: 90
+
+  # ---------- Auto Scaling ----------
+  ScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn: ECSService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Sub 'service/${EnvironmentName}-cluster/${EnvironmentName}-api-service'
+      ScalableDimension: ecs:service:DesiredCount
+      MinCapacity: 2
+      MaxCapacity: 20
+      RoleARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService'
+
+  ScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    DependsOn: ScalableTarget
+    Properties:
+      PolicyName: !Sub '${EnvironmentName}-cpu-target-tracking'
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 60.0
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: 300
+        ScaleOutCooldown: 60
 
 Outputs:
   ALBDNSName:

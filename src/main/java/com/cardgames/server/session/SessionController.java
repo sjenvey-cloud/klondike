@@ -6,6 +6,7 @@ import com.cardgames.server.game.GameState;
 import com.cardgames.server.game.ReplayResult;
 import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
+import com.cardgames.server.metrics.MetricsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ public class SessionController {
     @Autowired HandRepository      handRepository;
     @Autowired ChallengeRepository challengeRepository;
     @Autowired CacheManager        cacheManager;
+    @Autowired MetricsService      metricsService;
 
     // ── DEV-202: Active session ───────────────────────────────────────────
 
@@ -117,6 +119,7 @@ public class SessionController {
         }
 
         sessionRepository.save(session);
+        metricsService.recordSessionStarted();
         log.info("createSession: saved session id={} isDaily={} dailyDate={} isRanked={} drawMode={}",
             session.getId(), session.isDaily(), session.getDailyDate(), session.isRanked(), session.getDrawMode());
         return new ResponseEntity<>(new CreateSessionResponse(session, isRanked), HttpStatus.CREATED);
@@ -187,6 +190,7 @@ public class SessionController {
         session.setTurns(body.turns());
         session.setCompletedAt(LocalDateTime.now());
         sessionRepository.save(session);
+        metricsService.recordSessionCompleted();
         log.info("completeSession: saved win — id={} handId={} userId={} isDaily={} dailyDate={} isRanked={} moves={} timeSeconds={}",
             session.getId(), session.getHandId(), session.getUserId(),
             session.isDaily(), session.getDailyDate(), session.isRanked(),

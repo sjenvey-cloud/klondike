@@ -4,6 +4,7 @@ import com.cardgames.server.game.SeededShuffle;
 import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
 import com.cardgames.server.hand.HandResponse;
+import com.cardgames.server.metrics.MetricsService;
 import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
@@ -49,17 +50,20 @@ public class DailyController {
     private final UserRepository           userRepo;
     private final DailyChallengeRepository dailyChallengeRepo;
     private final DailyGeneratorService    dailyGenerator;
+    private final MetricsService           metricsService;
 
     public DailyController(HandRepository handRepo,
                            SessionRepository sessionRepo,
                            UserRepository userRepo,
                            DailyChallengeRepository dailyChallengeRepo,
-                           DailyGeneratorService dailyGenerator) {
+                           DailyGeneratorService dailyGenerator,
+                           MetricsService metricsService) {
         this.handRepo           = handRepo;
         this.sessionRepo        = sessionRepo;
         this.userRepo           = userRepo;
         this.dailyChallengeRepo = dailyChallengeRepo;
         this.dailyGenerator     = dailyGenerator;
+        this.metricsService     = metricsService;
     }
 
     /**
@@ -83,6 +87,8 @@ public class DailyController {
 
         // Delegate selection/creation to the shared service (also used by the scheduler).
         Hand hand = dailyGenerator.ensureDaily(today, drawMode);
+
+        metricsService.recordDailyChallengeAttempt();
 
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
         HandResponse handResponse = new HandResponse(hand.getUuid(), hand.getShuffleSeed(), cards, drawMode);
@@ -111,6 +117,7 @@ public class DailyController {
      * via the is_daily = true filter.
      */
     @Operation(summary = "Daily leaderboard for a specific date", description = "Ranked wins only, deduplicated to best session per user.")
+    @Transactional(readOnly = true)
     @GetMapping("/leaderboard/daily/{date}/{sort}")
     public ResponseEntity<List<LeaderboardEntry>> getDailyLeaderboard(
             @PathVariable String date,

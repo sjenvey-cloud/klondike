@@ -20,6 +20,14 @@ Parameters:
     Type: String
     NoEcho: true
 
+  DBReadReplicaEndpoint:
+    Type: String
+    Default: ''
+    Description: RDS read replica endpoint (empty = no replica, all traffic to primary)
+
+Conditions:
+  HasReplica: !Not [!Equals [!Ref DBReadReplicaEndpoint, '']]
+
 Resources:
 
   # ---------- CloudWatch Log Group ----------
@@ -75,6 +83,18 @@ Resources:
             Principal:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
+      Policies:
+        - PolicyName: XRayWrite
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                  - xray:GetSamplingRules
+                  - xray:GetSamplingTargets
+                Resource: '*'
 
   # ---------- ECS Cluster ----------
   ECSCluster:
@@ -93,8 +113,8 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '256'
-      Memory: '512'
+      Cpu: '512'
+      Memory: '768'
       ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
       TaskRoleArn: !GetAtt TaskRole.Arn
       ContainerDefinitions:
@@ -128,6 +148,13 @@ Resources:
               Value: '60000'
             - Name: SERVER_PORT
               Value: '8080'
+            - Name: XRAY_ENABLED
+              Value: 'true'
+            - Name: SPRING_DATASOURCE_REPLICA_URL
+              Value: !If
+                - HasReplica
+                - !Sub 'jdbc:postgresql://${DBReadReplicaEndpoint}:5432/solitaire_db'
+                - ''
           Secrets:
             - Name: KLONDIKE_JWT_PRIVATE_KEY
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:privateKey::'
@@ -148,6 +175,31 @@ Resources:
             Retries: 5
             StartPeriod: 120
           Essential: true
+        - Name: xray-daemon
+          Image: amazon/aws-xray-daemon
+          PortMappings:
+            - ContainerPort: 2000
+              Protocol: udp
+          Environment:
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: xray
+          Essential: false
+          Cpu: 32
+          Memory: 256
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - 'curl -s http://localhost:2000/getSamplingRules || exit 1'
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 10
 
 Outputs:
   ClusterName:

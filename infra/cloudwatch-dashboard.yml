@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Klondike CloudWatch application dashboard
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: klondike
+
+Resources:
+
+  ApplicationDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${EnvironmentName}-application'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "title": "Sessions Started",
+                "view": "timeSeries",
+                "metrics": [
+                  [ "KlondikePro/Application", "sessions_started", "Environment", "${EnvironmentName}" ]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8,
+              "y": 0,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "title": "Sessions Completed",
+                "view": "timeSeries",
+                "metrics": [
+                  [ "KlondikePro/Application", "sessions_completed", "Environment", "${EnvironmentName}" ]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16,
+              "y": 0,
+              "width": 8,
+              "height": 6,
+              "properties": {
+                "title": "Daily Challenge Attempts",
+                "view": "timeSeries",
+                "metrics": [
+                  [ "KlondikePro/Application", "daily_challenge_attempts", "Environment", "${EnvironmentName}" ]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}"
+              }
+            }
+          ]
+        }
