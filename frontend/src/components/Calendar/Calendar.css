@@ -80,6 +80,11 @@
 /* ── Day cells ──────────────────────────────────────────────────────────── */
 
 .calendar-cell {
+  /* Reset button defaults */
+  padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  /* Layout */
   aspect-ratio: 1;
   border-radius: 6px;
   background: var(--color-surface-raised);
