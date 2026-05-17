@@ -17,8 +17,22 @@ const THEME_PREVIEWS: Record<string, ThemePreview> = {
   modern:  { bg: '#e8eaed', surface: '#ffffff', accent: '#2563eb', text: '#1f2937', label: 'Modern Minimal' },
 };
 
-const CARD_BACK_COLOURS = ['#1c2333', '#2d1b4e', '#1a3a2e', '#3a1a1a', '#1a2a3a', '#2a2a2a'];
-const FELT_COLOURS      = ['#0d1117', '#1a5c2e', '#e8eaed', '#1a1a2e', '#2d1a0e', '#0e1a2d'];
+const CARD_BACK_COLOURS = [
+  { hex: '#1c2333', label: 'Dark Navy' },
+  { hex: '#2d1b4e', label: 'Deep Purple' },
+  { hex: '#1a3a2e', label: 'Forest' },
+  { hex: '#3a1a1a', label: 'Burgundy' },
+  { hex: '#1a2a3a', label: 'Midnight Blue' },
+  { hex: '#2a2a2a', label: 'Charcoal' },
+];
+const FELT_COLOURS = [
+  { hex: '#0d1117', label: 'Black' },
+  { hex: '#1a5c2e', label: 'Classic Green' },
+  { hex: '#e8eaed', label: 'Light Grey' },
+  { hex: '#1a1a2e', label: 'Dark Indigo' },
+  { hex: '#2d1a0e', label: 'Dark Brown' },
+  { hex: '#0e1a2d', label: 'Deep Navy' },
+];
 
 const CDN = (import.meta as unknown as { env: Record<string, string> }).env.VITE_THEMES_CDN_URL || '';
 const CARD_BACK_PATTERNS = [
@@ -40,7 +54,7 @@ export function Settings(): React.JSX.Element {
   const drawMode        = preferences?.drawModeDefault   ?? 'draw3';
   const cardBackColour  = preferences?.cardBackColour    ?? '#1c2333';
   const cardBackPattern = preferences?.cardBackPattern   ?? null;
-  const feltColour      = preferences?.feltColour        ?? '#0d1117';
+  const feltColour      = preferences?.feltColour        ?? FELT_COLOURS[0].hex;
   const animEnabled     = preferences?.animationsEnabled !== false;
   const cardFaceDesign  = preferences?.cardFaceDesign    ?? 'standard';
 
@@ -60,22 +74,25 @@ export function Settings(): React.JSX.Element {
       {/* ── Theme ── */}
       <div className="settings-section">
         <h3 className="settings-section-title">Theme</h3>
-        <div className="theme-grid">
+        <div className="theme-grid" role="radiogroup" aria-label="Theme">
           {Object.entries(THEME_PREVIEWS).map(([key, t]) => (
-            <div
+            <button
               key={key}
+              type="button"
+              role="radio"
+              aria-checked={theme === key}
               className={`theme-card${theme === key ? ' selected' : ''}`}
               onClick={() => setTheme(key as 'dark' | 'classic' | 'modern')}
               style={{ background: t.bg, borderColor: theme === key ? t.accent : 'transparent' }}
             >
-              <div className="theme-preview" style={{ background: t.surface, borderColor: t.accent }}>
+              <div className="theme-preview" style={{ background: t.surface, borderColor: t.accent }} aria-hidden="true">
                 <span style={{ color: t.accent }}>♠ A</span>
               </div>
               <span className="theme-label" style={{ color: t.text }}>{t.label}</span>
               {theme === key && (
-                <div className="theme-check" style={{ color: t.accent }}>✓</div>
+                <div className="theme-check" style={{ color: t.accent }} aria-hidden="true">✓</div>
               )}
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -102,19 +119,22 @@ export function Settings(): React.JSX.Element {
       {/* ── Card Face Design ── */}
       <div className="settings-section">
         <h3 className="settings-section-title">Card Face Design</h3>
-        <div className="design-cards">
+        <div className="design-cards" role="radiogroup" aria-label="Card face design">
           {CARD_DESIGNS.map(d => (
-            <div
+            <button
               key={d.key}
+              type="button"
+              role="radio"
+              aria-checked={cardFaceDesign === d.key}
               className={`design-card${cardFaceDesign === d.key ? ' design-card--active' : ''}`}
               onClick={() => updatePreference('cardFaceDesign', d.key)}
             >
-              <div className={`design-card-preview design-card-preview--${d.key}`}>
+              <div className={`design-card-preview design-card-preview--${d.key}`} aria-hidden="true">
                 <span className="design-card-suit">♠</span>
                 <span className="design-card-rank">A</span>
               </div>
               <span className="design-card-label">{d.label}</span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -148,14 +168,17 @@ export function Settings(): React.JSX.Element {
 
         {/* Flat colour swatches */}
         <p className="settings-subsection-label">Flat colour</p>
-        <div className="swatch-row">
-          {CARD_BACK_COLOURS.map(colour => (
+        <div className="swatch-row" role="radiogroup" aria-label="Card back colour">
+          {CARD_BACK_COLOURS.map(c => (
             <button
-              key={colour}
-              className={`swatch${!cardBackPattern && cardBackColour === colour ? ' active' : ''}`}
-              style={{ background: colour }}
-              aria-label={colour}
-              onClick={() => selectColour(colour)}
+              key={c.hex}
+              type="button"
+              role="radio"
+              aria-checked={!cardBackPattern && cardBackColour === c.hex}
+              className={`swatch${!cardBackPattern && cardBackColour === c.hex ? ' active' : ''}`}
+              style={{ background: c.hex }}
+              aria-label={c.label}
+              onClick={() => selectColour(c.hex)}
             />
           ))}
         </div>
@@ -164,14 +187,17 @@ export function Settings(): React.JSX.Element {
       {/* ── Felt Colour ── */}
       <div className="settings-section">
         <h3 className="settings-section-title">Felt Colour</h3>
-        <div className="swatch-row">
-          {FELT_COLOURS.map(colour => (
+        <div className="swatch-row" role="radiogroup" aria-label="Felt colour">
+          {FELT_COLOURS.map(c => (
             <button
-              key={colour}
-              className={`swatch${feltColour === colour ? ' active' : ''}`}
-              style={{ background: colour }}
-              aria-label={colour}
-              onClick={() => updatePreference('feltColour', colour)}
+              key={c.hex}
+              type="button"
+              role="radio"
+              aria-checked={feltColour === c.hex}
+              className={`swatch${feltColour === c.hex ? ' active' : ''}`}
+              style={{ background: c.hex }}
+              aria-label={c.label}
+              onClick={() => updatePreference('feltColour', c.hex)}
             />
           ))}
         </div>
@@ -181,11 +207,12 @@ export function Settings(): React.JSX.Element {
       <div className="settings-section">
         <h3 className="settings-section-title">Animations</h3>
         <div className="toggle-row">
-          <span className="toggle-label">{animEnabled ? 'On' : 'Off'}</span>
+          <span className="toggle-label" aria-hidden="true">{animEnabled ? 'On' : 'Off'}</span>
           <label className="toggle">
             <input
               type="checkbox"
               checked={animEnabled}
+              aria-label={`Animations ${animEnabled ? 'on' : 'off'}`}
               onChange={e => updatePreference('animationsEnabled', e.target.checked)}
             />
             <span className="toggle-track" />

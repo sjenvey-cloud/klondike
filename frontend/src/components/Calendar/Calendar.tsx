@@ -75,22 +75,22 @@ export function Calendar({ history = [], onDayClick, onMonthChange }: CalendarPr
     <div className="calendar">
       <div className="calendar-nav">
         <div className="calendar-nav-side">
-          <button className="cal-nav-btn" onClick={() => navigateYear(-1)} title="Previous year">«</button>
-          <button className="cal-nav-btn" onClick={() => navigate(-1)} title="Previous month">‹</button>
+          <button className="cal-nav-btn" onClick={() => navigateYear(-1)} aria-label="Previous year">«</button>
+          <button className="cal-nav-btn" onClick={() => navigate(-1)} aria-label="Previous month">‹</button>
         </div>
-        <div className="calendar-nav-title">{MONTH_NAMES[month]} {year}</div>
+        <div className="calendar-nav-title" aria-live="polite">{MONTH_NAMES[month]} {year}</div>
         <div className="calendar-nav-side">
           <button
             className="cal-nav-btn"
             onClick={() => navigate(1)}
             disabled={year === today.getFullYear() && month === today.getMonth()}
-            title="Next month"
+            aria-label="Next month"
           >›</button>
           <button
             className="cal-nav-btn"
             onClick={() => navigateYear(1)}
             disabled={year >= today.getFullYear()}
-            title="Next year"
+            aria-label="Next year"
           >»</button>
         </div>
       </div>
@@ -129,22 +129,32 @@ export function Calendar({ history = [], onDayClick, onMonthChange }: CalendarPr
               isFuture               ? 'calendar-cell--future' : '',
             ].filter(Boolean).join(' ');
 
+            const dayLabel = [
+              MONTH_NAMES[month], String(day),
+              isToday ? '(today)' : '',
+              hasWin   ? `${sessionsWon} won` : '',
+              hasPlayed && !hasWin ? `${sessionsPlayed} played` : '',
+            ].filter(Boolean).join(' ');
+
             return (
-              <div
+              <button
                 key={di}
                 className={classes}
                 style={opacity > 0 ? { '--cell-opacity': opacity } as React.CSSProperties : undefined}
                 onClick={() => !isFuture && onDayClick && onDayClick(key)}
-                title={hasPlayed ? `${sessionsPlayed} played · ${sessionsWon} won` : undefined}
+                disabled={isFuture || !onDayClick}
+                aria-label={dayLabel}
+                aria-pressed={false}
+                type="button"
               >
-                <span className="calendar-day-num">{day}</span>
+                <span className="calendar-day-num" aria-hidden="true">{day}</span>
                 {hasPlayed && !isFuture && (
-                  <span className="calendar-dot-row">
+                  <span className="calendar-dot-row" aria-hidden="true">
                     {sessionsWon > 0 && <span className="calendar-dot calendar-dot--win" />}
                     {sessionsPlayed - sessionsWon > 0 && <span className="calendar-dot calendar-dot--play" />}
                   </span>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

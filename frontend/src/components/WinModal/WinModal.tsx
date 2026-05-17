@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Confetti } from './Confetti';
 import { getFriends, getCustomLeagues, createSocialChallenge } from '../../services/api';
@@ -28,6 +28,15 @@ export function WinModal({
   const rank = result?.rank ?? null;
 
   const [view, setView] = useState<'win' | 'challenge'>('win');
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Auto-focus first interactive element when modal opens or view changes
+  useEffect(() => {
+    const first = modalRef.current?.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    first?.focus();
+  }, [view]);
 
   const [friends,        setFriends]        = useState<FriendResponse[]>([]);
   const [leagues,        setLeagues]        = useState<CustomLeagueListEntry[]>([]);
@@ -96,13 +105,19 @@ export function WinModal({
 
   if (view === 'challenge') {
     return (
-      <div className="win-overlay">
-        <div className="win-modal win-modal--challenge">
+      <div className="win-overlay" aria-hidden="false">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="win-challenge-title"
+          className="win-modal win-modal--challenge"
+          ref={modalRef}
+        >
           <div className="win-challenge-header">
             <button className="win-back-btn" onClick={() => { setView('win'); setChallengeMsg(null); }}>
               ← Back
             </button>
-            <h2 className="win-challenge-title">Create Challenge</h2>
+            <h2 id="win-challenge-title" className="win-challenge-title">Create Challenge</h2>
           </div>
 
           {pickerLoading && <p className="win-picker-empty">Loading…</p>}
@@ -168,9 +183,15 @@ export function WinModal({
     <>
       {winAnimation === 'confetti' && <Confetti />}
       <div className="win-overlay">
-        <div className="win-modal">
-          <div className="win-trophy">🏆</div>
-          <h2 className="win-title">You Win!</h2>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="win-dialog-title"
+          className="win-modal"
+          ref={modalRef}
+        >
+          <div className="win-trophy" aria-hidden="true">🏆</div>
+          <h2 id="win-dialog-title" className="win-title">You Win!</h2>
 
           <div className="win-stats">
             <div className="win-stat">

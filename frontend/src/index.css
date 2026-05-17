@@ -82,3 +82,25 @@ html.game-fullwidth .app-shell {
   color: var(--color-text-primary);
   border-color: var(--color-text-secondary);
 }
+
+/* ── Global focus-visible ── */
+/* Remove default outline, replace with a high-contrast ring for keyboard nav */
+*:focus { outline: none; }
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Visually hidden — accessible to screen readers, hidden from sighted users */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

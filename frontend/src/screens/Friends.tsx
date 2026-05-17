@@ -386,10 +386,12 @@ export function Friends(): React.JSX.Element {
 
   return (
     <div className="screen friends-screen">
-      <div className="tab-bar">
+      <div className="tab-bar" role="tablist" aria-label="Social sections">
         {TABS.map(t => (
           <button
             key={t}
+            role="tab"
+            aria-selected={tab === t}
             className={`tab-btn${tab === t ? ' active' : ''}`}
             onClick={() => {
               setTab(t);
@@ -404,7 +406,9 @@ export function Friends(): React.JSX.Element {
           >
             {t}
             {t === 'Challenges' && newChallengeCount > 0 && (
-              <span className="tab-heart-badge" aria-label={`${newChallengeCount} new`}>♥</span>
+              <span className="tab-heart-badge" aria-label={`${newChallengeCount} new`}>
+                <span aria-hidden="true">♥</span>
+              </span>
             )}
           </button>
         ))}
@@ -458,7 +462,7 @@ export function Friends(): React.JSX.Element {
             </div>
           ))}
 
-          {inviteMsg && <p className="invite-msg">{inviteMsg}</p>}
+          {inviteMsg && <p role="status" aria-live="polite" className="invite-msg">{inviteMsg}</p>}
 
           {/* Generate invite link */}
           <button className="btn-primary invite-btn" onClick={handleInvite}>
@@ -619,8 +623,9 @@ export function Friends(): React.JSX.Element {
             <button className="sc-back-btn" onClick={() => setLeagueView('list')}>‹ Leagues</button>
           </div>
 
-          <p className="league-form-label">League Name</p>
+          <label className="league-form-label" htmlFor="league-name-input">League Name</label>
           <input
+            id="league-name-input"
             className="text-input league-name-input"
             placeholder="e.g. Work Friends"
             value={createName}
@@ -1018,9 +1023,19 @@ export function Friends(): React.JSX.Element {
 
       {/* ── Delete challenge confirmation modal ───────────────────────────── */}
       {deleteConfirmId != null && (
-        <div className="sc-delete-backdrop" onClick={() => setDeleteConfirmId(null)}>
-          <div className="sc-delete-modal" onClick={e => e.stopPropagation()}>
-            <h3 className="sc-delete-modal-title">Delete Challenge?</h3>
+        <div
+          className="sc-delete-backdrop"
+          onClick={() => setDeleteConfirmId(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setDeleteConfirmId(null); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sc-delete-title"
+            className="sc-delete-modal"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 id="sc-delete-title" className="sc-delete-modal-title">Delete Challenge?</h3>
             <p className="sc-delete-modal-body">
               This will permanently delete the challenge and all its data for every player. This cannot be undone.
             </p>

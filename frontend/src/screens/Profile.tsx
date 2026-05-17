@@ -187,16 +187,18 @@ export function Profile(): React.JSX.Element {
   return (
     <div className="screen profile-screen">
       <div className="profile-header">
-        <div
+        <button
+          type="button"
           className={`profile-avatar${avatarUploading ? ' profile-avatar--uploading' : ''}`}
           onClick={() => !avatarUploading && avatarInputRef.current?.click()}
-          title="Change avatar"
+          aria-label="Change avatar"
+          disabled={avatarUploading}
         >
           {avatarUrl
-            ? <img src={avatarUrl} className="profile-avatar-img" alt="avatar" onError={() => setAvatarUrl(null)} />
-            : <span className="profile-avatar-initials">{initials}</span>
+            ? <img src={avatarUrl} className="profile-avatar-img" alt={`${user.displayName} avatar`} onError={() => setAvatarUrl(null)} />
+            : <span className="profile-avatar-initials" aria-hidden="true">{initials}</span>
           }
-          <span className="profile-avatar-overlay">
+          <span className="profile-avatar-overlay" aria-hidden="true">
             {avatarUploading ? '…' : '📷'}
           </span>
           <input
@@ -206,13 +208,13 @@ export function Profile(): React.JSX.Element {
             style={{ display: 'none' }}
             onChange={handleAvatarChange}
           />
-        </div>
+        </button>
         <h2 className="profile-header-name">{user.displayName}</h2>
-        {avatarError && <p className="profile-avatar-error">{avatarError}</p>}
+        {avatarError && <p role="alert" className="profile-avatar-error">{avatarError}</p>}
       </div>
 
       {/* ── Tab bar ──────────────────────────────────────────────────── */}
-      <div className="profile-tabs">
+      <div className="profile-tabs" role="tablist" aria-label="Profile sections">
         {(
           [
             { key: 'stats',    label: 'Stats'    },
@@ -223,6 +225,8 @@ export function Profile(): React.JSX.Element {
         ).map(t => (
           <button
             key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
             className={`profile-tab${tab === t.key ? ' profile-tab--active' : ''}`}
             onClick={() => setTab(t.key)}
           >
@@ -434,6 +438,7 @@ export function Profile(): React.JSX.Element {
             <div className="name-row">
               <input
                 className="text-input"
+                aria-label="Display name"
                 value={nameInput}
                 onChange={e => setNameInput(e.target.value)}
               />
@@ -447,6 +452,7 @@ export function Profile(): React.JSX.Element {
               <input
                 className="text-input"
                 type="password"
+                aria-label="Current password"
                 placeholder="Current password"
                 value={currentPw}
                 onChange={e => setCurrentPw(e.target.value)}
@@ -455,6 +461,7 @@ export function Profile(): React.JSX.Element {
               <input
                 className="text-input"
                 type="password"
+                aria-label="New password"
                 placeholder="New password"
                 value={newPw}
                 onChange={e => setNewPw(e.target.value)}
@@ -463,13 +470,14 @@ export function Profile(): React.JSX.Element {
               <input
                 className="text-input"
                 type="password"
+                aria-label="Confirm new password"
                 placeholder="Confirm new password"
                 value={confirmPw}
                 onChange={e => setConfirmPw(e.target.value)}
                 autoComplete="new-password"
               />
-              {pwError   && <p className="error-text">{pwError}</p>}
-              {pwSuccess && <p className="success-text">{pwSuccess}</p>}
+              {pwError   && <p role="alert" className="error-text">{pwError}</p>}
+              {pwSuccess && <p role="status" className="success-text">{pwSuccess}</p>}
               <button className="btn-primary" type="submit" disabled={pwLoading}>
                 {pwLoading ? 'Saving…' : 'Update Password'}
               </button>
@@ -494,9 +502,19 @@ export function Profile(): React.JSX.Element {
 
       {/* ── Delete Account Modal ─────────────────────────────────────── */}
       {showDeleteModal && (
-        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
-            <h3 className="modal-title">Delete Account</h3>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowDeleteModal(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowDeleteModal(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-modal-title"
+            className="modal-box"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 id="delete-modal-title" className="modal-title">Delete Account</h3>
             <p className="modal-body">
               This will permanently delete your account, all game history, stats, and settings.
               There is no way to recover your data after this.
@@ -504,12 +522,13 @@ export function Profile(): React.JSX.Element {
             <input
               className="text-input"
               type="password"
+              aria-label="Password confirmation"
               placeholder="Enter your password to confirm"
               value={deletePw}
               onChange={e => setDeletePw(e.target.value)}
               autoComplete="current-password"
             />
-            {deleteError && <p className="error-text">{deleteError}</p>}
+            {deleteError && <p role="alert" className="error-text">{deleteError}</p>}
             <div className="modal-actions">
               <button className="btn-modal-cancel" onClick={() => setShowDeleteModal(false)}>
                 Cancel

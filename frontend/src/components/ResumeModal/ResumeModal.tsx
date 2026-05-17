@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import './ResumeModal.css';
 
 interface ResumeModalProps {
@@ -9,18 +9,30 @@ interface ResumeModalProps {
 }
 
 export function ResumeModal({ session, onResume, onStartNew, isDaily = false }: ResumeModalProps): React.JSX.Element {
+  const resumeRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-focus the Resume button when modal mounts
+  useEffect(() => {
+    resumeRef.current?.focus();
+  }, []);
+
   return (
     <div className="resume-overlay">
-      <div className="resume-modal">
-        <div className="resume-icon">🃏</div>
-        <h2 className="resume-title">Unfinished Game</h2>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="resume-dialog-title"
+        className="resume-modal"
+      >
+        <div className="resume-icon" aria-hidden="true">🃏</div>
+        <h2 id="resume-dialog-title" className="resume-title">Unfinished Game</h2>
         <p className="resume-body">
           You have a game in progress
           {session.moves > 0 ? ` — ${session.moves} move${session.moves !== 1 ? 's' : ''} played` : ''}.
           Would you like to continue?
         </p>
         <div className="resume-buttons">
-          <button className="resume-btn resume-btn--primary" onClick={onResume}>
+          <button ref={resumeRef} className="resume-btn resume-btn--primary" onClick={onResume}>
             Resume
           </button>
           <button className="resume-btn resume-btn--secondary" onClick={onStartNew}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { usePreferences } from '../hooks/usePreferences';
@@ -280,7 +280,7 @@ export function Game({
   if (game.loading || !game.tableau) {
     return (
       <div className="screen game-screen game-center">
-        <div className="game-spinner">Dealing…</div>
+        <div role="status" className="game-spinner">Dealing…</div>
       </div>
     );
   }
@@ -349,11 +349,37 @@ function formatLbTime(s: number | null | undefined): string {
 }
 
 function GameLeaderboard({ entries, loading, userId, onClose, onRedeal }: GameLeaderboardProps): React.JSX.Element {
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-focus close button on mount
+  useEffect(() => {
+    const first = drawerRef.current?.querySelector<HTMLElement>(
+      'button, [href], input, [tabindex]:not([tabindex="-1"])'
+    );
+    first?.focus();
+  }, []);
+
+  // Escape key closes the drawer
+  useEffect(() => {
+    const handler = (e: KeyboardEvent): void => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   return (
-    <div className="game-lb-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="game-lb-drawer">
+    <div
+      className="game-lb-backdrop"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="game-lb-title"
+        className="game-lb-drawer"
+        ref={drawerRef}
+      >
         <div className="game-lb-header">
-          <span className="game-lb-title">Deal Leaderboard</span>
+          <span id="game-lb-title" className="game-lb-title">Deal Leaderboard</span>
           <button className="game-lb-close" onClick={onClose} aria-label="Close">×</button>
         </div>
         <div className="game-lb-body">

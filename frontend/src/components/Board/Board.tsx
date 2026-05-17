@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Card } from '../Card/Card';
 import { canPlaceOnTableau, canPlaceOnFoundation, foundationIndex } from '../../services/gameLogic';
 import type { UseGameReturn } from '../../hooks/useGame';
@@ -51,6 +51,18 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
   } = game;
 
   const [shaking, setShaking] = useState<number | string | null>(null);
+
+  // Pause modal: auto-focus the Resume button when game pauses
+  const resumeBtnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (timer?.isPaused) resumeBtnRef.current?.focus();
+  }, [timer?.isPaused]);
+
+  // Win announcement for screen readers
+  const winAnnouncement = useMemo(
+    () => isWon ? `You win! ${game.moves} move${game.moves !== 1 ? 's' : ''}${timer ? ` in ${timer.formatted}` : ''}.` : '',
+    [isWon, game.moves, timer]
+  );
 
   const dragRef = useRef<DragState | null>(null);
   const [dragTarget, setDragTarget] = useState<DropTarget | null>(null);
@@ -292,10 +304,19 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
 
   return (
     <div className="board">
+      {/* Screen-reader win announcement */}
+      <div role="status" aria-live="assertive" aria-atomic="true" className="sr-only">
+        {winAnnouncement}
+      </div>
+
       {/* Stats bar */}
       <div className="board-stats">
-        <span className="board-stat-item">Moves: {game.moves}</span>
-        <span className="board-stat-item">{timer?.formatted ?? '0:00'}</span>
+        <div aria-live="polite" aria-atomic="true" className="board-stat-item">
+          <span className="sr-only">Moves: </span>{game.moves}
+        </div>
+        <span className="board-stat-item" aria-label={`Time: ${timer?.formatted ?? '0:00'}`}>
+          {timer?.formatted ?? '0:00'}
+        </span>
         {!isWon && timer && (
           <button
             className="board-pause-btn"
@@ -359,13 +380,27 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
       </div>
 
       {/* Top row */}
-      <div className={`board-top${stockSide === 'right' ? ' board-top--stock-right' : ''}`}>
+      <div
+        className={`board-top${stockSide === 'right' ? ' board-top--stock-right' : ''}`}
+        role="region"
+        aria-label="Stock, waste, and foundations"
+      >
         {/* Stock */}
         {stock.length > 0
-          ? <div className="stock-pile" onClick={handleStockClick}>
+          ? <button
+              className="stock-pile"
+              onClick={handleStockClick}
+              aria-label="Draw from stock"
+            >
               <Card card={stock[stock.length - 1].card} faceUp={false} />
-            </div>
-          : <div className="stock-empty" onClick={handleStockClick}>↺</div>
+            </button>
+          : <button
+              className="stock-empty"
+              onClick={handleStockClick}
+              aria-label="Recycle stock pile"
+            >
+              <span aria-hidden="true">↺</span>
+            </button>
         }
 
         {/* Waste */}
@@ -373,6 +408,8 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
           className={`waste-area${shaking === 'waste' ? ' shake' : ''}${isDraw3 ? ' waste-area--draw3' : ''}`}
           onClick={handleWasteClick}
           data-drop="waste"
+          role="region"
+          aria-label="Waste pile"
         >
           {wasteThird && (
             <div className="waste-card waste-card--peek" style={{ left: 0 }}>
@@ -404,6 +441,8 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
         {foundations.map((pile, fi) => (
           <div
             key={fi}
+            role="region"
+            aria-label={`Foundation ${fi + 1}${pile.length > 0 ? ` — ${SUIT_SYMBOLS[fi]}` : ` — empty`}`}
             className={`foundation-pile${shaking === `foundation${fi}` ? ' shake' : ''}${dragTarget?.type === 'foundation' && dragTarget?.fi === fi ? ' drop-target' : ''}`}
             onClick={() => handleFoundationClick(fi)}
             data-drop="foundation"
@@ -424,26 +463,38 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
 
       {/* Pause overlay */}
       {timer?.isPaused && (
-        <div className="pause-overlay" onClick={() => timer.resume()}>
-          <div className="pause-modal" onClick={e => e.stopPropagation()}>
-            <div className="pause-modal-title">Game Paused</div>
+        <div
+          className="pause-overlay"
+          onClick={() => timer.resume()}
+          onKeyDown={(e) => { if (e.key === 'Escape') timer.resume(); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pause-dialog-title"
+            className="pause-modal"
+            onClick={e => e.stopPropagation()}
+          >
+            <div id="pause-dialog-title" className="pause-modal-title">Game Paused</div>
             <div className="pause-modal-stats">
               <span>{timer.formatted}</span>
-              <span className="pause-modal-dot">·</span>
+              <span className="pause-modal-dot" aria-hidden="true">·</span>
               <span>{game.moves} moves</span>
             </div>
-            <button className="pause-modal-resume" onClick={() => timer.resume()}>
-              ▶&ensp;Resume
+            <button ref={resumeBtnRef} className="pause-modal-resume" onClick={() => timer.resume()}>
+              <span aria-hidden="true">▶</span>&ensp;Resume
             </button>
           </div>
         </div>
       )}
 
       {/* Tableau */}
-      <div className="board-tableau">
+      <div className="board-tableau" role="region" aria-label="Tableau">
         {tableau.map((pile, col) => (
           <div
             key={col}
+            role="region"
+            aria-label={`Column ${col + 1}${pile.length === 0 ? ' — empty' : ` — ${pile.length} card${pile.length !== 1 ? 's' : ''}`}`}
             className={`tableau-col${shaking === col ? ' shake' : ''}${dragTarget?.type === 'tableau' && dragTarget?.col === col ? ' drop-target' : ''}`}
             data-drop="tableau"
             data-col={col}

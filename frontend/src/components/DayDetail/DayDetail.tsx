@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -77,6 +77,8 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const drawerRef = useRef<HTMLDivElement>(null);
+
   // Panel 1 state
   const [sessions, setSessions]             = useState<DaySession[]>([]);
   const [loading, setLoading]               = useState(true);
@@ -152,6 +154,14 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
       .then(lb => setHandLeaderboard(Array.isArray(lb) ? lb : []))
       .catch(() => setHandLeaderboard([]))
       .finally(() => setLbLoading(false));
+  }, [selectedSession]);
+
+  // Auto-focus first focusable element on mount and whenever the panel switches
+  useEffect(() => {
+    const first = drawerRef.current?.querySelector<HTMLElement>(
+      'button, [href], input, [tabindex]:not([tabindex="-1"])'
+    );
+    first?.focus();
   }, [selectedSession]);
 
   const handleBackdropClick = useCallback((e: React.MouseEvent<HTMLDivElement>): void => {
@@ -234,14 +244,24 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
   const isHandDetail = !!selectedSession;
 
   return (
-    <div className="day-detail-backdrop" onClick={handleBackdropClick}>
-      <div className={`day-detail-drawer${isHandDetail ? ' day-detail-drawer--detail' : ''}`}>
+    <div
+      className="day-detail-backdrop"
+      onClick={handleBackdropClick}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="day-detail-dialog-title"
+        className={`day-detail-drawer${isHandDetail ? ' day-detail-drawer--detail' : ''}`}
+        ref={drawerRef}
+      >
 
         {/* ── Panel 1: session list ── */}
         {!isHandDetail && (
           <>
             <div className="day-detail-header">
-              <h3 className="day-detail-title">{date}</h3>
+              <h3 id="day-detail-dialog-title" className="day-detail-title">{date}</h3>
               <button className="day-detail-close" onClick={onClose} aria-label="Close">×</button>
             </div>
             <div className="day-detail-body">
@@ -312,7 +332,7 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
                 <button className="day-detail-back" onClick={() => { setSelectedSession(null); setPickerOpen(false); setChallengeMsg(null); }} aria-label="Back">
                   ‹ Back
                 </button>
-                <span className="day-detail-mode-title">
+                <span id="day-detail-dialog-title" className="day-detail-mode-title">
                   {s.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
                 </span>
                 <button className="day-detail-close" onClick={onClose} aria-label="Close">×</button>

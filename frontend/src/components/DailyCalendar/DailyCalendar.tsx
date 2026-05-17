@@ -220,18 +220,18 @@ export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps
 
   return (
     <div className="dc-container">
-      {loading && <p className="dc-empty dc-empty--center">Loading calendar…</p>}
+      {loading && <p role="status" className="dc-empty dc-empty--center">Loading calendar…</p>}
 
       {!loading && (
         <>
           <div className="dc-nav">
-            <button className="dc-nav-btn" onClick={() => navigateMonth(-1)} title="Previous month">‹</button>
-            <span className="dc-nav-title">{MONTH_NAMES[month]} {year}</span>
+            <button className="dc-nav-btn" onClick={() => navigateMonth(-1)} aria-label="Previous month">‹</button>
+            <span className="dc-nav-title" aria-live="polite">{MONTH_NAMES[month]} {year}</span>
             <button
               className="dc-nav-btn"
               onClick={() => navigateMonth(1)}
               disabled={atCurrentMonth}
-              title="Next month"
+              aria-label="Next month"
             >›</button>
           </div>
 
@@ -262,17 +262,29 @@ export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps
                   played && !won ? 'dc-cell--played'  : '',
                 ].filter(Boolean).join(' ');
 
+                const cellLabel = [
+                  MONTH_NAMES[month], String(day),
+                  isToday  ? '(today)' : '',
+                  won      ? 'Won' : '',
+                  played && !won ? 'Played' : '',
+                  !played && entry && !isFuture ? 'Challenge available' : '',
+                  isFuture ? '(future)' : '',
+                ].filter(Boolean).join(' ');
+
                 return (
-                  <div
+                  <button
                     key={`${wi}-${di}`}
                     className={cls}
                     onClick={() => !isFuture && handleDayClick(key)}
+                    disabled={isFuture || !entry}
+                    aria-label={cellLabel}
+                    type="button"
                   >
-                    <span className="dc-day-num">{day}</span>
+                    <span className="dc-day-num" aria-hidden="true">{day}</span>
                     {won && <HeartIcon filled />}
                     {played && !won && <HeartIcon faint />}
-                    {!played && entry && !isFuture && <span className="dc-dot" />}
-                  </div>
+                    {!played && entry && !isFuture && <span className="dc-dot" aria-hidden="true" />}
+                  </button>
                 );
               })
             )}

@@ -23,7 +23,7 @@
   text-decoration: none;
   color: var(--color-text-secondary);
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   transition: color 0.15s ease;
   -webkit-tap-highlight-color: transparent;

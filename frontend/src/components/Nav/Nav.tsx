@@ -13,7 +13,7 @@ const TABS = [
 
 export function Nav({ challengeBadge = 0 }: { challengeBadge?: number }): React.JSX.Element {
   return (
-    <nav className="nav">
+    <nav className="nav" aria-label="Main navigation">
       {TABS.map(tab => (
         <NavLink
           key={tab.to}
@@ -22,10 +22,13 @@ export function Nav({ challengeBadge = 0 }: { challengeBadge?: number }): React.
           className={({ isActive }) => `nav-tab${isActive ? ' active' : ''}`}
         >
           <span className="nav-tab-icon-wrap">
-            <span className="nav-tab-icon">{tab.icon}</span>
+            <span className="nav-tab-icon" aria-hidden="true">{tab.icon}</span>
             {tab.badge && challengeBadge > 0 && (
-              <span className="nav-heart-badge" aria-label={`${challengeBadge} pending challenge${challengeBadge !== 1 ? 's' : ''}`}>
-                ♥
+              <span
+                className="nav-heart-badge"
+                aria-label={`${challengeBadge} pending challenge${challengeBadge !== 1 ? 's' : ''}`}
+              >
+                <span aria-hidden="true">♥</span>
               </span>
             )}
           </span>

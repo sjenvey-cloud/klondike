@@ -48,8 +48,10 @@ export function Login(): React.JSX.Element {
         <h1 className="login-heading">Klondike Pro</h1>
         <p className="login-subtitle">Classic solitaire, elevated.</p>
 
-        <div className="login-tabs">
+        <div className="login-tabs" role="tablist" aria-label="Account options">
           <button
+            role="tab"
+            aria-selected={tab === 'signin'}
             className={`login-tab${tab === 'signin' ? ' active' : ''}`}
             onClick={() => switchTab('signin')}
             type="button"
@@ -57,6 +59,8 @@ export function Login(): React.JSX.Element {
             Sign In
           </button>
           <button
+            role="tab"
+            aria-selected={tab === 'register'}
             className={`login-tab${tab === 'register' ? ' active' : ''}`}
             onClick={() => switchTab('register')}
             type="button"
@@ -113,7 +117,7 @@ export function Login(): React.JSX.Element {
             />
           </div>
 
-          {error && <p className="login-error">{error}</p>}
+          {error && <p role="alert" className="login-error">{error}</p>}
 
           <button className="login-submit" type="submit" disabled={busy}>
             {busy ? 'Please wait…' : tab === 'signin' ? 'Sign In' : 'Create Account'}

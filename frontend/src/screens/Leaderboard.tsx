@@ -65,7 +65,7 @@ export function Leaderboard(): React.JSX.Element {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="lb-header">
-        <h1 className="lb-title">🏆 Global Rankings</h1>
+        <h1 className="lb-title"><span aria-hidden="true">🏆</span> Global Rankings</h1>
       </header>
 
       {/* ── Filters ─────────────────────────────────────────────────────── */}

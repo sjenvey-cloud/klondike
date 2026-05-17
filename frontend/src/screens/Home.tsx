@@ -69,7 +69,7 @@ export function Home(): React.JSX.Element {
 
       <div className="home-actions">
         <button className="btn-primary btn-large" onClick={() => navigate('/game', { state: { drawMode } })}>
-          🃏 New Game
+          <span aria-hidden="true">🃏</span> New Game
         </button>
 
         {/* Draw mode toggle */}
@@ -89,10 +89,10 @@ export function Home(): React.JSX.Element {
         </div>
 
         <button className="btn-secondary btn-large" onClick={() => navigate('/daily')}>
-          🌅 Daily Challenge
+          <span aria-hidden="true">🌅</span> Daily Challenge
         </button>
         <button className="btn-secondary btn-large" onClick={() => navigate('/friends')}>
-          👥 Social & League
+          <span aria-hidden="true">👥</span> Social &amp; League
         </button>
       </div>
     </div>

@@ -116,10 +116,10 @@ export function Daily(): React.JSX.Element {
           <h2 className="daily-title">Daily Challenge</h2>
           <p className="daily-date">{activeDate}</p>
         </div>
-        <div className="daily-tabs">
-          <button className={`daily-tab${view === 'board' ? ' active' : ''}`} onClick={() => setView('board')}>Game</button>
-          <button className={`daily-tab${view === 'leaderboard' ? ' active' : ''}`} onClick={() => setView('leaderboard')}>Leaderboard</button>
-          <button className={`daily-tab${view === 'calendar' ? ' active' : ''}`} onClick={() => setView('calendar')}>Calendar</button>
+        <div className="daily-tabs" role="tablist" aria-label="Daily challenge views">
+          <button role="tab" aria-selected={view === 'board'} className={`daily-tab${view === 'board' ? ' active' : ''}`} onClick={() => setView('board')}>Game</button>
+          <button role="tab" aria-selected={view === 'leaderboard'} className={`daily-tab${view === 'leaderboard' ? ' active' : ''}`} onClick={() => setView('leaderboard')}>Leaderboard</button>
+          <button role="tab" aria-selected={view === 'calendar'} className={`daily-tab${view === 'calendar' ? ' active' : ''}`} onClick={() => setView('calendar')}>Calendar</button>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ export function Daily(): React.JSX.Element {
       )}
 
       {view === 'board' && !dailyError && !daily && (
-        <div className="daily-loading">Loading today's challenge…</div>
+        <div role="status" className="daily-loading">Loading today's challenge…</div>
       )}
 
       {!dailyError && daily && (

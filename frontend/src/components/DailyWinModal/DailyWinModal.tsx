@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDailyLeaderboard } from '../../services/api';
 import type { DailyLeaderboardEntry } from '../../types/api';
@@ -37,10 +37,19 @@ export function DailyWinModal({
   onNavigate,
   winAnimation = 'confetti',
 }: DailyWinModalProps): React.JSX.Element {
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const modalRef  = useRef<HTMLDivElement>(null);
   const [leaderboard, setLeaderboard] = useState<DailyLeaderboardEntry[]>([]);
   const [sort,        setSort]        = useState('moves');
   const [lbLoading,   setLbLoading]   = useState(true);
+
+  // Auto-focus first interactive element on mount
+  useEffect(() => {
+    const first = modalRef.current?.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    first?.focus();
+  }, []);
 
   useEffect(() => {
     setLbLoading(true);
@@ -64,9 +73,15 @@ export function DailyWinModal({
     <>
       {winAnimation === 'confetti' && <Confetti />}
       <div className="dwm-overlay">
-        <div className="dwm-modal">
-          <div className="dwm-trophy">🏆</div>
-          <h2 className="dwm-title">Daily Challenge Complete!</h2>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="dwm-dialog-title"
+          className="dwm-modal"
+          ref={modalRef}
+        >
+          <div className="dwm-trophy" aria-hidden="true">🏆</div>
+          <h2 id="dwm-dialog-title" className="dwm-title">Daily Challenge Complete!</h2>
           <p className="dwm-date">{date}</p>
 
           <div className="dwm-stats">
