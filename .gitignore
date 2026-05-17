@@ -17,3 +17,13 @@ application.properties
 # Environment variables
 .env.production
 .env.local
+
+# iOS / Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+ios-app/Pods/
+ios-app/build/

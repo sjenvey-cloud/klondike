@@ -12,6 +12,7 @@ on:
       - 'pom.xml'
       - 'Dockerfile'
       - '.github/workflows/deploy-api.yml'
+      # ios-app/** is intentionally excluded — iOS CI is separate (ios-ci.yml)
   workflow_dispatch:
 
 jobs:

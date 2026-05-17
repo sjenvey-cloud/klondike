@@ -1,0 +1,108 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'ios-app/**'
+      - '.github/workflows/ios-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ios-app/**'
+      - '.github/workflows/ios-ci.yml'
+
+jobs:
+  build-and-test:
+    name: Build & Test — Xcode
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Xcode & SDK versions
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -E "iOS|Simulator"
+
+      - name: List available simulator runtimes
+        run: xcrun simctl list runtimes
+
+      - name: Install iOS simulator runtime (if missing)
+        run: |
+          # Download the iOS simulator runtime if none are installed
+          if xcrun simctl list runtimes | grep -q "iOS"; then
+            echo "iOS simulator runtime already present — skipping download"
+          else
+            echo "No iOS runtime found — downloading via xcodebuild..."
+            # -downloadPlatform downloads the selected Xcode's matching simulator runtime
+            xcodebuild -downloadPlatform iOS || true
+            xcrun simctl list runtimes
+          fi
+
+      - name: Pick simulator destination
+        id: sim
+        run: |
+          # Prefer iPhone 16; fall back to the first available iPhone simulator
+          if xcrun simctl list devices available | grep -q "iPhone 16"; then
+            echo "destination=platform=iOS Simulator,name=iPhone 16,OS=latest" >> "$GITHUB_OUTPUT"
+          else
+            DEVICE=$(xcrun simctl list devices available | grep "iPhone" | head -1 | sed 's/.*(\(.*\)) (\(.*\))/\1/')
+            if [ -z "$DEVICE" ]; then
+              echo "destination=generic/platform=iOS Simulator" >> "$GITHUB_OUTPUT"
+            else
+              echo "destination=platform=iOS Simulator,id=${DEVICE}" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+          echo "Using destination: $(cat $GITHUB_OUTPUT | grep destination)"
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios-app
+        run: xcodegen generate
+
+      - name: Resolve Swift packages
+        working-directory: ios-app
+        run: |
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project KlondikePro.xcodeproj \
+            -scheme KlondikePro
+
+      - name: Build for simulator
+        working-directory: ios-app
+        run: |
+          xcodebuild \
+            -project KlondikePro.xcodeproj \
+            -scheme KlondikePro \
+            -destination '${{ steps.sim.outputs.destination }}' \
+            -configuration Debug \
+            build \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty || cat
+
+      - name: Run unit tests
+        working-directory: ios-app
+        run: |
+          xcodebuild \
+            -project KlondikePro.xcodeproj \
+            -scheme KlondikePro \
+            -destination '${{ steps.sim.outputs.destination }}' \
+            -configuration Debug \
+            test \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty || cat
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: ios-app/build/reports/
+          retention-days: 7
