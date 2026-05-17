@@ -564,6 +564,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
               role="button"
               data-kb-zone="waste"
               aria-label={`${cardLabel(wasteTop.card)} in waste. Press Space or Enter to pick up.`}
+              onClick={handleWasteClick}
               onPointerDown={(e) => handleCardPointerDown(e, 'waste', null, null)}
               onKeyDown={(e) => {
                 if (e.key === ' ' || e.key === 'Enter') {
