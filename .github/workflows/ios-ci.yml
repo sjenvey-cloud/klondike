@@ -65,7 +65,10 @@ jobs:
 
       - name: Generate Xcode project
         working-directory: ios-app
-        run: xcodegen generate
+        run: |
+          xcodegen generate
+          # Patch Testables — xcodegen 2.x doesn't reliably populate the test scheme
+          python3 scripts/patch-scheme.py
 
       - name: Resolve Swift packages
         working-directory: ios-app

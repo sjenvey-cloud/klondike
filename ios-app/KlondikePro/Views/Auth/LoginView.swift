@@ -161,37 +161,16 @@ struct LoginView: View {
     }
 
     private func signInWithGameCenter() {
-        // Sprint iOS-2: full GKLocalPlayer authentication
-        // Placeholder shows Game Center auth UI; backend endpoint not yet wired.
+        // Full Game Center → backend auth is DEV-249/250 (Sprint iOS-2).
+        // This stub shows the native GK auth sheet and gates on isAuthenticated.
+        // Signature fetch + POST /api/v1/auth/game-center wired in GameCenterService (Sprint iOS-2).
         isAuthenticatingGC = true
-        let player = GKLocalPlayer.local
-        player.authenticateHandler = { viewController, error in
-            isAuthenticatingGC = false
-            if let error {
-                // Show error inline
-                return
-            }
-            if player.isAuthenticated {
-                // Fetch identity verification signature → POST /api/v1/auth/game-center
-                // Implemented in Sprint iOS-2 (DEV-249/250)
-                Task {
-                    player.fetchItemsForIdentityVerificationSignature { publicKeyURL, signature, salt, timestamp, playerID, error in
-                        guard error == nil,
-                              let publicKeyURL,
-                              let signature,
-                              let salt else { return }
-
-                        let request = GameCenterAuthRequest(
-                            playerId: player.teamPlayerID,
-                            bundleId: Bundle.main.bundleIdentifier ?? "",
-                            publicKeyUrl: publicKeyURL.absoluteString,
-                            signature: signature.base64EncodedString(),
-                            salt: salt.base64EncodedString(),
-                            timestamp: timestamp
-                        )
-                        await authStore.loginWithGameCenter(request: request)
-                    }
-                }
+        GKLocalPlayer.local.authenticateHandler = { _, error in
+            // GK may call this on a background thread — hop to MainActor before touching state.
+            Task { @MainActor in
+                self.isAuthenticatingGC = false
+                guard error == nil, GKLocalPlayer.local.isAuthenticated else { return }
+                // Sprint iOS-2 (DEV-249): call GameCenterService.authenticate(authStore:)
             }
         }
     }

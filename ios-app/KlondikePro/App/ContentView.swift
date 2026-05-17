@@ -10,21 +10,25 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            Tab("Home", systemImage: "house.fill", value: AppTab.home) {
-                HomeView()
-            }
-            Tab("Game", systemImage: "suit.club.fill", value: AppTab.game) {
-                Text("Game") // replaced Sprint iOS-4
-            }
-            Tab("Daily", systemImage: "calendar", value: AppTab.daily) {
-                Text("Daily") // replaced Sprint iOS-5
-            }
-            Tab("Profile", systemImage: "person.fill", value: AppTab.profile) {
-                Text("Profile") // replaced Sprint iOS-6
-            }
-            Tab("Friends", systemImage: "person.2.fill", value: AppTab.friends) {
-                Text("Friends") // replaced Sprint iOS-8
-            }
+            HomeView()
+                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tag(AppTab.home)
+
+            Text("Game") // replaced Sprint iOS-4
+                .tabItem { Label("Game", systemImage: "suit.club.fill") }
+                .tag(AppTab.game)
+
+            Text("Daily") // replaced Sprint iOS-5
+                .tabItem { Label("Daily", systemImage: "calendar") }
+                .tag(AppTab.daily)
+
+            Text("Profile") // replaced Sprint iOS-6
+                .tabItem { Label("Profile", systemImage: "person.fill") }
+                .tag(AppTab.profile)
+
+            Text("Friends") // replaced Sprint iOS-8
+                .tabItem { Label("Friends", systemImage: "person.2.fill") }
+                .tag(AppTab.friends)
         }
         .tint(.yellow)
     }

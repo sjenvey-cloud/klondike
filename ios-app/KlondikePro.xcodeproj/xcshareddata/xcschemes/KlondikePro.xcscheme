@@ -39,6 +39,18 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO"
+            randomExecutionOrder = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "04106F44462DBF9C3E2D5947"
+               BuildableName = "KlondikeProTests.xctest"
+               BlueprintName = "KlondikeProTests"
+               ReferencedContainer = "container:KlondikePro.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

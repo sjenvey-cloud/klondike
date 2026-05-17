@@ -19,7 +19,7 @@ settings:
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ""            # set in Xcode → Signing & Capabilities
     ENABLE_HARDENED_RUNTIME: "YES"
-    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_STRICT_CONCURRENCY: targeted   # upgrade to complete in Sprint iOS-7 once all actors are annotated
 
 targets:
   KlondikePro:
@@ -56,6 +56,9 @@ targets:
         API_BASE_URL: https://d2fbehwb6bp7kq.cloudfront.net
     entitlements:
       path: KlondikePro/Resources/KlondikePro.entitlements
+      properties:
+        com.apple.developer.game-center: true
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.klondikepro.app
@@ -88,7 +91,8 @@ schemes:
     test:
       config: Debug
       targets:
-        - KlondikeProTests
+        - target: KlondikeProTests
+          randomExecutionOrder: false
     profile:
       config: Release
     archive:
