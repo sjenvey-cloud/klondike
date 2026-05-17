@@ -162,7 +162,7 @@ export function WinModal({
           )}
 
           {challengeMsg && (
-            <p className="win-challenge-msg">{challengeMsg}</p>
+            <p role="status" aria-live="polite" className="win-challenge-msg">{challengeMsg}</p>
           )}
 
           {!pickerLoading && !challengeMsg && (

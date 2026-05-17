@@ -467,7 +467,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
         )}
         <div className="board-stat-actions">
           {canAutoComplete && (
-            <button className="autocomplete-btn" onClick={autoComplete}>
+            <button className="autocomplete-btn" onClick={autoComplete} aria-label="Auto-complete game">
               Auto
             </button>
           )}
@@ -534,6 +534,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
               onClick={handleStockClick}
               aria-label="Recycle stock pile"
             >
+              {/* aria-hidden: ↺ is decorative; label above serves as the accessible name */}
               <span aria-hidden="true">↺</span>
             </button>
         }
@@ -541,7 +542,6 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
         {/* Waste */}
         <div
           className={`waste-area${shaking === 'waste' ? ' shake' : ''}${isDraw3 ? ' waste-area--draw3' : ''}`}
-          onClick={handleWasteClick}
           data-drop="waste"
           role="region"
           aria-label="Waste pile"

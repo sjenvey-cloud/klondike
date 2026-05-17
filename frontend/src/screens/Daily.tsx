@@ -59,6 +59,7 @@ export function Daily(): React.JSX.Element {
   const drawMode = daily?.hand?.drawMode ?? 'draw3';
   const activeDate = priorDailyInfo?.date ?? today;
 
+  useEffect(() => { document.title = 'Daily Challenge – Klondike Pro'; }, []);
   useEffect(() => {
     getDaily()
       .then(data => { setDaily(data as unknown as DailyResponse); setDailyError(false); })
@@ -117,9 +118,9 @@ export function Daily(): React.JSX.Element {
           <p className="daily-date">{activeDate}</p>
         </div>
         <div className="daily-tabs" role="tablist" aria-label="Daily challenge views">
-          <button role="tab" aria-selected={view === 'board'} className={`daily-tab${view === 'board' ? ' active' : ''}`} onClick={() => setView('board')}>Game</button>
-          <button role="tab" aria-selected={view === 'leaderboard'} className={`daily-tab${view === 'leaderboard' ? ' active' : ''}`} onClick={() => setView('leaderboard')}>Leaderboard</button>
-          <button role="tab" aria-selected={view === 'calendar'} className={`daily-tab${view === 'calendar' ? ' active' : ''}`} onClick={() => setView('calendar')}>Calendar</button>
+          <button id="tab-daily-board" role="tab" aria-selected={view === 'board'} aria-controls="panel-daily-board" className={`daily-tab${view === 'board' ? ' active' : ''}`} onClick={() => setView('board')}>Game</button>
+          <button id="tab-daily-lb" role="tab" aria-selected={view === 'leaderboard'} aria-controls="panel-daily-lb" className={`daily-tab${view === 'leaderboard' ? ' active' : ''}`} onClick={() => setView('leaderboard')}>Leaderboard</button>
+          <button id="tab-daily-cal" role="tab" aria-selected={view === 'calendar'} aria-controls="panel-daily-cal" className={`daily-tab${view === 'calendar' ? ' active' : ''}`} onClick={() => setView('calendar')}>Calendar</button>
         </div>
       </div>
 
@@ -151,7 +152,12 @@ export function Daily(): React.JSX.Element {
       )}
 
       {!dailyError && daily && (
-        <div className={view === 'board' && !priorDailyInfo
+        <div
+          id="panel-daily-board"
+          role="tabpanel"
+          aria-labelledby="tab-daily-board"
+          aria-hidden={view !== 'board' || undefined}
+          className={view === 'board' && !priorDailyInfo
             ? 'daily-board-wrap'
             : 'daily-board-wrap daily-board-wrap--hidden'}>
           <Game
@@ -186,17 +192,18 @@ export function Daily(): React.JSX.Element {
       )}
 
       {view === 'leaderboard' && (
-        <div className="leaderboard">
+        <div id="panel-daily-lb" role="tabpanel" aria-labelledby="tab-daily-lb" className="leaderboard">
+          <h3 className="sr-only">Leaderboard</h3>
           {myRank && (
             <div className="my-rank-bar">
               Your rank: <strong>#{myRank.rank}</strong>
               {myRank.moves && <> · {myRank.moves} moves · {formatTime(myRank.timeSeconds)}</>}
             </div>
           )}
-          <div className="sort-row">
+          <div className="sort-row" role="group" aria-label="Sort by">
             <span className="sort-label">Sort by:</span>
-            <button className={`sort-btn${sort === 'moves' ? ' active' : ''}`} onClick={() => setSort('moves')}>Moves</button>
-            <button className={`sort-btn${sort === 'time'  ? ' active' : ''}`} onClick={() => setSort('time')}>Time</button>
+            <button className={`sort-btn${sort === 'moves' ? ' active' : ''}`} onClick={() => setSort('moves')} aria-pressed={sort === 'moves'}>Moves</button>
+            <button className={`sort-btn${sort === 'time'  ? ' active' : ''}`} onClick={() => setSort('time')} aria-pressed={sort === 'time'}>Time</button>
           </div>
           <table className="lb-table">
             <thead>
@@ -230,7 +237,10 @@ export function Daily(): React.JSX.Element {
       )}
 
       {view === 'calendar' && (
-        <DailyCalendar drawMode={drawMode} onPlay={handlePriorDailyPlay} />
+        <div id="panel-daily-cal" role="tabpanel" aria-labelledby="tab-daily-cal">
+          <h3 className="sr-only">Challenge Calendar</h3>
+          <DailyCalendar drawMode={drawMode} onPlay={handlePriorDailyPlay} />
+        </div>
       )}
 
       {dailyWinData && (

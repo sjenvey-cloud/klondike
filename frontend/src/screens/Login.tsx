@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { acceptPendingInvite } from './AcceptInvite';
@@ -9,6 +9,8 @@ type LoginTab = 'signin' | 'register';
 export function Login(): React.JSX.Element {
   const { login, register } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => { document.title = 'Sign In – Klondike Pro'; }, []);
 
   const [tab, setTab]           = useState<LoginTab>('signin');
   const [displayName, setDisplayName] = useState('');
@@ -50,8 +52,10 @@ export function Login(): React.JSX.Element {
 
         <div className="login-tabs" role="tablist" aria-label="Account options">
           <button
+            id="login-tab-signin"
             role="tab"
             aria-selected={tab === 'signin'}
+            aria-controls="login-panel-signin"
             className={`login-tab${tab === 'signin' ? ' active' : ''}`}
             onClick={() => switchTab('signin')}
             type="button"
@@ -59,8 +63,10 @@ export function Login(): React.JSX.Element {
             Sign In
           </button>
           <button
+            id="login-tab-register"
             role="tab"
             aria-selected={tab === 'register'}
+            aria-controls="login-panel-register"
             className={`login-tab${tab === 'register' ? ' active' : ''}`}
             onClick={() => switchTab('register')}
             type="button"
@@ -69,6 +75,7 @@ export function Login(): React.JSX.Element {
           </button>
         </div>
 
+        <div id={`login-panel-${tab}`} role="tabpanel" aria-labelledby={`login-tab-${tab}`}>
         <form className="login-form" onSubmit={handleSubmit}>
           {tab === 'register' && (
             <div className="login-field">
@@ -123,6 +130,7 @@ export function Login(): React.JSX.Element {
             {busy ? 'Please wait…' : tab === 'signin' ? 'Sign In' : 'Create Account'}
           </button>
         </form>
+        </div>
       </div>
     </div>
   );

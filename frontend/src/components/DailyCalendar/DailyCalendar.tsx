@@ -169,10 +169,12 @@ export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps
           <button
             className={`dc-sort-btn${sort === 'moves' ? ' active' : ''}`}
             onClick={() => setSort('moves')}
+            aria-pressed={sort === 'moves'}
           >Moves</button>
           <button
             className={`dc-sort-btn${sort === 'time' ? ' active' : ''}`}
             onClick={() => setSort('time')}
+            aria-pressed={sort === 'time'}
           >Time</button>
           <button
             className="dc-play-btn"

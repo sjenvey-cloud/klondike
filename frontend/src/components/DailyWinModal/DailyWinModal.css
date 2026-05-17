@@ -42,13 +42,13 @@
 /* ── Header ──────────────────────────────────────────────────────────────── */
 
 .dwm-trophy {
-  font-size: 52px;
+  font-size: 3.25rem;
   line-height: 1;
 }
 
 .dwm-title {
   font-family: var(--font-heading);
-  font-size: 24px;
+  font-size: 1.5rem;
   color: var(--color-accent);
   margin: 0;
   text-align: center;
@@ -56,7 +56,7 @@
 
 .dwm-date {
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   margin: -8px 0 0;
 }
@@ -77,13 +77,13 @@
 }
 
 .dwm-stat-value {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .dwm-stat-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -111,7 +111,7 @@
 
 .dwm-lb-title {
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-secondary);
   text-transform: uppercase;
@@ -129,7 +129,7 @@
   border-radius: 4px;
   padding: 2px 8px;
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s;
@@ -138,20 +138,21 @@
 .dwm-sort-btn.active {
   border-color: var(--color-accent);
   color: var(--color-accent);
+  font-weight: 700;
 }
 
 .dwm-lb-table {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .dwm-lb-table th {
   text-align: left;
   padding: 4px 6px;
   color: var(--color-text-secondary);
-  font-size: 10px;
+  font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid var(--color-border);
@@ -182,7 +183,7 @@
 
 .dwm-lb-empty {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-text-secondary);
   text-align: center;
   margin: 8px 0;
@@ -211,7 +212,7 @@
 .dwm-replay-btn {
   width: 100%;
   padding: 10px;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: var(--font-ui);
   font-weight: 600;
   color: var(--color-accent);
@@ -232,10 +233,10 @@
 .dwm-modal .btn-primary {
   width: 100%;
   padding: 12px 20px;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .dwm-modal .btn-secondary {
   padding: 9px 12px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { usePreferences } from '../hooks/usePreferences';
@@ -68,8 +69,12 @@ export function Profile(): React.JSX.Element {
   const [pwSuccess, setPwSuccess]   = useState('');
   const [pwLoading, setPwLoading]   = useState(false);
 
+  useEffect(() => { document.title = 'Profile – Klondike Pro'; }, []);
+
   // Delete account
+  const deleteModalRef = useRef<HTMLDivElement>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  useFocusTrap(showDeleteModal, deleteModalRef);
   const [deletePw, setDeletePw]               = useState('');
   const [deleteError, setDeleteError]         = useState('');
   const [deleteLoading, setDeleteLoading]     = useState(false);
@@ -225,8 +230,10 @@ export function Profile(): React.JSX.Element {
         ).map(t => (
           <button
             key={t.key}
+            id={`profile-tab-${t.key}`}
             role="tab"
             aria-selected={tab === t.key}
+            aria-controls={`profile-panel-${t.key}`}
             className={`profile-tab${tab === t.key ? ' profile-tab--active' : ''}`}
             onClick={() => setTab(t.key)}
           >
@@ -237,7 +244,7 @@ export function Profile(): React.JSX.Element {
 
       {/* ── Stats tab ────────────────────────────────────────────────── */}
       {tab === 'stats' && (
-        <>
+        <div id="profile-panel-stats" role="tabpanel" aria-labelledby="profile-tab-stats">
           {stats && (
             <div className="profile-section">
               <h3 className="profile-section-title">Stats</h3>
@@ -300,12 +307,12 @@ export function Profile(): React.JSX.Element {
           {!hasAnyStats && !records && (
             <p className="profile-empty">Play some games to see your stats here.</p>
           )}
-        </>
+        </div>
       )}
 
       {/* ── Calendar tab ─────────────────────────────────────────────── */}
       {tab === 'calendar' && (
-        <div className="profile-section">
+        <div id="profile-panel-calendar" role="tabpanel" aria-labelledby="profile-tab-calendar" className="profile-section">
           <Calendar
             history={history}
             onDayClick={setSelectedDay}
@@ -320,7 +327,7 @@ export function Profile(): React.JSX.Element {
 
       {/* ── Display tab ──────────────────────────────────────────────── */}
       {tab === 'display' && (
-        <>
+        <div id="profile-panel-display" role="tabpanel" aria-labelledby="profile-tab-display">
           <div className="profile-section">
             <h3 className="profile-section-title">Card Style</h3>
             <div className="app-card-style-grid">
@@ -427,12 +434,12 @@ export function Profile(): React.JSX.Element {
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* ── Account tab ──────────────────────────────────────────────── */}
       {tab === 'user' && (
-        <>
+        <div id="profile-panel-user" role="tabpanel" aria-labelledby="profile-tab-user">
           <div className="profile-section">
             <h3 className="profile-section-title">Display Name</h3>
             <div className="name-row">
@@ -497,7 +504,7 @@ export function Profile(): React.JSX.Element {
           <div className="profile-section profile-section--signout">
             <button className="btn-signout" onClick={logout}>Sign Out</button>
           </div>
-        </>
+        </div>
       )}
 
       {/* ── Delete Account Modal ─────────────────────────────────────── */}
@@ -512,7 +519,9 @@ export function Profile(): React.JSX.Element {
             aria-modal="true"
             aria-labelledby="delete-modal-title"
             className="modal-box"
+            ref={deleteModalRef}
             onClick={e => e.stopPropagation()}
+            onKeyDown={(e) => { if (e.key === 'Escape') setShowDeleteModal(false); }}
           >
             <h3 id="delete-modal-title" className="modal-title">Delete Account</h3>
             <p className="modal-body">

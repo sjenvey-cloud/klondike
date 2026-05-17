@@ -144,7 +144,7 @@ export function Calendar({ history = [], onDayClick, onMonthChange }: CalendarPr
                 onClick={() => !isFuture && onDayClick && onDayClick(key)}
                 disabled={isFuture || !onDayClick}
                 aria-label={dayLabel}
-                aria-pressed={false}
+                aria-current={isToday ? 'date' : undefined}
                 type="button"
               >
                 <span className="calendar-day-num" aria-hidden="true">{day}</span>

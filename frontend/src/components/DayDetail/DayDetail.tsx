@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import {
   getSessionsByDate, getHandLeaderboard,
   createSocialChallenge, getFriends, getCustomLeagues,
@@ -239,6 +240,8 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
     }
   }, [challenging, selectedSession, pickerUserIds, pickerLeagueIds]);
 
+  useFocusTrap(!!date, drawerRef);
+
   if (!date) return null;
 
   const isHandDetail = !!selectedSession;
@@ -252,7 +255,7 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="day-detail-dialog-title"
+        aria-labelledby={isHandDetail ? 'day-detail-hand-title' : 'day-detail-list-title'}
         className={`day-detail-drawer${isHandDetail ? ' day-detail-drawer--detail' : ''}`}
         ref={drawerRef}
       >
@@ -261,7 +264,7 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
         {!isHandDetail && (
           <>
             <div className="day-detail-header">
-              <h3 id="day-detail-dialog-title" className="day-detail-title">{date}</h3>
+              <h3 id="day-detail-list-title" className="day-detail-title">{date}</h3>
               <button className="day-detail-close" onClick={onClose} aria-label="Close">×</button>
             </div>
             <div className="day-detail-body">
@@ -332,7 +335,7 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
                 <button className="day-detail-back" onClick={() => { setSelectedSession(null); setPickerOpen(false); setChallengeMsg(null); }} aria-label="Back">
                   ‹ Back
                 </button>
-                <span id="day-detail-dialog-title" className="day-detail-mode-title">
+                <span id="day-detail-hand-title" className="day-detail-mode-title">
                   {s.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'}
                 </span>
                 <button className="day-detail-close" onClick={onClose} aria-label="Close">×</button>
@@ -434,7 +437,7 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
                 )}
 
                 {challengeMsg && (
-                  <p className="day-detail-challenge-msg">{challengeMsg}</p>
+                  <p role="status" aria-live="polite" className="day-detail-challenge-msg">{challengeMsg}</p>
                 )}
 
                 {/* Your result summary */}

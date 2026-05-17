@@ -108,10 +108,12 @@ export function DailyWinModal({
                 <button
                   className={`dwm-sort-btn${sort === 'moves' ? ' active' : ''}`}
                   onClick={() => setSort('moves')}
+                  aria-pressed={sort === 'moves'}
                 >Moves</button>
                 <button
                   className={`dwm-sort-btn${sort === 'time' ? ' active' : ''}`}
                   onClick={() => setSort('time')}
+                  aria-pressed={sort === 'time'}
                 >Time</button>
               </div>
             </div>

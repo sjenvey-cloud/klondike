@@ -12,7 +12,7 @@
 
 .home-title {
   font-family: var(--font-heading);
-  font-size: 38px;
+  font-size: 2.375rem;
   font-weight: 700;
   color: var(--color-accent);
   margin: 0 0 6px;
@@ -21,7 +21,7 @@
 
 .home-subtitle {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-text-secondary);
   margin: 0;
   letter-spacing: 0.08em;
@@ -30,7 +30,7 @@
 
 .home-welcome {
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--color-text-secondary);
 }
 
@@ -60,13 +60,13 @@
 
 .home-stat-value {
   font-family: var(--font-heading);
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .home-stat-label {
-  font-size: 10px;
+  font-size: 0.625rem;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -82,7 +82,7 @@
 
 .btn-large {
   padding: 14px 20px;
-  font-size: 16px;
+  font-size: 1rem;
   border-radius: 10px;
 }
 
@@ -104,7 +104,7 @@
   background: transparent;
   color: var(--color-text-secondary);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;

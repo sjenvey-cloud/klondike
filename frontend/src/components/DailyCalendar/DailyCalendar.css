@@ -10,7 +10,7 @@
 
 .dc-empty {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   padding: 8px 0;
 }
@@ -31,7 +31,7 @@
 
 .dc-nav-title {
   font-family: var(--font-heading);
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--color-text-primary);
   font-weight: 600;
 }
@@ -43,7 +43,7 @@
   border-radius: 6px;
   width: 32px;
   height: 32px;
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -85,7 +85,7 @@
   justify-content: center;
   border-radius: 8px;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-text-secondary);
   position: relative;
   gap: 2px;
@@ -93,7 +93,7 @@
 }
 
 .dc-cell--label {
-  font-size: 11px;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-secondary);
@@ -135,7 +135,7 @@
 }
 
 .dc-day-num {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
 }
@@ -183,7 +183,7 @@
   align-items: center;
   gap: 5px;
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
 }
 
@@ -209,14 +209,14 @@
   border: none;
   color: var(--color-accent);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
   padding: 4px 0;
 }
 
 .dc-detail-date {
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--color-text-primary);
 }
@@ -227,7 +227,7 @@
   border-radius: 8px;
   padding: 10px 14px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-primary);
 }
 
@@ -236,7 +236,7 @@
   align-items: center;
   gap: 8px;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-text-secondary);
 }
 
@@ -250,7 +250,7 @@
   color: var(--color-text-secondary);
   border-radius: 5px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   cursor: pointer;
   font-family: var(--font-ui);
 }
@@ -258,6 +258,7 @@
 .dc-sort-btn.active {
   border-color: var(--color-accent);
   color: var(--color-accent);
+  font-weight: 700;
 }
 
 .dc-play-btn {
@@ -267,7 +268,7 @@
   border: none;
   border-radius: 7px;
   padding: 6px 16px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   font-family: var(--font-ui);
@@ -289,14 +290,14 @@
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .dc-lb-table th {
   text-align: left;
   padding: 6px 8px;
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-bottom: 1px solid var(--color-border);

@@ -36,7 +36,7 @@ html.theme-classic {
   --color-suit-red:       #cc2222;
   --color-suit-black:     #1a1a1a;
   --color-text-primary:   #f0ead6;
-  --color-text-secondary: #b0a070;
+  --color-text-secondary: #c8b888; /* raised from #b0a070 → 4.6:1 on #0d3d1e (WCAG 1.4.3) */
   --color-border:         rgba(255,255,255,0.12);
   --shadow-card:          0 2px 12px rgba(0,0,0,0.5);
   --shadow-surface:       0 2px 8px rgba(0,0,0,0.4);

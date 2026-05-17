@@ -51,7 +51,8 @@ export default function App(): React.JSX.Element {
         <Route path="/*" element={
           <AuthGuard>
             <div className="app-shell">
-              <main className="app-main">
+              <a href="#main-content" className="skip-link">Skip to main content</a>
+              <main id="main-content" className="app-main">
                 <Routes>
                   <Route path="/"        element={<Home />}     />
                   <Route path="/game"    element={<Game />}     />

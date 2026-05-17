@@ -56,6 +56,7 @@ export function Leaderboard(): React.JSX.Element {
     Promise.all([boardPromise, rankPromise]).finally(() => setLoading(false));
   }, [period, drawMode, sort, user]);
 
+  useEffect(() => { document.title = 'Global Rankings – Klondike Pro'; }, []);
   useEffect(() => { load(); }, [load]);
 
   const isOnBoard = myRank != null && board.some(r => r.userUuid === user?.uuid);
@@ -71,12 +72,13 @@ export function Leaderboard(): React.JSX.Element {
       {/* ── Filters ─────────────────────────────────────────────────────── */}
       <div className="lb-filters">
         {/* Period */}
-        <div className="lb-pill-group">
+        <div className="lb-pill-group" role="group" aria-label="Period">
           {PERIODS.map(p => (
             <button
               key={p.value}
               className={`lb-pill${period === p.value ? ' lb-pill--active' : ''}`}
               onClick={() => setPeriod(p.value)}
+              aria-pressed={period === p.value}
             >
               {p.label}
             </button>
@@ -85,25 +87,29 @@ export function Leaderboard(): React.JSX.Element {
 
         {/* Draw mode + sort on one row */}
         <div className="lb-filter-row">
-          <div className="lb-pill-group lb-pill-group--sm">
+          <div className="lb-pill-group lb-pill-group--sm" role="group" aria-label="Draw mode">
             <button
               className={`lb-pill lb-pill--sm${drawMode === 'draw3' ? ' lb-pill--active' : ''}`}
               onClick={() => setDrawMode('draw3')}
+              aria-pressed={drawMode === 'draw3'}
             >Draw 3</button>
             <button
               className={`lb-pill lb-pill--sm${drawMode === 'draw1' ? ' lb-pill--active' : ''}`}
               onClick={() => setDrawMode('draw1')}
+              aria-pressed={drawMode === 'draw1'}
             >Draw 1</button>
           </div>
 
-          <div className="lb-pill-group lb-pill-group--sm">
+          <div className="lb-pill-group lb-pill-group--sm" role="group" aria-label="Sort by">
             <button
               className={`lb-pill lb-pill--sm${sort === 'moves' ? ' lb-pill--active' : ''}`}
               onClick={() => setSort('moves')}
+              aria-pressed={sort === 'moves'}
             >Moves</button>
             <button
               className={`lb-pill lb-pill--sm${sort === 'time' ? ' lb-pill--active' : ''}`}
               onClick={() => setSort('time')}
+              aria-pressed={sort === 'time'}
             >Time</button>
           </div>
         </div>

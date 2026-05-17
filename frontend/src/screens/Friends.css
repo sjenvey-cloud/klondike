@@ -24,7 +24,7 @@
   border: none;
   padding: 12px 8px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   cursor: pointer;
   position: relative;
@@ -40,14 +40,14 @@
   background: var(--color-danger);
   color: white;
   border-radius: 10px;
-  font-size: 10px;
+  font-size: 0.625rem;
   padding: 1px 5px;
   margin-left: 4px;
   vertical-align: middle;
 }
 
 .tab-heart-badge {
-  font-size: 13px;
+  font-size: 0.8125rem;
   margin-left: 4px;
   vertical-align: middle;
   color: #e05c7a;
@@ -82,7 +82,7 @@
 }
 
 .invite-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   margin: 0 0 8px;
   font-family: var(--font-ui);
@@ -96,7 +96,7 @@
 
 .invite-link {
   flex: 1;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--color-accent);
   word-break: break-all;
   font-family: monospace;
@@ -121,7 +121,7 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   text-decoration: none;
   white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
@@ -138,7 +138,7 @@
 }
 
 .invite-action-label {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .friends-list {
@@ -183,7 +183,7 @@
 
 .friend-avatar-initials {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   color: var(--color-accent);
   display: flex;
@@ -203,13 +203,13 @@
 
 .friend-name {
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--color-text-primary);
   font-weight: 500;
 }
 
 .friend-stat {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   font-family: var(--font-ui);
 }
@@ -220,7 +220,7 @@
   color: var(--color-danger);
   border-radius: 6px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   cursor: pointer;
   font-family: var(--font-ui);
 }
@@ -236,7 +236,7 @@
   color: var(--color-text-secondary);
   border-radius: 6px;
   padding: 5px 12px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
   font-family: var(--font-ui);
 }
@@ -250,14 +250,14 @@
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .lb-table th {
   text-align: left;
   padding: 6px 8px;
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-bottom: 1px solid var(--color-border);
@@ -280,7 +280,7 @@
   color: var(--color-text-secondary);
   padding: 24px 0;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .challenge-row {
@@ -292,12 +292,12 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-primary);
 }
 
 .challenge-stat {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   margin-top: 3px;
 }
@@ -337,26 +337,26 @@
 
 .sc-card-bot {
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
 }
 
 .sc-creator {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .sc-date {
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
 }
 
 .sc-mode-badge {
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
@@ -367,7 +367,7 @@
 
 .sc-status-badge {
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   border-radius: 4px;
   padding: 2px 7px;
@@ -387,7 +387,7 @@
 
 .sc-new-badge {
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   background: var(--color-accent);
   color: #000;
@@ -415,7 +415,7 @@
   border: none;
   color: var(--color-accent);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
   padding: 4px 0;
   flex: 1;
@@ -431,7 +431,7 @@
 
 .sc-meta-text {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-text-secondary);
 }
 
@@ -441,7 +441,7 @@
   border-radius: 8px;
   padding: 10px 14px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-primary);
 }
 
@@ -453,7 +453,7 @@
 
 .sc-play-btn {
   flex: 1;
-  font-size: 14px;
+  font-size: 0.875rem;
   padding: 10px 16px;
 }
 
@@ -465,7 +465,7 @@
   border-radius: 8px;
   padding: 10px 16px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
@@ -492,7 +492,7 @@
   border-radius: 8px;
   padding: 10px 16px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-accent);
   cursor: pointer;
   transition: background 0.15s;
@@ -521,7 +521,7 @@
 }
 
 .sc-add-pax-title {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0;
@@ -557,7 +557,7 @@
 }
 
 .sc-add-pax-name {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-primary);
 }
 
@@ -568,7 +568,7 @@
 
 .sc-add-pax-actions .btn-primary {
   flex: 1;
-  font-size: 14px;
+  font-size: 0.875rem;
   padding: 10px 16px;
 }
 
@@ -579,7 +579,7 @@
   border-radius: 8px;
   padding: 10px 16px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
@@ -600,7 +600,7 @@
 }
 
 .sc-creator-badge {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--color-accent);
 }
 
@@ -623,20 +623,20 @@
 }
 
 .received-invite-icon {
-  font-size: 22px;
+  font-size: 1.375rem;
   flex-shrink: 0;
 }
 
 .received-invite-name {
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
 .received-invite-sub {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
 }
 
@@ -647,7 +647,7 @@
 
 .received-invite-accept {
   flex: 1;
-  font-size: 14px;
+  font-size: 0.875rem;
   padding: 9px 16px;
 }
 
@@ -658,7 +658,7 @@
   border-radius: 8px;
   padding: 9px 16px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
@@ -671,7 +671,7 @@
 
 .invite-msg {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-accent);
   margin: 0;
   text-align: center;
@@ -687,7 +687,7 @@
 
 .sent-invites-header {
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -712,14 +712,14 @@
 
 .sent-invite-expire {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--color-text-primary);
 }
 
 .sent-invite-date {
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--color-text-secondary);
 }
 
@@ -735,7 +735,7 @@
   border-radius: 6px;
   padding: 5px 10px;
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
@@ -750,7 +750,7 @@
 
 .league-section-header {
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -766,7 +766,7 @@
 }
 
 .league-create-btn {
-  font-size: 13px;
+  font-size: 0.8125rem;
   padding: 6px 14px;
 }
 
@@ -791,24 +791,24 @@
 
 .league-card-name {
   flex: 1;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 500;
   color: var(--color-text-primary);
 }
 
 .league-card-meta {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   flex-shrink: 0;
 }
 
 .league-creator-badge {
   color: var(--color-accent);
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 
 .league-card-chevron {
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--color-text-secondary);
   flex-shrink: 0;
   line-height: 1;
@@ -825,7 +825,7 @@
 
 .league-detail-title {
   font-family: var(--font-ui);
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0 0 4px;
@@ -833,7 +833,7 @@
 
 .league-form-label {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--color-text-secondary);
   margin: 4px 0 4px;
 }
@@ -871,7 +871,7 @@
 
 .league-picker-name {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-primary);
 }
 
@@ -889,7 +889,7 @@
   align-items: center;
   justify-content: space-between;
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -903,7 +903,7 @@
   border-radius: 6px;
   padding: 3px 10px;
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-accent);
   cursor: pointer;
   transition: background 0.15s;
@@ -925,13 +925,13 @@
 
 .league-member-name {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-primary);
 }
 
 .league-you-badge {
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 400;
 }
 
@@ -943,7 +943,7 @@
   border-radius: 6px;
   padding: 3px 8px;
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--color-accent);
   cursor: pointer;
   white-space: nowrap;
@@ -976,7 +976,7 @@
   border-radius: 8px;
   padding: 8px 18px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-danger);
   cursor: pointer;
   transition: background 0.15s;
@@ -1028,7 +1028,7 @@
   flex: 1;
   border: none;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   color: #fff;
@@ -1081,7 +1081,7 @@
 .sc-delete-modal-title {
   margin: 0 0 10px;
   font-family: var(--font-ui);
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--color-text);
 }
@@ -1089,7 +1089,7 @@
 .sc-delete-modal-body {
   margin: 0 0 20px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.55;
   color: var(--color-text-secondary);
 }
@@ -1107,7 +1107,7 @@
   background: var(--color-danger);
   color: #fff;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
   transition: filter 0.15s;
@@ -1130,7 +1130,7 @@
   background: none;
   color: var(--color-text);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 0.9375rem;
   cursor: pointer;
   transition: background 0.15s;
 }

@@ -21,6 +21,7 @@ export function Home(): React.JSX.Element {
     () => localStorage.getItem(DRAW_MODE_KEY) || 'draw3'
   );
 
+  useEffect(() => { document.title = 'Klondike Pro'; }, []);
   useEffect(() => {
     if (user) getProfile(user.id).then(data => setStats(data as unknown as HomeStats)).catch(() => {});
   }, [user]);
@@ -73,16 +74,18 @@ export function Home(): React.JSX.Element {
         </button>
 
         {/* Draw mode toggle */}
-        <div className="draw-mode-toggle">
+        <div className="draw-mode-toggle" role="group" aria-label="Draw mode">
           <button
             className={`draw-mode-pill${drawMode === 'draw1' ? ' draw-mode-pill--active' : ''}`}
             onClick={() => selectDrawMode('draw1')}
+            aria-pressed={drawMode === 'draw1'}
           >
             Draw 1
           </button>
           <button
             className={`draw-mode-pill${drawMode === 'draw3' ? ' draw-mode-pill--active' : ''}`}
             onClick={() => selectDrawMode('draw3')}
+            aria-pressed={drawMode === 'draw3'}
           >
             Draw 3
           </button>

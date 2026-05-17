@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -364,6 +365,11 @@ export function Friends(): React.JSX.Element {
     c => c.status === 'active' && !c.isCreator && !c.userHasWon
   ).length;
 
+  useEffect(() => { document.title = 'Social & League – Klondike Pro'; }, []);
+
+  const deleteModalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(deleteConfirmId != null, deleteModalRef);
+
   // ── Guard ──────────────────────────────────────────────────────────
   if (!user) {
     return (
@@ -390,8 +396,10 @@ export function Friends(): React.JSX.Element {
         {TABS.map(t => (
           <button
             key={t}
+            id={`friends-tab-${t}`}
             role="tab"
             aria-selected={tab === t}
+            aria-controls={`friends-panel-${t}`}
             className={`tab-btn${tab === t ? ' active' : ''}`}
             onClick={() => {
               setTab(t);
@@ -418,7 +426,7 @@ export function Friends(): React.JSX.Element {
           FRIENDS TAB
           ════════════════════════════════════════════════════════════════════ */}
       {tab === 'Friends' && (
-        <div className="tab-content">
+        <div className="tab-content" id="friends-panel-Friends" role="tabpanel" aria-labelledby="friends-tab-Friends">
 
           {/* Received invite (sessionStorage token) */}
           {pendingInvite && (
@@ -483,6 +491,7 @@ export function Friends(): React.JSX.Element {
                     <span className="invite-action-label">{copied ? 'Copied!' : 'Copy'}</span>
                   </button>
                   <a className="invite-action-btn"
+                    aria-label="Share invite link via text message"
                     href={`sms:?body=${encodeURIComponent('Join me on Klondike Pro! ' + inviteLink)}`}>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13 1H3a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2l1.5 2.5a.5.5 0 0 0 .866 0L9 12h4a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="5.5" cy="6.5" r="1" fill="currentColor"/><circle cx="8" cy="6.5" r="1" fill="currentColor"/><circle cx="10.5" cy="6.5" r="1" fill="currentColor"/></svg>
                     <span className="invite-action-label">Text</span>
@@ -559,7 +568,7 @@ export function Friends(): React.JSX.Element {
           LEAGUES TAB — LIST VIEW
           ════════════════════════════════════════════════════════════════════ */}
       {tab === 'Leagues' && leagueView === 'list' && (
-        <div className="tab-content">
+        <div className="tab-content" id="friends-panel-Leagues" role="tabpanel" aria-labelledby="friends-tab-Leagues">
 
           {/* ── Friends League ── */}
           <div className="league-section-header">Friends League</div>
@@ -618,7 +627,7 @@ export function Friends(): React.JSX.Element {
           LEAGUES TAB — CREATE VIEW
           ════════════════════════════════════════════════════════════════════ */}
       {tab === 'Leagues' && leagueView === 'create' && (
-        <div className="tab-content">
+        <div className="tab-content" id="friends-panel-Leagues" role="tabpanel" aria-labelledby="friends-tab-Leagues">
           <div className="league-detail-header">
             <button className="sc-back-btn" onClick={() => setLeagueView('list')}>‹ Leagues</button>
           </div>
@@ -674,7 +683,7 @@ export function Friends(): React.JSX.Element {
           LEAGUES TAB — DETAIL VIEW
           ════════════════════════════════════════════════════════════════════ */}
       {tab === 'Leagues' && leagueView === 'detail' && selectedLeague && (
-        <div className="tab-content">
+        <div className="tab-content" id="friends-panel-Leagues" role="tabpanel" aria-labelledby="friends-tab-Leagues">
           <div className="league-detail-header">
             <button className="sc-back-btn" onClick={() => { setLeagueView('list'); setSelectedLeague(null); }}>
               ‹ Leagues
@@ -778,7 +787,7 @@ export function Friends(): React.JSX.Element {
           LEAGUES TAB — ADD MEMBERS VIEW
           ════════════════════════════════════════════════════════════════════ */}
       {tab === 'Leagues' && leagueView === 'add-members' && selectedLeague && (
-        <div className="tab-content">
+        <div className="tab-content" id="friends-panel-Leagues" role="tabpanel" aria-labelledby="friends-tab-Leagues">
           <div className="league-detail-header">
             <button className="sc-back-btn" onClick={() => setLeagueView('detail')}>‹ Back</button>
           </div>
@@ -826,7 +835,7 @@ export function Friends(): React.JSX.Element {
           CHALLENGES TAB
           ════════════════════════════════════════════════════════════════════ */}
       {tab === 'Challenges' && !selectedChallenge && (
-        <div className="tab-content">
+        <div className="tab-content" id="friends-panel-Challenges" role="tabpanel" aria-labelledby="friends-tab-Challenges">
           {challenges.length === 0 && !detailLoading && (
             <p className="empty-state">No challenges yet. Win a deal and tap ⚔ Challenge Friends.</p>
           )}
@@ -913,7 +922,7 @@ export function Friends(): React.JSX.Element {
         const addablePaxFriends = friends.filter(f => !involvedIds.has(f.userId));
 
         return (
-          <div className="tab-content sc-detail">
+          <div className="tab-content sc-detail" id="friends-panel-Challenges" role="tabpanel" aria-labelledby="friends-tab-Challenges">
             <div className="sc-detail-header">
               <button className="sc-back-btn" onClick={() => { setSelectedChallenge(null); setAddPaxOpen(false); setAddPaxSelected(new Set()); }}>‹ Challenges</button>
               <span className={`sc-status-badge sc-status-badge--${ch.status}`}>
@@ -1018,7 +1027,7 @@ export function Friends(): React.JSX.Element {
       })()}
 
       {tab === 'Challenges' && detailLoading && (
-        <div className="tab-content"><p className="empty-state">Loading challenge…</p></div>
+        <div className="tab-content" id="friends-panel-Challenges" role="tabpanel" aria-labelledby="friends-tab-Challenges"><p className="empty-state">Loading challenge…</p></div>
       )}
 
       {/* ── Delete challenge confirmation modal ───────────────────────────── */}
@@ -1033,6 +1042,7 @@ export function Friends(): React.JSX.Element {
             aria-modal="true"
             aria-labelledby="sc-delete-title"
             className="sc-delete-modal"
+            ref={deleteModalRef}
             onClick={e => e.stopPropagation()}
           >
             <h3 id="sc-delete-title" className="sc-delete-modal-title">Delete Challenge?</h3>

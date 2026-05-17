@@ -34,13 +34,13 @@
 }
 
 .win-trophy {
-  font-size: 56px;
+  font-size: 3.5rem;
   line-height: 1;
 }
 
 .win-title {
   font-family: var(--font-heading);
-  font-size: 28px;
+  font-size: 1.75rem;
   color: var(--color-accent);
   margin: 0;
   text-align: center;
@@ -60,13 +60,13 @@
 }
 
 .win-stat-value {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
 .win-stat-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -86,7 +86,7 @@
   border-radius: 8px;
   padding: 12px 20px;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -102,7 +102,7 @@
   border-radius: 8px;
   padding: 10px 20px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   width: 100%;
@@ -133,7 +133,7 @@
   border: none;
   color: var(--color-text-secondary);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
@@ -143,14 +143,14 @@
 
 .win-challenge-title {
   font-family: var(--font-heading);
-  font-size: 20px;
+  font-size: 1.25rem;
   color: var(--color-text-primary);
   margin: 0;
 }
 
 .win-picker-empty {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
   text-align: center;
   padding: 16px 0;
@@ -166,7 +166,7 @@
 
 .win-picker-section {
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -181,7 +181,7 @@
   gap: 10px;
   padding: 8px 4px;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--color-text-primary);
   cursor: pointer;
   border-radius: 6px;
@@ -199,7 +199,7 @@
 
 .win-challenge-msg {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-accent);
   text-align: center;
   margin: 8px 0 0;
