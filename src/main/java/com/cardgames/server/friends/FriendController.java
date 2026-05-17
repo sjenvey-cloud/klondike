@@ -3,6 +3,8 @@ package com.cardgames.server.friends;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Tag(name = "Friends", description = "Friend list, invite links, and direct friend requests")
 @RestController
 @RequestMapping("/api/v1/friends")
 public class FriendController {
@@ -44,6 +47,7 @@ public class FriendController {
 
     // ── DEV-155: POST /api/v1/friends/invite ─────────────────────────────
 
+    @Operation(summary = "Generate a shareable friend invite link (24-hour TTL)")
     @PostMapping("/invite")
     public ResponseEntity<InviteResponse> createInvite(Authentication auth) {
 
@@ -59,6 +63,7 @@ public class FriendController {
 
     // ── DEV-156: POST /api/v1/friends/invite/{token}/accept ──────────────
 
+    @Operation(summary = "Accept a friend invite by token")
     @PostMapping("/invite/{token}/accept")
     public ResponseEntity<Void> acceptInvite(
             @PathVariable String token, Authentication auth) {
@@ -90,6 +95,7 @@ public class FriendController {
 
     // ── DEV-157: GET /api/v1/friends ─────────────────────────────────────
 
+    @Operation(summary = "List friends with today's activity", description = "Includes wins today and avatar URL for each friend.")
     @GetMapping
     public ResponseEntity<List<FriendResponse>> listFriends(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
@@ -117,6 +123,7 @@ public class FriendController {
 
     // ── DEV-158: DELETE /api/v1/friends/{userId} ─────────────────────────
 
+    @Operation(summary = "Remove a friend")
     @DeleteMapping("/{targetUserId}")
     public ResponseEntity<Void> removeFriend(
             @PathVariable int targetUserId, Authentication auth) {
@@ -198,6 +205,7 @@ public class FriendController {
     // Used when adding a league member who isn't already a friend.
     // If the other user has already sent a request, auto-accepts into a friendship.
 
+    @Operation(summary = "Send a direct friend request", description = "Auto-accepts if the target has already sent a request to the caller.")
     @PostMapping("/requests")
     public ResponseEntity<Void> sendFriendRequest(
             @RequestBody Map<String, Integer> body, Authentication auth) {
@@ -232,6 +240,7 @@ public class FriendController {
 
     // ── GET /api/v1/friends/requests/received ─────────────────────────────
 
+    @Operation(summary = "List incoming friend requests")
     @GetMapping("/requests/received")
     public ResponseEntity<List<FriendRequestEntry>> getReceivedRequests(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();

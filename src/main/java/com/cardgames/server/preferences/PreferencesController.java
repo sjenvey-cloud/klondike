@@ -1,9 +1,12 @@
 package com.cardgames.server.preferences;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Preferences", description = "User display and gameplay preferences (draw mode, card design, animation, theme)")
 @CrossOrigin(origins = {
     "http://localhost:4200",
     "http://localhost:5173",
@@ -23,6 +26,7 @@ public class PreferencesController {
     }
 
     // GET /api/v1/profile/preferences
+    @Operation(summary = "Get user preferences (creates defaults on first call)")
     @GetMapping
     public ResponseEntity<UserPreferences> getPreferences(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
@@ -32,6 +36,7 @@ public class PreferencesController {
     }
 
     // PATCH /api/v1/profile/preferences
+    @Operation(summary = "Update one or more preferences (partial update — omit fields to leave unchanged)")
     @PatchMapping
     public ResponseEntity<UserPreferences> patchPreferences(
             @RequestBody PatchPreferencesRequest body,

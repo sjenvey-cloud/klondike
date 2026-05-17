@@ -1,5 +1,7 @@
 package com.cardgames.server.auth;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+@Tag(name = "Authentication", description = "Register, login, refresh token, and logout")
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -22,6 +25,7 @@ public class AuthController {
 
     // ── DEV-75: Register ──────────────────────────────────────────────────
 
+    @Operation(summary = "Register a new account", description = "Creates a user, returns an access token and sets the refresh_token cookie.")
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterRequest body,
@@ -34,6 +38,7 @@ public class AuthController {
 
     // ── DEV-76: Login ─────────────────────────────────────────────────────
 
+    @Operation(summary = "Login with email and password")
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest body,
@@ -46,6 +51,7 @@ public class AuthController {
 
     // ── DEV-77: Refresh ───────────────────────────────────────────────────
 
+    @Operation(summary = "Exchange refresh_token cookie for a new access token")
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(
             @CookieValue(name = "refresh_token", required = false) String rawToken,
@@ -61,6 +67,7 @@ public class AuthController {
 
     // ── DEV-78: Logout ────────────────────────────────────────────────────
 
+    @Operation(summary = "Revoke refresh token and invalidate access token JTI")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @CookieValue(name = "refresh_token", required = false) String rawToken,

@@ -6,6 +6,8 @@ import com.cardgames.server.league.LeagueEntry;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Tag(name = "Custom Leagues", description = "Named friend leagues with weekly/monthly/all-time leaderboards")
 @RestController
 @RequestMapping("/api/v1/custom-leagues")
 public class CustomLeagueController {
@@ -45,6 +48,7 @@ public class CustomLeagueController {
 
     // ── POST /api/v1/custom-leagues ─ create a new league ─────────────────
 
+    @Operation(summary = "Create a named league and add initial members")
     @PostMapping
     public ResponseEntity<CustomLeagueListEntry> createLeague(
             @RequestBody CreateLeagueRequest req, Authentication auth) {
@@ -77,6 +81,7 @@ public class CustomLeagueController {
 
     // ── GET /api/v1/custom-leagues ─ leagues I'm in ────────────────────────
 
+    @Operation(summary = "List all leagues the authenticated user belongs to")
     @GetMapping
     public ResponseEntity<List<CustomLeagueListEntry>> listLeagues(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
@@ -100,6 +105,7 @@ public class CustomLeagueController {
 
     // ── GET /api/v1/custom-leagues/{id} ─ detail with members ─────────────
 
+    @Operation(summary = "Get league detail with member list and friend status")
     @GetMapping("/{id}")
     public ResponseEntity<CustomLeagueDetail> getLeague(
             @PathVariable int id, Authentication auth) {
@@ -134,6 +140,7 @@ public class CustomLeagueController {
 
     // ── GET /api/v1/custom-leagues/{id}/leaderboard?period=week ───────────
 
+    @Operation(summary = "League leaderboard (period: week/daily/monthly/alltime)")
     @GetMapping("/{id}/leaderboard")
     public ResponseEntity<List<LeagueEntry>> getLeaderboard(
             @PathVariable int id,
@@ -153,6 +160,7 @@ public class CustomLeagueController {
 
     // ── DELETE /api/v1/custom-leagues/{id} ─ delete (creator only) ─────────
 
+    @Operation(summary = "Delete a league (creator only)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLeague(
             @PathVariable int id, Authentication auth) {

@@ -5,6 +5,8 @@ import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
 import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,7 @@ import java.util.UUID;
  * from the session's stored turns string. Only won sessions have a complete
  * turns record; any other status returns 422.
  */
+@Tag(name = "Replay", description = "Session replay — parse and return structured move list for a won session")
 @CrossOrigin(origins = {
     "http://localhost:4200",
     "http://localhost:5173",
@@ -46,6 +49,7 @@ public class ReplayController {
         this.handRepo    = handRepo;
     }
 
+    @Operation(summary = "Get replay data for a won session", description = "Returns the original card deal plus a structured move list. 422 if the session is not in won status.")
     @GetMapping("/sessions/{uuid}/replay")
     public ResponseEntity<ReplayResponse> getSessionReplay(@PathVariable UUID uuid) {
 

@@ -7,6 +7,8 @@ import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Tag(name = "Challenges (Legacy)", description = "Legacy 1-to-1 direct challenges — superseded by Social Challenges")
 @RestController
 @RequestMapping("/api/v1/challenges")
 public class ChallengeController {
@@ -38,6 +41,7 @@ public class ChallengeController {
 
     // ── DEV-160: POST /api/v1/challenges ─────────────────────────────────
 
+    @Operation(summary = "Create a 1-to-1 direct challenge from a won session")
     @PostMapping
     public ResponseEntity<ChallengeResponse> createChallenge(
             @RequestBody CreateChallengeRequest body, Authentication auth) {
@@ -72,6 +76,7 @@ public class ChallengeController {
 
     // ── DEV-161: GET /api/v1/challenges/inbox ────────────────────────────
 
+    @Operation(summary = "Get pending challenges sent to the authenticated user")
     @GetMapping("/inbox")
     public ResponseEntity<List<InboxEntry>> getInbox(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
@@ -103,6 +108,7 @@ public class ChallengeController {
 
     // ── DEV-162: POST /api/v1/challenges/{id}/play ───────────────────────
 
+    @Operation(summary = "Accept and start playing a challenge — creates a new session on the same hand")
     @PostMapping("/{id}/play")
     public ResponseEntity<PlayResponse> playChallenge(
             @PathVariable int id, Authentication auth) {

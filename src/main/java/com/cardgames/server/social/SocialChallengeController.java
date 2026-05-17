@@ -9,6 +9,8 @@ import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Tag(name = "Social Challenges", description = "Group challenges — create, view, join, end, hide, and delete")
 @RestController
 @RequestMapping("/api/v1/social")
 public class SocialChallengeController {
@@ -57,6 +60,7 @@ public class SocialChallengeController {
      * If invitedLeagueIds is also provided, all members of those leagues are merged in.
      * If both are null, falls back to inviting all current friends (backward compat).
      */
+    @Operation(summary = "Create a group challenge from a won session")
     @Transactional
     @PostMapping("/challenges")
     public ResponseEntity<SocialChallengeListEntry> createChallenge(
@@ -124,6 +128,7 @@ public class SocialChallengeController {
      * Number of active challenges where the user is a participant but hasn't won yet.
      * Used to drive the notification badge on the nav Social tab.
      */
+    @Operation(summary = "Pending challenge count", description = "Active challenges where the user is a participant but hasn't won yet — drives nav badge.")
     @GetMapping("/challenges/pending-count")
     public ResponseEntity<Map<String, Integer>> getPendingCount(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
@@ -148,6 +153,7 @@ public class SocialChallengeController {
      * All challenges the authenticated user is involved in (created or invited).
      * Sorted newest first.
      */
+    @Operation(summary = "List all challenges for the authenticated user", description = "Includes challenges created by the user and challenges the user was invited to.")
     @GetMapping("/challenges")
     public ResponseEntity<List<SocialChallengeListEntry>> getChallenges(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
@@ -202,6 +208,7 @@ public class SocialChallengeController {
      * Full detail for a challenge including the leaderboard.
      * Each participant's best won session on the hand is used for ranking.
      */
+    @Operation(summary = "Get challenge detail with ranked leaderboard")
     @GetMapping("/challenges/{id}")
     public ResponseEntity<SocialChallengeDetail> getChallengeDetail(
             @PathVariable int id,
@@ -282,6 +289,7 @@ public class SocialChallengeController {
      * Add one or more friends to an existing active challenge.
      * Only the creator can add participants; already-present users are silently skipped.
      */
+    @Operation(summary = "Add participants to an existing challenge (creator only)")
     @Transactional
     @PostMapping("/challenges/{id}/participants")
     public ResponseEntity<Void> addParticipants(
@@ -316,6 +324,7 @@ public class SocialChallengeController {
      * POST /api/v1/social/challenges/{id}/end
      * Creator ends the challenge (status → "ended").
      */
+    @Operation(summary = "End a challenge (creator only)")
     @Transactional
     @PostMapping("/challenges/{id}/end")
     public ResponseEntity<Void> endChallenge(@PathVariable int id, Authentication auth) {
@@ -337,6 +346,7 @@ public class SocialChallengeController {
      * POST /api/v1/social/challenges/{id}/resume
      * Creator re-opens an ended challenge (status → "active").
      */
+    @Operation(summary = "Re-open an ended challenge (creator only)")
     @Transactional
     @PostMapping("/challenges/{id}/resume")
     public ResponseEntity<Void> resumeChallenge(@PathVariable int id, Authentication auth) {
@@ -359,6 +369,7 @@ public class SocialChallengeController {
      * Creator permanently deletes a challenge and all participant records.
      * The ON DELETE CASCADE constraint handles participant cleanup in the DB.
      */
+    @Operation(summary = "Delete a challenge permanently (creator only)", description = "Cascade deletes all participant records.")
     @Transactional
     @DeleteMapping("/challenges/{id}")
     public ResponseEntity<Void> deleteChallenge(@PathVariable int id, Authentication auth) {
@@ -377,6 +388,7 @@ public class SocialChallengeController {
      * A participant hides a challenge from their own list.
      * The challenge remains visible to all other participants and the creator.
      */
+    @Operation(summary = "Hide a challenge from the caller's list (participant only)")
     @Transactional
     @PostMapping("/challenges/{id}/hide")
     public ResponseEntity<Void> hideChallenge(@PathVariable int id, Authentication auth) {

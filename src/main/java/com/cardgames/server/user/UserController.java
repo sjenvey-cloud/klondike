@@ -1,5 +1,7 @@
 package com.cardgames.server.user;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Date;
 import java.util.Map;
 
+@Tag(name = "User (Legacy)", description = "Legacy user lookup/create endpoints — prefer /api/v1/auth and /api/v1/profile")
 @CrossOrigin(origins = {
     "http://localhost:4200",
     "http://localhost:5173",

@@ -6,6 +6,8 @@ import com.cardgames.server.game.GameState;
 import com.cardgames.server.game.ReplayResult;
 import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Tag(name = "Sessions", description = "Create, complete, abandon, and resume game sessions")
 @CrossOrigin(origins = {
     "http://localhost:4200",
     "http://localhost:5173",
@@ -49,6 +52,7 @@ public class SessionController {
      * Used by the frontend on app boot to offer a resume-game prompt.
      * Returns 204 No Content if the user has no active session.
      */
+    @Operation(summary = "Get active sessions", description = "Returns the current in-progress daily and random sessions for the authenticated user (null if none).")
     @GetMapping("/sessions/active")
     public ResponseEntity<ActiveSessionsResponse> getActiveSession(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
@@ -79,6 +83,7 @@ public class SessionController {
      * Creates a new active session for the given hand and user.
      * Called once when the player starts a new game.
      */
+    @Operation(summary = "Create a new game session")
     @PostMapping("/sessions")
     public ResponseEntity<CreateSessionResponse> createSession(@RequestBody CreateSessionRequest body) {
         log.info("createSession: handUuid={} userId={} isDaily={} dailyDate={} isRanked={}",
@@ -128,6 +133,7 @@ public class SessionController {
      * is persisted as status=won. On failure HTTP 422 is returned and the
      * session record is NOT modified.
      */
+    @Operation(summary = "Complete a session (win)", description = "Server-side replays the full move history to validate the win before persisting.")
     @Transactional
     @PostMapping("/sessions/{uuid}/complete")
     public ResponseEntity<CompleteSessionResponse> completeSession(
@@ -210,6 +216,7 @@ public class SessionController {
      * turns string. The move history is stored for analytics but not
      * validated — only completed sessions are replay-checked.
      */
+    @Operation(summary = "Abandon a session", description = "Marks the session as abandoned and stores the partial move history.")
     @Transactional
     @PostMapping("/sessions/{uuid}/abandon")
     public ResponseEntity<Session> abandonSession(

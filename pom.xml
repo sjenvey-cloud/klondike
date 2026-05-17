@@ -75,6 +75,13 @@
 			<version>2.26.31</version>
 		</dependency>
 
+		<!-- Springdoc OpenAPI / Swagger UI (DEV-231) -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.5.0</version>
+		</dependency>
+
 		<!-- JJWT — RS256 sign and verify -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>

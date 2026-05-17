@@ -8,6 +8,8 @@ import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
     "https://klondikepro.app",
     "https://www.klondikepro.app"
 })
+@Tag(name = "Daily", description = "Daily challenge hand, calendar, and date-specific lookups")
 @RestController
 @RequestMapping("/api/v1")
 public class DailyController {
@@ -70,6 +73,7 @@ public class DailyController {
      *
      * Every user receives the same hand for the same UTC date and draw mode.
      */
+    @Operation(summary = "Get today's daily challenge hand")
     @GetMapping("/daily")
     public ResponseEntity<DailyHandResponse> getDaily(
             @RequestParam(defaultValue = "draw3") String drawMode,
@@ -106,6 +110,7 @@ public class DailyController {
      * attempts and unranked replays. Non-daily plays of the same hand are excluded
      * via the is_daily = true filter.
      */
+    @Operation(summary = "Daily leaderboard for a specific date", description = "Ranked wins only, deduplicated to best session per user.")
     @GetMapping("/leaderboard/daily/{date}/{sort}")
     public ResponseEntity<List<LeaderboardEntry>> getDailyLeaderboard(
             @PathVariable String date,
@@ -146,6 +151,7 @@ public class DailyController {
      * GET /api/v1/leaderboard/daily/{date}/{userId}/{sort}
      * Single user's rank for a given daily date.
      */
+    @Operation(summary = "Get a user's rank on the daily leaderboard for a specific date")
     @GetMapping("/leaderboard/daily/{date}/{userId}/{sort}")
     public ResponseEntity<LeaderboardEntry> getUserDailyRank(
             @PathVariable String date,
@@ -183,6 +189,7 @@ public class DailyController {
      * NOTE: must be declared before /daily/{date} so the literal "calendar"
      * segment takes priority over the path-variable pattern.
      */
+    @Operation(summary = "Daily play calendar", description = "Returns completion status for each day in the requested window.")
     @GetMapping("/daily/calendar")
     public ResponseEntity<List<DailyCalendarEntry>> getDailyCalendar(
             @RequestParam(defaultValue = "draw3") String drawMode,
@@ -235,6 +242,7 @@ public class DailyController {
      * Returns the daily hand for a specific past date — for practice replay.
      * Always returns userHasRankedAttempt=true so the game starts unranked.
      */
+    @Operation(summary = "Get the daily challenge hand for a specific date (yyyy-MM-dd)")
     @GetMapping("/daily/{date}")
     public ResponseEntity<DailyHandResponse> getDailyByDate(
             @PathVariable String date,
@@ -264,6 +272,7 @@ public class DailyController {
      * GET /api/v1/profile/{userId}/history?days=35&tzOffset=60
      * tzOffset = minutes east of UTC (e.g. 60 for BST, -300 for US Eastern).
      */
+    @Operation(summary = "Profile play history heatmap", description = "Returns day-by-day play data for the profile calendar view.")
     @GetMapping("/profile/{userId}/history")
     public ResponseEntity<List<DayHistory>> getProfileHistory(
             @PathVariable int userId,
@@ -289,6 +298,7 @@ public class DailyController {
      * GET /api/v1/profile/{userId}/sessions?date=2026-04-01&tzOffset=60
      * tzOffset = minutes east of UTC — shifts the day boundary into the user's timezone.
      */
+    @Operation(summary = "Sessions for a user on a specific calendar date")
     @GetMapping("/profile/{userId}/sessions")
     public ResponseEntity<List<Session>> getSessionsByDate(
             @PathVariable int userId,

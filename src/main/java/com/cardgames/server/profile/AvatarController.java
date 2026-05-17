@@ -2,6 +2,8 @@ package com.cardgames.server.profile;
 
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,7 @@ import java.util.UUID;
  *  2. Client PUTs the image file directly to the S3 presigned uploadUrl
  *  3. Client PATCHes { avatarUrl: publicUrl } → saves CDN URL on the user row
  */
+@Tag(name = "Avatar", description = "Profile avatar upload via S3 presigned PUT URL")
 @RestController
 @RequestMapping("/api/v1/profile")
 public class AvatarController {
@@ -52,6 +55,7 @@ public class AvatarController {
      * Body: { "contentType": "image/jpeg" | "image/png" }
      * Returns a 15-minute presigned PUT URL and the final CDN URL to save after upload.
      */
+    @Operation(summary = "Request a presigned S3 PUT URL for avatar upload", description = "Step 1 of 2: client receives uploadUrl and publicUrl. PUT the image file to uploadUrl, then PATCH /profile/avatar with publicUrl.")
     @PostMapping("/avatar")
     public ResponseEntity<AvatarUploadResponse> requestUploadUrl(
             @RequestBody AvatarUploadRequest req,
@@ -90,6 +94,7 @@ public class AvatarController {
      * Body: { "avatarUrl": "https://cdn.example.com/avatars/..." }
      * Saves the CDN URL on the authenticated user's account.
      */
+    @Operation(summary = "Confirm avatar upload — save CDN URL on the user account", description = "Step 2 of 2: call after a successful PUT to the presigned URL.")
     @PatchMapping("/avatar")
     public ResponseEntity<ProfileResponse> confirmUpload(
             @RequestBody AvatarConfirmRequest req,

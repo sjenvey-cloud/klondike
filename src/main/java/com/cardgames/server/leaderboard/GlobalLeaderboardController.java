@@ -4,6 +4,8 @@ import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +23,7 @@ import java.util.UUID;
  * Returns one entry per user (their best ranked won session) for the requested
  * period / drawMode / sort. Integer PKs never leave the server.
  */
+@Tag(name = "Leaderboard", description = "Global and daily ranked leaderboards")
 @CrossOrigin(origins = {
     "http://localhost:4200",
     "http://localhost:5173",
@@ -74,6 +77,7 @@ public class GlobalLeaderboardController {
      *
      * Returns up to 50 entries, one per user (their best session).
      */
+    @Operation(summary = "Global leaderboard", description = "Best session per user for the given period/drawMode/sort. Max 50 entries.")
     @GetMapping("/leaderboard/global")
     public ResponseEntity<List<GlobalLeaderboardEntry>> getGlobalLeaderboard(
             @RequestParam(defaultValue = "weekly") String period,
@@ -104,6 +108,7 @@ public class GlobalLeaderboardController {
      *
      * Query params: period, drawMode, sort (same defaults as list endpoint).
      */
+    @Operation(summary = "Get a user's global rank", description = "Returns 404 if the user has no qualifying win in the period.")
     @GetMapping("/leaderboard/global/{uuid}/rank")
     public ResponseEntity<GlobalLeaderboardEntry> getGlobalRank(
             @PathVariable UUID uuid,

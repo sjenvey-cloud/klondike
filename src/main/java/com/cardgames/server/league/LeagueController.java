@@ -5,6 +5,8 @@ import com.cardgames.server.friends.FriendRepository;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Tag(name = "League (Friends)", description = "Automatic friends league leaderboard — no setup required")
 @RestController
 @RequestMapping("/api/v1/leagues")
 public class LeagueController {
@@ -34,6 +37,7 @@ public class LeagueController {
      * GET /api/v1/leagues?period=daily|weekly|monthly|alltime
      * DEV-164: ranked wins + best moves for the authenticated user and all their friends.
      */
+    @Operation(summary = "Friends league leaderboard", description = "Ranked wins for the caller and all their friends. Period: daily/weekly/monthly/alltime.")
     @GetMapping
     public ResponseEntity<List<LeagueEntry>> getLeague(
             @RequestParam(defaultValue = "weekly") String period,

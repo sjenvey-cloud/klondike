@@ -6,6 +6,8 @@ import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -19,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Tag(name = "Hands", description = "Create and retrieve shuffled hands (deals)")
 @CrossOrigin(origins = {
     "http://localhost:4200",
     "http://localhost:5173",
@@ -41,6 +44,7 @@ public class HandController {
      *
      * Creates a new randomly-dealt hand and returns it with its card order.
      */
+    @Operation(summary = "Create a new randomly-dealt hand")
     @PostMapping("/hands")
     public ResponseEntity<HandResponse> createHand(
             @RequestBody(required = false) CreateHandRequest body) {
@@ -75,6 +79,7 @@ public class HandController {
      *
      * Returns the card order for an existing hand so the client can replay it.
      */
+    @Operation(summary = "Get card order for an existing hand")
     @GetMapping("/hands/{uuid}")
     public ResponseEntity<HandResponse> getHand(@PathVariable UUID uuid) {
         return handRepository.findByUuid(uuid)
@@ -93,6 +98,7 @@ public class HandController {
      * deduplicated to one entry per user (their personal best).
      * Sorted by moves ASC, time ASC.
      */
+    @Operation(summary = "All-time leaderboard for a specific deal", description = "Best session per user, sorted by moves then time. Max 50 entries.")
     @GetMapping("/hands/{uuid}/leaderboard")
     public ResponseEntity<List<LeaderboardEntry>> getHandLeaderboard(@PathVariable UUID uuid) {
         Hand hand = handRepository.findByUuid(uuid)

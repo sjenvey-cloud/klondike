@@ -5,6 +5,8 @@ import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.session.Session;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 
+@Tag(name = "Profile", description = "User profile, stats, records, password, and account management")
 @RestController
 @RequestMapping("/api/v1/profile")
 public class ProfileController {
@@ -34,6 +37,7 @@ public class ProfileController {
 
     // ── DEV-81: GET /api/v1/profile ───────────────────────────────────────
 
+    @Operation(summary = "Get the authenticated user's profile")
     @GetMapping
     public ResponseEntity<ProfileResponse> getProfile(Authentication auth) {
         User user = resolveUser(auth);
@@ -42,6 +46,7 @@ public class ProfileController {
 
     // ── DEV-82: PATCH /api/v1/profile ─────────────────────────────────────
 
+    @Operation(summary = "Update display name")
     @PatchMapping
     public ResponseEntity<ProfileResponse> patchProfile(
             @Valid @RequestBody PatchProfileRequest body,
@@ -56,6 +61,7 @@ public class ProfileController {
 
     // ── Change password: PATCH /api/v1/profile/password ──────────────────
 
+    @Operation(summary = "Change password")
     @PatchMapping("/password")
     public ResponseEntity<Void> changePassword(
             @Valid @RequestBody ChangePasswordRequest body,
@@ -69,6 +75,7 @@ public class ProfileController {
     // ── Delete account: DELETE /api/v1/profile ────────────────────────────
     // All user data is removed via ON DELETE CASCADE (V14 migration).
 
+    @Operation(summary = "Permanently delete account", description = "Requires password confirmation. All data removed via CASCADE.")
     @DeleteMapping
     public ResponseEntity<Void> deleteAccount(
             @Valid @RequestBody DeleteAccountRequest body,
@@ -88,6 +95,7 @@ public class ProfileController {
 
     // ── DEV-150: GET /api/v1/profile/stats ───────────────────────────────
 
+    @Operation(summary = "Get play statistics (games played, win rate, averages) by draw mode")
     @GetMapping("/stats")
     public ResponseEntity<StatsResponse> getStats(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
@@ -114,6 +122,7 @@ public class ProfileController {
 
     // ── DEV-151: GET /api/v1/profile/records ─────────────────────────────
 
+    @Operation(summary = "Get personal best records (fewest moves, fastest time)")
     @GetMapping("/records")
     public ResponseEntity<RecordsResponse> getRecords(Authentication auth) {
         int userId = (Integer) auth.getPrincipal();
