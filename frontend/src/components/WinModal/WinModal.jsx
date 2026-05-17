@@ -40,7 +40,7 @@ export function WinModal({ moves, timeFormatted, result, sessionUuid, onNewGame,
     setChallengeMsg(null);
     try {
       const [f, l] = await Promise.all([
-        getFriends().catch(() => []),
+        getFriends().then(r => r?.items ?? []).catch(() => []),
         getCustomLeagues().catch(() => []),
       ]);
       setFriends(Array.isArray(f) ? f : []);

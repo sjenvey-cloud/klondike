@@ -93,7 +93,7 @@ export function Friends() {
   // ── Initial data loads ─────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
-    getFriends().then(setFriends).catch(() => {});
+    getFriends().then(r => setFriends(r?.items ?? [])).catch(() => {});
     getSentInvites().then(setSentInvites).catch(() => {});
     getReceivedFriendRequests().then(setFriendRequests).catch(() => {});
 
@@ -112,7 +112,7 @@ export function Friends() {
 
   useEffect(() => {
     if (!user || tab !== 'Leagues' || leagueView !== 'list') return;
-    getLeague(friendsPeriod).then(setFriendsLeague).catch(() => {});
+    getLeague(friendsPeriod).then(r => setFriendsLeague(r?.items ?? [])).catch(() => {});
   }, [user, tab, leagueView, friendsPeriod]);
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export function Friends() {
       setPendingInvite(null);
       setInviteMsg(`You are now friends with ${name}!`);
       setTimeout(() => setInviteMsg(null), 4000);
-      getFriends().then(setFriends).catch(() => {});
+      getFriends().then(r => setFriends(r?.items ?? [])).catch(() => {});
     } catch {
       clearPendingInviteToken();
       setPendingInvite(null);
@@ -186,7 +186,7 @@ export function Friends() {
   const handleAcceptFriendRequest = useCallback(async (id, name) => {
     await acceptFriendRequest(id).catch(() => {});
     setFriendRequests(prev => prev.filter(r => r.id !== id));
-    getFriends().then(setFriends).catch(() => {});
+    getFriends().then(r => setFriends(r?.items ?? [])).catch(() => {});
     setInviteMsg(`You are now friends with ${name}!`);
     setTimeout(() => setInviteMsg(null), 4000);
   }, []);

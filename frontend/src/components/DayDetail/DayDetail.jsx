@@ -172,7 +172,7 @@ export function DayDetail({ date, onClose }) {
     setChallengeMsg(null);
     try {
       const [friends, leagues] = await Promise.all([
-        getFriends().catch(() => []),
+        getFriends().then(r => r?.items ?? []).catch(() => []),
         getCustomLeagues().catch(() => []),
       ]);
       setPickerFriends(Array.isArray(friends) ? friends : []);

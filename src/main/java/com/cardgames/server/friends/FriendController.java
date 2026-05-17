@@ -1,10 +1,14 @@
 package com.cardgames.server.friends;
 
 import com.cardgames.server.session.SessionRepository;
+import com.cardgames.server.shared.CursorUtil;
+import com.cardgames.server.shared.FriendCursor;
+import com.cardgames.server.shared.PagedResponse;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -93,18 +97,39 @@ public class FriendController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── DEV-157: GET /api/v1/friends ─────────────────────────────────────
+    // ── DEV-157 / DEV-232: GET /api/v1/friends ───────────────────────────
 
-    @Operation(summary = "List friends with today's activity", description = "Includes wins today and avatar URL for each friend.")
+    @Operation(summary = "List friends with today's activity",
+               description = "Cursor-paginated (keyset on created_at+id). Default limit=50. " +
+                             "Pass nextCursor from the previous response to advance pages.")
     @GetMapping
-    public ResponseEntity<List<FriendResponse>> listFriends(Authentication auth) {
+    public ResponseEntity<PagedResponse<FriendResponse>> listFriends(
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(required = false) String cursor,
+            Authentication auth) {
+
         int userId = (Integer) auth.getPrincipal();
-        List<Friend> friendships = friendRepository.findAllByUserId(userId);
+
+        // Fetch one extra row to detect whether another page exists
+        PageRequest pageable = PageRequest.of(0, limit + 1);
+
+        List<Friend> friendships;
+        if (cursor != null) {
+            FriendCursor fc = CursorUtil.decode(cursor, FriendCursor.class);
+            friendships = (fc != null)
+                ? friendRepository.findPageByUserIdAfter(userId, fc.createdAtDateTime(), fc.id(), pageable)
+                : friendRepository.findPageByUserId(userId, pageable);
+        } else {
+            friendships = friendRepository.findPageByUserId(userId, pageable);
+        }
+
+        boolean hasMore = friendships.size() > limit;
+        List<Friend> page = hasMore ? friendships.subList(0, limit) : friendships;
 
         LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
         LocalDateTime endOfToday   = startOfToday.plusDays(1);
 
-        List<FriendResponse> result = friendships.stream().map(f -> {
+        List<FriendResponse> items = page.stream().map(f -> {
             int friendId = f.otherUserId(userId);
             User friend = userRepository.findById(friendId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -118,7 +143,13 @@ public class FriendController {
             return new FriendResponse(friendId, friend.getDisplayName(), friend.getlasthand(), wonToday, friend.getAvatarUrl());
         }).collect(Collectors.toList());
 
-        return ResponseEntity.ok(result);
+        String nextCursor = null;
+        if (hasMore && !page.isEmpty()) {
+            Friend last = page.get(page.size() - 1);
+            nextCursor = CursorUtil.encode(new FriendCursor(last.getCreatedAt().toString(), last.getId()));
+        }
+
+        return ResponseEntity.ok(new PagedResponse<>(items, nextCursor, hasMore));
     }
 
     // ── DEV-158: DELETE /api/v1/friends/{userId} ─────────────────────────

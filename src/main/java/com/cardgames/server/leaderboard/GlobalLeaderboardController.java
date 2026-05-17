@@ -2,6 +2,9 @@ package com.cardgames.server.leaderboard;
 
 import com.cardgames.server.session.Session;
 import com.cardgames.server.session.SessionRepository;
+import com.cardgames.server.shared.CursorUtil;
+import com.cardgames.server.shared.OffsetCursor;
+import com.cardgames.server.shared.PagedResponse;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -77,25 +80,41 @@ public class GlobalLeaderboardController {
      *
      * Returns up to 50 entries, one per user (their best session).
      */
-    @Operation(summary = "Global leaderboard", description = "Best session per user for the given period/drawMode/sort. Max 50 entries.")
+    @Operation(summary = "Global leaderboard",
+               description = "Best session per user for the given period/drawMode/sort. " +
+                             "Cursor-paginated (offset-based). Default limit=50.")
     @GetMapping("/leaderboard/global")
-    public ResponseEntity<List<GlobalLeaderboardEntry>> getGlobalLeaderboard(
+    public ResponseEntity<PagedResponse<GlobalLeaderboardEntry>> getGlobalLeaderboard(
             @RequestParam(defaultValue = "weekly") String period,
             @RequestParam(defaultValue = "draw3")  String drawMode,
-            @RequestParam(defaultValue = "moves")  String sort) {
+            @RequestParam(defaultValue = "moves")  String sort,
+            @RequestParam(defaultValue = "50")     int limit,
+            @RequestParam(required = false)        String cursor) {
+
+        int offset = 0;
+        if (cursor != null) {
+            OffsetCursor oc = CursorUtil.decode(cursor, OffsetCursor.class);
+            if (oc != null) offset = oc.offset();
+        }
 
         LocalDateTime since = sinceFor(period);
 
+        // Fetch limit+1 to detect whether another page exists
         List<Session> sessions = "time".equals(sort)
-            ? sessionRepo.findGlobalLeaderboardByTime(drawMode, since)
-            : sessionRepo.findGlobalLeaderboardByMoves(drawMode, since);
+            ? sessionRepo.findGlobalLeaderboardByTimePage(drawMode, since, limit + 1, offset)
+            : sessionRepo.findGlobalLeaderboardByMovesPage(drawMode, since, limit + 1, offset);
 
-        List<GlobalLeaderboardEntry> board = new ArrayList<>();
-        int rank = 1;
-        for (Session s : sessions) {
-            board.add(toEntry(rank++, s));
+        boolean hasMore = sessions.size() > limit;
+        List<Session> page = hasMore ? sessions.subList(0, limit) : sessions;
+
+        List<GlobalLeaderboardEntry> items = new ArrayList<>();
+        int rank = offset + 1;
+        for (Session s : page) {
+            items.add(toEntry(rank++, s));
         }
-        return ResponseEntity.ok(board);
+
+        String nextCursor = hasMore ? CursorUtil.encode(new OffsetCursor(offset + limit)) : null;
+        return ResponseEntity.ok(new PagedResponse<>(items, nextCursor, hasMore));
     }
 
     // ── DEV-224: Caller's rank ────────────────────────────────────────────

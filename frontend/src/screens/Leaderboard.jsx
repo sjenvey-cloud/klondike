@@ -43,7 +43,7 @@ export function Leaderboard() {
     setLoading(true);
     setError(null);
     const boardPromise = getGlobalLeaderboard(period, drawMode, sort)
-      .then(data => setBoard(Array.isArray(data) ? data : []))
+      .then(data => setBoard(Array.isArray(data?.items) ? data.items : []))
       .catch(() => { setBoard([]); setError('Failed to load leaderboard.'); });
 
     const rankPromise = user?.uuid

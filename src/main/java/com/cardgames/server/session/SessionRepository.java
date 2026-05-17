@@ -205,6 +205,32 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     List<Session> findGlobalLeaderboardByTime(
         @Param("drawMode") String drawMode, @Param("since") LocalDateTime since);
 
+    // DEV-232: paginated variants with LIMIT + OFFSET for cursor-based pagination
+
+    @Query(value =
+        "SELECT * FROM (" +
+        "  SELECT DISTINCT ON (user_id) * FROM sessions " +
+        "  WHERE draw_mode = :drawMode AND is_ranked = true AND status = 'won' " +
+        "    AND completed_at >= :since " +
+        "  ORDER BY user_id, moves ASC, time_seconds ASC" +
+        ") best ORDER BY moves ASC, time_seconds ASC LIMIT :limit OFFSET :offset",
+        nativeQuery = true)
+    List<Session> findGlobalLeaderboardByMovesPage(
+        @Param("drawMode") String drawMode, @Param("since") LocalDateTime since,
+        @Param("limit") int limit, @Param("offset") int offset);
+
+    @Query(value =
+        "SELECT * FROM (" +
+        "  SELECT DISTINCT ON (user_id) * FROM sessions " +
+        "  WHERE draw_mode = :drawMode AND is_ranked = true AND status = 'won' " +
+        "    AND completed_at >= :since " +
+        "  ORDER BY user_id, time_seconds ASC, moves ASC" +
+        ") best ORDER BY time_seconds ASC, moves ASC LIMIT :limit OFFSET :offset",
+        nativeQuery = true)
+    List<Session> findGlobalLeaderboardByTimePage(
+        @Param("drawMode") String drawMode, @Param("since") LocalDateTime since,
+        @Param("limit") int limit, @Param("offset") int offset);
+
     // ── DEV-224: Rank computation ──────────────────────────────────────────
     // Step 1 — fetch the user's best qualifying session for the period+sort.
 

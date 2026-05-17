@@ -5,6 +5,9 @@ import com.cardgames.server.friends.FriendRepository;
 import com.cardgames.server.session.SessionRepository;
 import com.cardgames.server.user.User;
 import com.cardgames.server.user.UserRepository;
+import com.cardgames.server.shared.CursorUtil;
+import com.cardgames.server.shared.OffsetCursor;
+import com.cardgames.server.shared.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -37,10 +40,14 @@ public class LeagueController {
      * GET /api/v1/leagues?period=daily|weekly|monthly|alltime
      * DEV-164: ranked wins + best moves for the authenticated user and all their friends.
      */
-    @Operation(summary = "Friends league leaderboard", description = "Ranked wins for the caller and all their friends. Period: daily/weekly/monthly/alltime.")
+    @Operation(summary = "Friends league leaderboard",
+               description = "Ranked wins for the caller and all their friends. " +
+                             "Period: daily/weekly/monthly/alltime. Cursor-paginated (offset-based). Default limit=50.")
     @GetMapping
-    public ResponseEntity<List<LeagueEntry>> getLeague(
+    public ResponseEntity<PagedResponse<LeagueEntry>> getLeague(
             @RequestParam(defaultValue = "weekly") String period,
+            @RequestParam(defaultValue = "50")     int limit,
+            @RequestParam(required = false)        String cursor,
             Authentication auth) {
 
         int userId = (Integer) auth.getPrincipal();
@@ -78,14 +85,26 @@ public class LeagueController {
             .comparingInt(LeagueEntry::wins).reversed()
             .thenComparingInt(e -> (e.bestMoves() != null ? e.bestMoves() : Integer.MAX_VALUE)));
 
-        // Assign ranks
+        // Assign global ranks before slicing
         List<LeagueEntry> ranked = new ArrayList<>();
         for (int i = 0; i < entries.size(); i++) {
             LeagueEntry e = entries.get(i);
             ranked.add(new LeagueEntry(i + 1, e.userId(), e.displayName(), e.wins(), e.bestMoves()));
         }
 
-        return ResponseEntity.ok(ranked);
+        // Apply cursor offset
+        int offset = 0;
+        if (cursor != null) {
+            OffsetCursor oc = CursorUtil.decode(cursor, OffsetCursor.class);
+            if (oc != null) offset = Math.max(0, Math.min(oc.offset(), ranked.size()));
+        }
+
+        List<LeagueEntry> pageSlice = ranked.subList(offset, Math.min(offset + limit + 1, ranked.size()));
+        boolean hasMore = pageSlice.size() > limit;
+        List<LeagueEntry> items = hasMore ? pageSlice.subList(0, limit) : pageSlice;
+
+        String nextCursor = hasMore ? CursorUtil.encode(new OffsetCursor(offset + limit)) : null;
+        return ResponseEntity.ok(new PagedResponse<>(items, nextCursor, hasMore));
     }
 
     private LocalDateTime windowStart(String period) {
