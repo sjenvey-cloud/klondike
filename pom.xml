@@ -68,6 +68,13 @@
 			<artifactId>spring-boot-starter-cache</artifactId>
 		</dependency>
 
+		<!-- AWS SDK S3 — presigned upload URLs for avatars (DEV-229) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>2.26.31</version>
+		</dependency>
+
 		<!-- JJWT — RS256 sign and verify -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>

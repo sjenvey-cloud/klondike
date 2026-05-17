@@ -1,8 +1,8 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { PreferencesContext } from '../contexts/PreferencesContext';
-import { getProfile, patchProfile, getProfileHistory, getProfileStats, getProfileRecords, changePassword, deleteAccount } from '../services/api';
+import { getProfile, patchProfile, getProfileHistory, getProfileStats, getProfileRecords, changePassword, deleteAccount, getMyProfile, requestAvatarUpload, confirmAvatarUpload } from '../services/api';
 import { Calendar } from '../components/Calendar/Calendar';
 import { DayDetail } from '../components/DayDetail/DayDetail';
 import './Profile.css';
@@ -64,6 +64,12 @@ export function Profile() {
   const [deleteError, setDeleteError]         = useState('');
   const [deleteLoading, setDeleteLoading]     = useState(false);
 
+  // Avatar (DEV-230)
+  const [avatarUrl, setAvatarUrl]           = useState(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError]       = useState('');
+  const avatarInputRef                      = useRef(null);
+
   const fetchHistory = (y, m) => {
     if (!user) return;
     const today = new Date();
@@ -77,6 +83,7 @@ export function Profile() {
 
   useEffect(() => {
     if (user) {
+      getMyProfile().then(p => { if (p?.avatarUrl) setAvatarUrl(p.avatarUrl); }).catch(() => {});
       getProfile(user.id).then(() => {}).catch(() => {});
       fetchHistory(calYear, calMonth);
       getProfileStats().then(setStats).catch(() => {});
@@ -134,6 +141,32 @@ export function Profile() {
     updateDisplayName(nameInput.trim());
   };
 
+  const handleAvatarChange = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError('Image must be under 2 MB.');
+      return;
+    }
+    setAvatarUploading(true);
+    setAvatarError('');
+    try {
+      const { uploadUrl, publicUrl } = await requestAvatarUpload(file.type);
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+      await confirmAvatarUpload(publicUrl);
+      setAvatarUrl(publicUrl);
+    } catch {
+      setAvatarError('Upload failed. Please try again.');
+    } finally {
+      setAvatarUploading(false);
+      e.target.value = '';
+    }
+  }, []);
+
   if (!user) {
     return (
       <div className="screen profile-screen">
@@ -155,9 +188,36 @@ export function Profile() {
     );
   }
 
+  const initials = user.displayName
+    ? user.displayName.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : '?';
+
   return (
     <div className="screen profile-screen">
-      <h2 className="section-title">{user.displayName}</h2>
+      <div className="profile-header">
+        <div
+          className={`profile-avatar${avatarUploading ? ' profile-avatar--uploading' : ''}`}
+          onClick={() => !avatarUploading && avatarInputRef.current?.click()}
+          title="Change avatar"
+        >
+          {avatarUrl
+            ? <img src={avatarUrl} className="profile-avatar-img" alt="avatar" onError={() => setAvatarUrl(null)} />
+            : <span className="profile-avatar-initials">{initials}</span>
+          }
+          <span className="profile-avatar-overlay">
+            {avatarUploading ? '…' : '📷'}
+          </span>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            style={{ display: 'none' }}
+            onChange={handleAvatarChange}
+          />
+        </div>
+        <h2 className="profile-header-name">{user.displayName}</h2>
+        {avatarError && <p className="profile-avatar-error">{avatarError}</p>}
+      </div>
 
       {/* ── Tab bar ──────────────────────────────────────────────────── */}
       <div className="profile-tabs">

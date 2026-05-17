@@ -499,17 +499,29 @@ export function Friends() {
           {/* Friends list */}
           <div className="friends-list">
             {friends.length === 0 && <p className="empty-state">No friends yet. Invite someone!</p>}
-            {friends.map(f => (
-              <div key={f.userId} className="friend-row">
-                <div className="friend-info">
-                  <span className="friend-name">{f.displayName}</span>
-                  {f.gamesCompletedToday > 0 && (
-                    <span className="friend-stat">{f.gamesCompletedToday} won today</span>
-                  )}
+            {friends.map(f => {
+              const initials = f.displayName
+                ? f.displayName.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()
+                : '?';
+              return (
+                <div key={f.userId} className="friend-row">
+                  <div className="friend-avatar-bubble">
+                    {f.avatarUrl
+                      ? <img src={f.avatarUrl} className="friend-avatar-img" alt={f.displayName} onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                      : null
+                    }
+                    <span className="friend-avatar-initials" style={f.avatarUrl ? { display: 'none' } : {}}>{initials}</span>
+                  </div>
+                  <div className="friend-info">
+                    <span className="friend-name">{f.displayName}</span>
+                    {f.gamesCompletedToday > 0 && (
+                      <span className="friend-stat">{f.gamesCompletedToday} won today</span>
+                    )}
+                  </div>
+                  <button className="btn-danger-sm" onClick={() => handleRemoveFriend(f.userId)}>Remove</button>
                 </div>
-                <button className="btn-danger-sm" onClick={() => handleRemoveFriend(f.userId)}>Remove</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

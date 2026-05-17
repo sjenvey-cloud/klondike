@@ -109,7 +109,7 @@ public class FriendController {
                 .filter(s -> com.cardgames.server.session.Session.STATUS_WON.equals(s.getStatus()))
                 .count();
 
-            return new FriendResponse(friendId, friend.getDisplayName(), friend.getlasthand(), wonToday);
+            return new FriendResponse(friendId, friend.getDisplayName(), friend.getlasthand(), wonToday, friend.getAvatarUrl());
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(result);

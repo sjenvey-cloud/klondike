@@ -117,8 +117,15 @@ export const getMyDailyRank = (date, userId, sort = 'moves', drawMode = 'draw3')
   get(`/leaderboard/daily/${date}/${userId}/${sort}?drawMode=${drawMode}`);
 
 // ── Profile ───────────────────────────────────────────────────────────────
-export const getProfile   = (userId)       => get(`/profile/${userId}`);
-export const patchProfile = (userId, body) => patch(`/profile/${userId}`, body);
+export const getProfile    = (userId)       => get(`/profile/${userId}`);
+export const patchProfile  = (userId, body) => patch(`/profile/${userId}`, body);
+export const getMyProfile  = ()             => get('/profile');
+
+// ── Avatar (DEV-229) ──────────────────────────────────────────────────────
+// Step 1: get a presigned S3 PUT URL
+export const requestAvatarUpload = (contentType) => post('/profile/avatar', { contentType });
+// Step 2 (after PUT to S3): persist the CDN URL on the account
+export const confirmAvatarUpload = (avatarUrl)   => patch('/profile/avatar', { avatarUrl });
 
 // ── Friends ───────────────────────────────────────────────────────────────
 export const getFriends         = ()           => get('/friends');

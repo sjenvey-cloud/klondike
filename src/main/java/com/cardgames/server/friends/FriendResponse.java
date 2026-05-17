@@ -7,5 +7,6 @@ public record FriendResponse(
     int    userId,
     String displayName,
     Date   lastActive,
-    int    gamesCompletedToday
+    int    gamesCompletedToday,
+    String avatarUrl
 ) {}
