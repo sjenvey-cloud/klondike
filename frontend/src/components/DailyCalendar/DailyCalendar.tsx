@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import { AuthContext } from '../../App';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 import {
   getDailyCalendar,
   getDailyLeaderboard,
@@ -58,7 +58,7 @@ interface DailyCalendarProps {
 }
 
 export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps): React.JSX.Element {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
 
   const today = useMemo(() => new Date(), []);
   const todayKey = isoDate(today.getFullYear(), today.getMonth(), today.getDate());

@@ -1,6 +1,6 @@
-import React, { useContext } from 'react';
-import { ThemeContext } from '../App';
-import { PreferencesContext } from '../contexts/PreferencesContext';
+import React from 'react';
+import { useTheme } from '../hooks/useTheme';
+import { usePreferences } from '../hooks/usePreferences';
 import './Settings.css';
 
 interface ThemePreview {
@@ -34,8 +34,8 @@ const CARD_DESIGNS = [
 ];
 
 export function Settings(): React.JSX.Element {
-  const { theme, setTheme } = useContext(ThemeContext);
-  const { preferences, updatePreference } = useContext(PreferencesContext);
+  const { theme, setTheme } = useTheme();
+  const { preferences, updatePreference } = usePreferences();
 
   const drawMode        = preferences?.drawModeDefault   ?? 'draw3';
   const cardBackColour  = preferences?.cardBackColour    ?? '#1c2333';

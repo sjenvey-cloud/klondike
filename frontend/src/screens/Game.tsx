@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App';
-import { PreferencesContext } from '../contexts/PreferencesContext';
+import { useAuth } from '../hooks/useAuth';
+import { usePreferences } from '../hooks/usePreferences';
 import { useGame } from '../hooks/useGame';
 import { useTimer } from '../hooks/useTimer';
 import { Board } from '../components/Board/Board';
@@ -47,8 +47,8 @@ export function Game({
   onShowLeaderboard = null,
   onDailyWin = null,
 }: GameProps): React.JSX.Element {
-  const { user }        = useContext(AuthContext);
-  const { preferences } = useContext(PreferencesContext);
+  const { user }        = useAuth();
+  const { preferences } = usePreferences();
   const location        = useLocation();
   const navigate        = useNavigate();
   // Daily games use a separate sessionStorage key so they never collide with

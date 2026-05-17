@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { AuthContext } from '../../App';
+import { useAuth } from '../../hooks/useAuth';
 
 export function AuthGuard({ children }: { children: React.ReactNode }): React.JSX.Element {
-  const { user, loading } = useContext(AuthContext);
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (

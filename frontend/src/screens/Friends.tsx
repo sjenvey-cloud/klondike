@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App';
+import { useAuth } from '../hooks/useAuth';
 import {
   getFriends, getLeague,
   createFriendInvite, acceptFriendInvite, removeFriend,
@@ -58,7 +58,7 @@ interface PendingInvite {
 }
 
 export function Friends(): React.JSX.Element {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<FriendsTab>('Friends');
 

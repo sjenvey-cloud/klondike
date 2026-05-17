@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useContext, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../App';
+import { useAuth } from '../../hooks/useAuth';
 import {
   getSessionsByDate, getHandLeaderboard,
   createSocialChallenge, getFriends, getCustomLeagues,
@@ -74,7 +74,7 @@ interface DayDetailProps {
 }
 
 export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element | null {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   // Panel 1 state

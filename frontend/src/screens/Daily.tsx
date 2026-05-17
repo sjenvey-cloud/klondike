@@ -1,7 +1,7 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App';
-import { PreferencesContext } from '../contexts/PreferencesContext';
+import { useAuth } from '../hooks/useAuth';
+import { usePreferences } from '../hooks/usePreferences';
 import { getDaily, getDailyLeaderboard, getMyDailyRank } from '../services/api';
 import type { DailyHandResponse, DailyLeaderboardEntry } from '../types/api';
 import { localDateString } from '../services/dateUtils';
@@ -39,8 +39,8 @@ type DailyView = 'board' | 'leaderboard' | 'calendar';
 type DailyWinDest = 'leaderboard' | 'calendar' | 'game' | 'home' | 'profile' | 'replay';
 
 export function Daily(): React.JSX.Element {
-  const { user }        = useContext(AuthContext);
-  const { preferences } = useContext(PreferencesContext);
+  const { user }        = useAuth();
+  const { preferences } = usePreferences();
   const navigate        = useNavigate();
 
   const [daily,      setDaily]      = useState<DailyResponse | null>(null);

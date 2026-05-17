@@ -1,13 +1,13 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App';
+import { useAuth } from '../hooks/useAuth';
 import { acceptPendingInvite } from './AcceptInvite';
 import './Login.css';
 
 type LoginTab = 'signin' | 'register';
 
 export function Login(): React.JSX.Element {
-  const { login, register } = useContext(AuthContext);
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
   const [tab, setTab]           = useState<LoginTab>('signin');

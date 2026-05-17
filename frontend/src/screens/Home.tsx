@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App';
+import { useAuth } from '../hooks/useAuth';
 import { getProfile } from '../services/api';
 import './Home.css';
 
@@ -14,7 +14,7 @@ interface HomeStats {
 }
 
 export function Home(): React.JSX.Element {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<HomeStats | null>(null);
   const [drawMode, setDrawModeState] = useState<string>(

@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AuthContext } from '../App';
-import { PreferencesContext } from '../contexts/PreferencesContext';
+import { useAuth } from '../hooks/useAuth';
+import { usePreferences } from '../hooks/usePreferences';
 import {
   patchProfile, getProfileHistory, getProfileStats, getProfileRecords,
   changePassword, deleteAccount, getMyProfile, requestAvatarUpload, confirmAvatarUpload,
@@ -41,8 +41,8 @@ interface HistoryEntry {
 }
 
 export function Profile(): React.JSX.Element {
-  const { user, logout, updateDisplayName } = useContext(AuthContext);
-  const { preferences, updatePreference }   = useContext(PreferencesContext);
+  const { user, logout, updateDisplayName } = useAuth();
+  const { preferences, updatePreference }   = usePreferences();
 
   // Persist active tab in URL (?tab=calendar) so the browser back button
   // restores the correct tab when the user navigates away and returns.

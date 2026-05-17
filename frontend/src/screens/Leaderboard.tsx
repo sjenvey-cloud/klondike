@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useState, useCallback } from 'react';
-import { AuthContext } from '../App';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { getGlobalLeaderboard, getGlobalRank } from '../services/api';
 import type { GlobalLeaderboardEntry } from '../types/api';
 import './Leaderboard.css';
@@ -27,7 +27,7 @@ const PERIODS = [
  * own rank via a pinned banner at the top if they are not in the visible list.
  */
 export function Leaderboard(): React.JSX.Element {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
 
   const [period,   setPeriod]   = useState('weekly');
   const [drawMode, setDrawMode] = useState<string>(

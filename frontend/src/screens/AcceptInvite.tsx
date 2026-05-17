@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AuthContext } from '../App';
+import { useAuth } from '../hooks/useAuth';
 import { acceptFriendInvite, previewInvite } from '../services/api';
 import './AcceptInvite.css';
 
@@ -29,7 +29,7 @@ export async function acceptPendingInvite(): Promise<boolean> {
 type InviteStatus = 'idle' | 'preview_loading' | 'preview_ready' | 'accepting' | 'success' | 'error';
 
 export function AcceptInvite(): React.JSX.Element {
-  const { user, loading } = useContext(AuthContext);
+  const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');

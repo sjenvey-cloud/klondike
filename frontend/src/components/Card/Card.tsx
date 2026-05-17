@@ -1,7 +1,7 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { getRank, getSuit, rankLabel } from '../../services/gameLogic';
 import type { SuitInfo } from '../../services/gameLogic';
-import { PreferencesContext } from '../../App';
+import { usePreferences } from '../../hooks/usePreferences';
 import './Card.css';
 
 const SUIT_CODE: Record<string, string> = { clubs: 'C', diamonds: 'D', hearts: 'H', spades: 'S' };
@@ -209,7 +209,7 @@ interface CardProps {
 }
 
 export function Card({ card, faceUp, selected, onClick, design: designProp }: CardProps): React.JSX.Element {
-  const { preferences } = useContext(PreferencesContext);
+  const { preferences } = usePreferences();
   const cardStyle = preferences?.cardStyle ?? null;
   const design    = designProp ?? preferences?.cardFaceDesign ?? 'standard';
 
