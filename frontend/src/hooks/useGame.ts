@@ -1,0 +1,520 @@
+import { useReducer, useState, useRef, useCallback, useEffect } from 'react';
+import {
+  dealKlondike, canPlaceOnTableau, canPlaceOnFoundation,
+  isGameWon, foundationIndex, getRank,
+} from '../services/gameLogic';
+import type { CardInPile, BoardState } from '../services/gameLogic';
+import { createHand, createSession, completeSession, abandonSession } from '../services/api';
+import type { CompleteSessionResponse } from '../types/api';
+
+// ── DEV-66: Session persistence ────────────────────────────────────────────
+const SESSION_KEY       = 'klondike_session';
+export const DAILY_SESSION_KEY = 'klondike_daily_session';
+
+interface PersistedSession {
+  sessionId: string;
+  handId: string;
+  gameState: BoardState;
+  moves: number;
+  turns: string[];
+  startTime: number;
+}
+
+function saveSession(
+  sessionId: string,
+  handId: string,
+  gameState: GameState,
+  moves: number,
+  turns: string[],
+  startTime: number,
+  key = SESSION_KEY,
+): void {
+  try {
+    sessionStorage.setItem(key, JSON.stringify({
+      sessionId,
+      handId,
+      gameState: {
+        tableau:     gameState.tableau,
+        stock:       gameState.stock,
+        waste:       gameState.waste,
+        foundations: gameState.foundations,
+      },
+      moves,
+      turns,
+      startTime,
+    }));
+  } catch { /* storage full — ignore */ }
+}
+
+function loadSession(key = SESSION_KEY): PersistedSession | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as PersistedSession) : null;
+  } catch { return null; }
+}
+
+function clearSession(key = SESSION_KEY): void {
+  sessionStorage.removeItem(key);
+}
+
+// Kept for any external callers (currently none, but exported for safety).
+export function clearSavedSession(): void {
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
+// ── Reducer types ─────────────────────────────────────────────────────────
+
+interface GameState extends BoardState {
+  moves: number;
+  turns: string[];
+  isWon: boolean;
+  drawMode: string;
+  history: Array<Omit<BoardState, 'foundations'> & { foundations: number[][]; turns: string[] }>;
+}
+
+type GameAction =
+  | { type: 'DEAL'; payload: Partial<GameState> }
+  | { type: 'RESTORE'; payload: Partial<GameState> }
+  | { type: 'DRAW' }
+  | { type: 'WASTE_TO_TABLEAU'; col: number }
+  | { type: 'WASTE_TO_FOUNDATION' }
+  | { type: 'TABLEAU_TO_FOUNDATION'; fromCol: number }
+  | { type: 'TABLEAU_TO_TABLEAU'; fromCol: number; fromIdx: number; toCol: number }
+  | { type: 'AUTO_COMPLETE_STEP' }
+  | { type: 'FOUNDATION_TO_TABLEAU'; fi: number; toCol: number }
+  | { type: 'UNDO' };
+
+type HistorySnapshot = Pick<GameState, 'tableau' | 'stock' | 'waste' | 'foundations' | 'turns'>;
+
+const initial: GameState = {
+  tableau: [], stock: [], waste: [], foundations: [],
+  moves: 0, turns: [], isWon: false, drawMode: 'draw3',
+  history: [],
+};
+
+function reducer(state: GameState, action: GameAction): GameState {
+  switch (action.type) {
+
+    case 'DEAL':
+      return { ...initial, ...action.payload };
+
+    case 'RESTORE':
+      return { ...initial, ...action.payload };
+
+    case 'DRAW': {
+      let stock = [...state.stock];
+      let waste = [...state.waste];
+      if (stock.length === 0) {
+        stock = [...waste].map(c => ({ card: c.card, faceUp: false }));
+        waste = [];
+      } else {
+        const count = Math.min(3, stock.length);
+        for (let i = 0; i < count; i++) {
+          const c = stock.shift()!;
+          waste.push({ card: c.card, faceUp: true });
+        }
+      }
+      return { ...state, stock, waste, moves: state.moves + 1, turns: [...state.turns, 'draw'] };
+    }
+
+    case 'WASTE_TO_TABLEAU': {
+      const { col } = action;
+      if (!state.waste.length) return state;
+      const top = state.waste[state.waste.length - 1];
+      const tableau = state.tableau.map(p => [...p]);
+      if (!canPlaceOnTableau(top.card, tableau[col])) return state;
+      tableau[col].push({ card: top.card, faceUp: true });
+      return {
+        ...state,
+        waste: state.waste.slice(0, -1),
+        tableau,
+        moves: state.moves + 1,
+        turns: [...state.turns, `wt:${col}`],
+      };
+    }
+
+    case 'WASTE_TO_FOUNDATION': {
+      if (!state.waste.length) return state;
+      const top = state.waste[state.waste.length - 1];
+      const fi = foundationIndex(top.card);
+      const foundations = state.foundations.map(p => [...p]);
+      if (!canPlaceOnFoundation(top.card, foundations[fi])) return state;
+      foundations[fi].push(top.card);
+      return {
+        ...state,
+        waste: state.waste.slice(0, -1),
+        foundations,
+        isWon: isGameWon(foundations),
+        moves: state.moves + 1,
+        turns: [...state.turns, 'wf'],
+      };
+    }
+
+    case 'TABLEAU_TO_FOUNDATION': {
+      const { fromCol } = action;
+      const tableau = state.tableau.map(p => [...p]);
+      const pile = tableau[fromCol];
+      if (!pile.length || !pile[pile.length - 1].faceUp) return state;
+      const top = pile[pile.length - 1];
+      const fi = foundationIndex(top.card);
+      const foundations = state.foundations.map(p => [...p]);
+      if (!canPlaceOnFoundation(top.card, foundations[fi])) return state;
+      tableau[fromCol] = pile.slice(0, -1);
+      if (tableau[fromCol].length > 0) {
+        const last = tableau[fromCol].length - 1;
+        if (!tableau[fromCol][last].faceUp) {
+          tableau[fromCol][last] = { ...tableau[fromCol][last], faceUp: true };
+        }
+      }
+      foundations[fi].push(top.card);
+      return {
+        ...state,
+        tableau,
+        foundations,
+        isWon: isGameWon(foundations),
+        moves: state.moves + 1,
+        turns: [...state.turns, `tf:${fromCol}`],
+      };
+    }
+
+    case 'TABLEAU_TO_TABLEAU': {
+      const { fromCol, fromIdx, toCol } = action;
+      const tableau = state.tableau.map(p => [...p]);
+      const fromPile = tableau[fromCol];
+      if (fromIdx >= fromPile.length || !fromPile[fromIdx].faceUp) return state;
+      const stack = fromPile.slice(fromIdx);
+      if (!canPlaceOnTableau(stack[0].card, tableau[toCol])) return state;
+      tableau[fromCol] = fromPile.slice(0, fromIdx);
+      if (tableau[fromCol].length > 0) {
+        const last = tableau[fromCol].length - 1;
+        if (!tableau[fromCol][last].faceUp) {
+          tableau[fromCol][last] = { ...tableau[fromCol][last], faceUp: true };
+        }
+      }
+      tableau[toCol] = [...tableau[toCol], ...stack];
+      return {
+        ...state,
+        tableau,
+        moves: state.moves + 1,
+        turns: [...state.turns, `tt:${fromCol}:${fromIdx}:${toCol}`],
+      };
+    }
+
+    case 'AUTO_COMPLETE_STEP': {
+      const tableau    = state.tableau.map(p => [...p]);
+      const foundations = state.foundations.map(p => [...p]);
+
+      // Phase 1: direct foundation moves
+      let best: { col: number; fi: number; rank: number } | null = null;
+      for (let col = 0; col < tableau.length; col++) {
+        const pile = tableau[col];
+        if (!pile.length) continue;
+        const top = pile[pile.length - 1];
+        const fi  = foundationIndex(top.card);
+        if (canPlaceOnFoundation(top.card, foundations[fi])) {
+          const rank = getRank(top.card);
+          if (best === null || rank < best.rank) {
+            best = { col, fi, rank };
+          }
+        }
+      }
+
+      if (best !== null) {
+        const { col, fi } = best;
+        const top = tableau[col][tableau[col].length - 1];
+        foundations[fi].push(top.card);
+        tableau[col] = tableau[col].slice(0, -1);
+        return {
+          ...state,
+          tableau,
+          foundations,
+          isWon: isGameWon(foundations),
+          moves: state.moves + 1,
+          turns: [...state.turns, `tf:${col}`],
+        };
+      }
+
+      // Phase 2: expose a buried needed card
+      const suitOffset = [0, 13, 26, 39];
+      const needed = [0, 1, 2, 3]
+        .map(fi => ({
+          fi,
+          rank: foundations[fi].length + 1,
+          card: suitOffset[fi] + foundations[fi].length + 1,
+        }))
+        .filter(n => n.rank <= 13)
+        .sort((a, b) => a.rank - b.rank);
+
+      for (const { card: neededCard } of needed) {
+        for (let col = 0; col < tableau.length; col++) {
+          const pile = tableau[col];
+          const idx  = pile.findIndex(c => c.card === neededCard);
+          if (idx < 0 || idx === pile.length - 1) continue;
+
+          const topCard = pile[pile.length - 1];
+          const fromIdx = pile.length - 1;
+          for (let toCol = 0; toCol < tableau.length; toCol++) {
+            if (toCol === col) continue;
+            if (canPlaceOnTableau(topCard.card, tableau[toCol])) {
+              tableau[col]  = pile.slice(0, fromIdx);
+              tableau[toCol] = [...tableau[toCol], { card: topCard.card, faceUp: true }];
+              return {
+                ...state,
+                tableau,
+                moves: state.moves + 1,
+                turns: [...state.turns, `tt:${col}:${fromIdx}:${toCol}`],
+              };
+            }
+          }
+          break;
+        }
+      }
+
+      return state;
+    }
+
+    case 'FOUNDATION_TO_TABLEAU': {
+      const { fi, toCol } = action;
+      const foundations = state.foundations.map(p => [...p]);
+      if (foundations[fi].length === 0) return state;
+      const card = foundations[fi][foundations[fi].length - 1];
+      const tableau = state.tableau.map(p => [...p]);
+      if (!canPlaceOnTableau(card, tableau[toCol])) return state;
+      foundations[fi].pop();
+      tableau[toCol].push({ card, faceUp: true });
+      return {
+        ...state,
+        foundations,
+        tableau,
+        moves: state.moves + 1,
+        turns: [...state.turns, `ft:${fi}:${toCol}`],
+        isWon: isGameWon(foundations),
+      };
+    }
+
+    default:
+      return state;
+  }
+}
+
+// ── History / undo wrapper ────────────────────────────────────────────────
+
+const UNDO_TRACKED = new Set([
+  'DRAW', 'WASTE_TO_TABLEAU', 'WASTE_TO_FOUNDATION',
+  'TABLEAU_TO_TABLEAU', 'TABLEAU_TO_FOUNDATION', 'FOUNDATION_TO_TABLEAU',
+]);
+
+function historyReducer(state: GameState, action: GameAction): GameState {
+  if (action.type === 'UNDO') {
+    const history = state.history || [];
+    if (history.length === 0) return state;
+    const prev = history[history.length - 1];
+    return {
+      ...state,
+      ...prev,
+      history: history.slice(0, -1),
+      moves: state.moves + 1,
+    };
+  }
+
+  const next = reducer(state, action);
+
+  if (action.type === 'DEAL' || action.type === 'RESTORE') {
+    return { ...next, history: [] };
+  }
+
+  if (UNDO_TRACKED.has(action.type) && next !== state) {
+    const snapshot: HistorySnapshot = {
+      tableau:     state.tableau,
+      stock:       state.stock,
+      waste:       state.waste,
+      foundations: state.foundations,
+      turns:       state.turns,
+    };
+    return { ...next, history: [...(state.history || []), snapshot] };
+  }
+
+  return next;
+}
+
+// ── canAutoComplete helper ─────────────────────────────────────────────────
+
+function checkCanAutoComplete(state: GameState): boolean {
+  if (!state.tableau?.length) return false;
+  if (state.stock.length > 0 || state.waste.length > 0) return false;
+  return state.tableau.every(pile => pile.every(c => c.faceUp));
+}
+
+// ── StartGame options ─────────────────────────────────────────────────────
+
+export interface StartGameOptions {
+  existingSessionId?: string;
+  isDaily?: boolean;
+  dailyDate?: string | null;
+  isRanked?: boolean;
+}
+
+// ── Hook return type ──────────────────────────────────────────────────────
+
+export interface UseGameReturn extends GameState {
+  sessionId: string | null;
+  handId: string | null;
+  loading: boolean;
+  canAutoComplete: boolean;
+  canUndo: boolean;
+  startTimeRef: React.MutableRefObject<number | null>;
+  startGame: (handOverride?: { uuid: string; cards: number[] } | null, drawMode?: string, opts?: StartGameOptions) => Promise<void>;
+  resumeGame: () => boolean;
+  hasSavedSession: (forHandId?: string | null) => boolean;
+  draw: () => void;
+  wasteToTableau: (col: number) => void;
+  wasteToFoundation: () => void;
+  tableauToTableau: (fromCol: number, fromIdx: number, toCol: number) => void;
+  tableauToFoundation: (fromCol: number) => void;
+  foundationToTableau: (fi: number, toCol: number) => void;
+  autoComplete: () => void;
+  undo: () => void;
+  finishGame: () => Promise<CompleteSessionResponse>;
+  abandon: () => Promise<void>;
+}
+
+// ── Hook ──────────────────────────────────────────────────────────────────
+
+export function useGame(userId: number | null, sessionKey = SESSION_KEY): UseGameReturn {
+  const [state, dispatch]   = useReducer(historyReducer, initial);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [handId, setHandId]       = useState<string | null>(null);
+  const [loading, setLoading]     = useState(false);
+  const startTimeRef = useRef<number | null>(null);
+
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
+  useEffect(() => {
+    if (!state.tableau?.length || !sessionId) return;
+    saveSession(sessionId, handId!, state, state.moves, state.turns, startTimeRef.current!, sessionKey);
+  }, [state, sessionId, handId, sessionKey]);
+
+  const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
+  const canUndo = (state.history?.length ?? 0) > 0 && !state.isWon;
+  const undo    = useCallback(() => dispatch({ type: 'UNDO' }), []);
+
+  const startGame = useCallback(async (
+    handOverride: { uuid: string; cards: number[] } | null = null,
+    drawMode = 'draw3',
+    opts: StartGameOptions = {},
+  ): Promise<void> => {
+    setLoading(true);
+    try {
+      const hand = handOverride ?? await createHand(drawMode);
+      let resolvedSessionId: string;
+      if (opts.existingSessionId) {
+        resolvedSessionId = opts.existingSessionId;
+      } else {
+        const session = await createSession(
+          hand.uuid, userId!,
+          opts.isDaily   ?? false,
+          opts.dailyDate ?? null,
+          opts.isRanked  !== undefined ? opts.isRanked : true,
+        );
+        resolvedSessionId = session?.session?.uuid ?? '';
+      }
+      const dealt = dealKlondike(hand.cards);
+      setSessionId(resolvedSessionId);
+      setHandId(hand.uuid);
+      startTimeRef.current = Date.now();
+      clearSession(sessionKey);
+      dispatch({ type: 'DEAL', payload: { ...dealt, drawMode } });
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, sessionKey]);
+
+  const resumeGame = useCallback((): boolean => {
+    const saved = loadSession(sessionKey);
+    if (!saved) return false;
+    setSessionId(saved.sessionId);
+    if (saved.handId) setHandId(saved.handId);
+    startTimeRef.current = saved.startTime || Date.now();
+    dispatch({
+      type: 'RESTORE',
+      payload: {
+        ...saved.gameState,
+        moves: saved.moves,
+        turns: saved.turns,
+        isWon: false,
+      },
+    });
+    return true;
+  }, [sessionKey]);
+
+  const hasSavedSession = useCallback((forHandId: string | null = null): boolean => {
+    const saved = loadSession(sessionKey);
+    if (!saved) return false;
+    if (forHandId && saved.handId !== forHandId) return false;
+    return true;
+  }, [sessionKey]);
+
+  const draw               = useCallback(() => dispatch({ type: 'DRAW' }), []);
+  const wasteToTableau     = useCallback((col: number) => dispatch({ type: 'WASTE_TO_TABLEAU', col }), []);
+  const wasteToFoundation  = useCallback(() => dispatch({ type: 'WASTE_TO_FOUNDATION' }), []);
+  const tableauToFoundation = useCallback((fromCol: number) => dispatch({ type: 'TABLEAU_TO_FOUNDATION', fromCol }), []);
+  const tableauToTableau   = useCallback((fromCol: number, fromIdx: number, toCol: number) =>
+    dispatch({ type: 'TABLEAU_TO_TABLEAU', fromCol, fromIdx, toCol }), []);
+  const foundationToTableau = useCallback((fi: number, toCol: number) =>
+    dispatch({ type: 'FOUNDATION_TO_TABLEAU', fi, toCol }), []);
+
+  const autoComplete = useCallback((): void => {
+    const speed = document.documentElement.dataset['animSpeed'] ?? 'normal';
+    const delay = speed === 'slow' ? 250 : speed === 'fast' ? 30 : 80;
+    let maxSteps = 300;
+    const step = (): void => {
+      const s = stateRef.current;
+      if (s.isWon || maxSteps-- <= 0) return;
+      const movesBefore = s.moves;
+      dispatch({ type: 'AUTO_COMPLETE_STEP' });
+      setTimeout(() => {
+        if (stateRef.current.moves === movesBefore) return;
+        step();
+      }, delay);
+    };
+    step();
+  }, []);
+
+  const finishGame = useCallback(async (): Promise<CompleteSessionResponse> => {
+    const timeSeconds = Math.floor((Date.now() - startTimeRef.current!) / 1000);
+    const result = await completeSession(sessionId!, state.moves, timeSeconds, state.turns.join(','));
+    clearSession(sessionKey);
+    return result;
+  }, [sessionId, state.moves, state.turns, sessionKey]);
+
+  const abandon = useCallback(async (): Promise<void> => {
+    if (!sessionId) return;
+    const timeSeconds = Math.floor((Date.now() - startTimeRef.current!) / 1000);
+    clearSession(sessionKey);
+    await abandonSession(sessionId, state.moves, timeSeconds, state.turns.join(',')).catch(() => {});
+  }, [sessionId, state.moves, state.turns, sessionKey]);
+
+  return {
+    ...state,
+    sessionId,
+    handId,
+    loading,
+    canAutoComplete,
+    canUndo,
+    startTimeRef,
+    startGame,
+    resumeGame,
+    hasSavedSession,
+    draw,
+    wasteToTableau,
+    wasteToFoundation,
+    tableauToTableau,
+    tableauToFoundation,
+    foundationToTableau,
+    autoComplete,
+    undo,
+    finishGame,
+    abandon,
+  };
+}
