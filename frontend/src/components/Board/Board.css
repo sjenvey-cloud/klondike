@@ -202,6 +202,37 @@ html.game-fullwidth {
 /* The ghost clone is created via JS with inline styles;
    these classes handle the source card while dragging */
 
+/* ── DEV-236: Keyboard navigation visual states ── */
+
+/* Held card: golden lift + ring, matching Card's own .selected style */
+.kb-held .card-face {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 2px var(--color-accent, #d4a017), 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* Active keyboard drop target — dashed outline, distinct from drag's solid outline */
+.tableau-col.kb-target {
+  background: rgba(212, 160, 23, 0.08);
+  border-radius: var(--radius-card);
+  outline: 2px dashed var(--color-accent, #d4a017);
+  outline-offset: 3px;
+}
+.foundation-pile.kb-target {
+  outline: 2px dashed var(--color-accent, #d4a017);
+  outline-offset: 3px;
+  border-radius: var(--radius-card);
+}
+
+/* Focus-visible rings for all keyboard-navigable zones */
+[data-kb-zone]:focus-visible,
+.tableau-col-empty:focus-visible {
+  outline: 2px solid var(--color-accent, #d4a017);
+  outline-offset: 3px;
+  border-radius: var(--radius-card);
+  position: relative;
+  z-index: 2;
+}
+
 /* ── DEV-65: Shake animation ── */
 @keyframes shake {
   0%,  100% { transform: translateX(0); }

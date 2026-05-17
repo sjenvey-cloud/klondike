@@ -1,6 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Card } from '../Card/Card';
-import { canPlaceOnTableau, canPlaceOnFoundation, foundationIndex } from '../../services/gameLogic';
+import {
+  canPlaceOnTableau, canPlaceOnFoundation, foundationIndex,
+  getRank, getSuit, rankLabel,
+} from '../../services/gameLogic';
 import type { UseGameReturn } from '../../hooks/useGame';
 import type { UseTimerReturn } from '../../hooks/useTimer';
 import './Board.css';
@@ -8,6 +11,20 @@ import './Board.css';
 const SUIT_SYMBOLS = ['♣', '♦', '♥', '♠'];
 
 type DragSource = 'waste' | 'tableau' | 'foundation';
+
+// ── Keyboard navigation types ────────────────────────────────────────────────
+interface KbHeld {
+  source: DragSource;
+  col: number | null;
+  idx: number | null;
+  fi: number | null;
+}
+type KbTarget = { type: 'tableau'; col: number } | { type: 'foundation'; fi: number };
+
+function cardLabel(card: number): string {
+  return `${rankLabel(getRank(card))} of ${getSuit(card).name}`;
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 interface DragState {
   source: DragSource;
@@ -70,6 +87,120 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
 
   const gameStateRef = useRef({ waste, tableau, foundations });
   useEffect(() => { gameStateRef.current = { waste, tableau, foundations }; }, [waste, tableau, foundations]);
+
+  // ── Keyboard navigation ──────────────────────────────────────────────────
+  const [kbHeld,         setKbHeld]         = useState<KbHeld | null>(null);
+  const [kbTargetCursor, setKbTargetCursor] = useState(0);
+  const [kbAnnounce,     setKbAnnounce]     = useState('');
+  const kbOriginRef = useRef<HTMLElement | null>(null);
+
+  const kbValidTargets = useMemo((): KbTarget[] => {
+    if (!kbHeld) return [];
+    let card: number | null = null;
+    if (kbHeld.source === 'waste') {
+      card = waste.length > 0 ? waste[waste.length - 1].card : null;
+    } else if (kbHeld.source === 'tableau') {
+      card = tableau[kbHeld.col!]?.[kbHeld.idx!]?.card ?? null;
+    } else if (kbHeld.source === 'foundation') {
+      const fp = foundations[kbHeld.fi!];
+      card = fp && fp.length > 0 ? fp[fp.length - 1] : null;
+    }
+    if (card == null) return [];
+    const targets: KbTarget[] = [];
+    for (let c = 0; c < tableau.length; c++) {
+      if (kbHeld.source === 'tableau' && c === kbHeld.col) continue;
+      if (canPlaceOnTableau(card, tableau[c])) targets.push({ type: 'tableau', col: c });
+    }
+    if (kbHeld.source !== 'foundation') {
+      const fi = foundationIndex(card);
+      if (canPlaceOnFoundation(card, foundations[fi])) targets.push({ type: 'foundation', fi });
+    }
+    return targets;
+  }, [kbHeld, waste, tableau, foundations]);
+
+  // When kbHeld becomes non-null, auto-focus the first valid target
+  useEffect(() => {
+    if (!kbHeld) return;
+    if (!kbValidTargets.length) {
+      setKbAnnounce('No valid moves. Press Escape to cancel.');
+      return;
+    }
+    setKbTargetCursor(0);
+    const t = kbValidTargets[0];
+    const sel = t.type === 'foundation'
+      ? `[data-kb-zone="foundation-${t.fi}"]`
+      : `[data-kb-zone="tableau-${t.col}"]`;
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(sel)?.focus());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kbHeld]);
+
+  const kbPickUp = useCallback((
+    source: DragSource, col: number | null, idx: number | null, fi: number | null = null,
+  ): void => {
+    kbOriginRef.current = document.activeElement as HTMLElement | null;
+    setKbHeld({ source, col, idx, fi });
+    setKbTargetCursor(0);
+    let card: number | null = null;
+    if (source === 'waste') card = waste[waste.length - 1]?.card ?? null;
+    else if (source === 'tableau') card = tableau[col!]?.[idx!]?.card ?? null;
+    else if (source === 'foundation') { const fp = foundations[fi!]; card = fp && fp.length > 0 ? fp[fp.length - 1] : null; }
+    setKbAnnounce(card != null
+      ? `Picked up ${cardLabel(card)}. Arrow keys to select target, Space or Enter to place, Escape to cancel.`
+      : '');
+  }, [waste, tableau, foundations]);
+
+  const kbCancelHold = useCallback((): void => {
+    setKbHeld(null);
+    setKbTargetCursor(0);
+    setKbAnnounce('Move cancelled');
+    requestAnimationFrame(() => kbOriginRef.current?.focus());
+  }, []);
+
+  const kbDrop = useCallback((target: KbTarget): void => {
+    if (!kbHeld) return;
+    if (target.type === 'tableau') {
+      if (kbHeld.source === 'waste')           wasteToTableau(target.col);
+      else if (kbHeld.source === 'tableau')    tableauToTableau(kbHeld.col!, kbHeld.idx!, target.col);
+      else if (kbHeld.source === 'foundation') foundationToTableau(kbHeld.fi!, target.col);
+    } else {
+      if (kbHeld.source === 'waste')        wasteToFoundation();
+      else if (kbHeld.source === 'tableau') tableauToFoundation(kbHeld.col!);
+    }
+    setKbAnnounce('Card placed');
+    setKbHeld(null);
+    setKbTargetCursor(0);
+  }, [kbHeld, wasteToTableau, tableauToTableau, foundationToTableau, wasteToFoundation, tableauToFoundation]);
+
+  const kbCycleTarget = useCallback((dir: 1 | -1): void => {
+    if (!kbValidTargets.length) return;
+    const next = (kbTargetCursor + dir + kbValidTargets.length) % kbValidTargets.length;
+    setKbTargetCursor(next);
+    const t = kbValidTargets[next];
+    setKbAnnounce(t.type === 'foundation' ? `Foundation ${t.fi + 1}` : `Column ${t.col + 1}`);
+    const sel = t.type === 'foundation'
+      ? `[data-kb-zone="foundation-${t.fi}"]`
+      : `[data-kb-zone="tableau-${t.col}"]`;
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(sel)?.focus());
+  }, [kbValidTargets, kbTargetCursor]);
+
+  const kbDropCurrent = useCallback((): void => {
+    if (!kbHeld || !kbValidTargets.length) return;
+    kbDrop(kbValidTargets[kbTargetCursor] ?? kbValidTargets[0]);
+  }, [kbHeld, kbValidTargets, kbTargetCursor, kbDrop]);
+
+  const handleBoardKeyDown = useCallback((e: React.KeyboardEvent): void => {
+    if (!kbHeld) return;
+    switch (e.key) {
+      case 'Escape':      e.preventDefault(); kbCancelHold();   break;
+      case 'ArrowLeft':
+      case 'ArrowUp':     e.preventDefault(); kbCycleTarget(-1); break;
+      case 'ArrowRight':
+      case 'ArrowDown':   e.preventDefault(); kbCycleTarget(1);  break;
+      case ' ':
+      case 'Enter':       e.preventDefault(); kbDropCurrent();   break;
+    }
+  }, [kbHeld, kbCancelHold, kbCycleTarget, kbDropCurrent]);
+  // ────────────────────────────────────────────────────────────────────────────
 
   const triggerShake = useCallback((target: number | string): void => {
     setShaking(target);
@@ -303,10 +434,14 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
   const wasteTopLeft = isDraw3 ? Math.min(waste.length - 1, 2) * FAN : 0;
 
   return (
-    <div className="board">
+    <div className="board" onKeyDown={handleBoardKeyDown}>
       {/* Screen-reader win announcement */}
       <div role="status" aria-live="assertive" aria-atomic="true" className="sr-only">
         {winAnnouncement}
+      </div>
+      {/* Screen-reader keyboard-navigation status */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {kbAnnounce}
       </div>
 
       {/* Stats bar */}
@@ -423,9 +558,20 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
           )}
           {wasteTop && (
             <div
-              className={`waste-card${dragRef.current?.source === 'waste' ? ' dragging' : ''}`}
+              className={`waste-card${dragRef.current?.source === 'waste' ? ' dragging' : ''}${kbHeld?.source === 'waste' ? ' kb-held' : ''}`}
               style={{ left: wasteTopLeft }}
+              tabIndex={0}
+              role="button"
+              data-kb-zone="waste"
+              aria-label={`${cardLabel(wasteTop.card)} in waste. Press Space or Enter to pick up.`}
               onPointerDown={(e) => handleCardPointerDown(e, 'waste', null, null)}
+              onKeyDown={(e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!kbHeld) kbPickUp('waste', null, null);
+                }
+              }}
             >
               <Card card={wasteTop.card} faceUp={true} />
             </div>
@@ -438,27 +584,51 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
         <div className="board-top-spacer" />
 
         {/* Foundations */}
-        {foundations.map((pile, fi) => (
-          <div
-            key={fi}
-            role="region"
-            aria-label={`Foundation ${fi + 1}${pile.length > 0 ? ` — ${SUIT_SYMBOLS[fi]}` : ` — empty`}`}
-            className={`foundation-pile${shaking === `foundation${fi}` ? ' shake' : ''}${dragTarget?.type === 'foundation' && dragTarget?.fi === fi ? ' drop-target' : ''}`}
-            onClick={() => handleFoundationClick(fi)}
-            data-drop="foundation"
-            data-fi={fi}
-          >
-            {pile.length === 0
-              ? <div className="foundation-empty">{SUIT_SYMBOLS[fi]}</div>
-              : <div
-                  onPointerDown={(e) => handleCardPointerDown(e, 'foundation', null, null, fi)}
-                  style={{ lineHeight: 0 }}
-                >
-                  <Card card={pile[pile.length - 1]} faceUp={true} />
-                </div>
-            }
-          </div>
-        ))}
+        {foundations.map((pile, fi) => {
+          const isKbTarget = kbHeld != null
+            && kbValidTargets[kbTargetCursor]?.type === 'foundation'
+            && kbValidTargets[kbTargetCursor].fi === fi;
+          return (
+            <div
+              key={fi}
+              role="region"
+              aria-label={`Foundation ${fi + 1}${pile.length > 0 ? ` — ${SUIT_SYMBOLS[fi]}` : ` — empty`}`}
+              tabIndex={0}
+              data-kb-zone={`foundation-${fi}`}
+              className={`foundation-pile${shaking === `foundation${fi}` ? ' shake' : ''}${dragTarget?.type === 'foundation' && dragTarget?.fi === fi ? ' drop-target' : ''}${isKbTarget ? ' kb-target' : ''}${kbHeld?.source === 'foundation' && kbHeld.fi === fi ? ' kb-held' : ''}`}
+              onClick={() => handleFoundationClick(fi)}
+              data-drop="foundation"
+              data-fi={fi}
+              onFocus={() => {
+                if (!kbHeld) return;
+                const idx = kbValidTargets.findIndex(t => t.type === 'foundation' && t.fi === fi);
+                if (idx >= 0) setKbTargetCursor(idx);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (kbHeld) {
+                    const t = kbValidTargets.find(t => t.type === 'foundation' && t.fi === fi);
+                    if (t) kbDrop(t);
+                  } else if (pile.length > 0) {
+                    kbPickUp('foundation', null, null, fi);
+                  }
+                }
+              }}
+            >
+              {pile.length === 0
+                ? <div className="foundation-empty">{SUIT_SYMBOLS[fi]}</div>
+                : <div
+                    onPointerDown={(e) => handleCardPointerDown(e, 'foundation', null, null, fi)}
+                    style={{ lineHeight: 0 }}
+                  >
+                    <Card card={pile[pile.length - 1]} faceUp={true} />
+                  </div>
+              }
+            </div>
+          );
+        })}
       </div>
 
       {/* Pause overlay */}
@@ -490,30 +660,86 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
 
       {/* Tableau */}
       <div className="board-tableau" role="region" aria-label="Tableau">
-        {tableau.map((pile, col) => (
-          <div
-            key={col}
-            role="region"
-            aria-label={`Column ${col + 1}${pile.length === 0 ? ' — empty' : ` — ${pile.length} card${pile.length !== 1 ? 's' : ''}`}`}
-            className={`tableau-col${shaking === col ? ' shake' : ''}${dragTarget?.type === 'tableau' && dragTarget?.col === col ? ' drop-target' : ''}`}
-            data-drop="tableau"
-            data-col={col}
-          >
-            {pile.length === 0
-              ? <div className="tableau-col-empty" />
-              : pile.map((c, idx) => (
-                  <div
-                    key={idx}
-                    className={`tableau-card${idx > 0 && pile[idx - 1].faceUp ? ' face-up' : ''}${dragRef.current?.source === 'tableau' && dragRef.current?.col === col && dragRef.current?.idx === idx ? ' dragging' : ''}`}
-                    onClick={(e) => handleTableauClick(col, idx, e)}
-                    onPointerDown={c.faceUp ? (e) => handleCardPointerDown(e, 'tableau', col, idx) : undefined}
-                  >
-                    <Card card={c.card} faceUp={c.faceUp} />
-                  </div>
-                ))
-            }
-          </div>
-        ))}
+        {tableau.map((pile, col) => {
+          const isColKbTarget = kbHeld != null
+            && kbValidTargets[kbTargetCursor]?.type === 'tableau'
+            && kbValidTargets[kbTargetCursor].col === col;
+          const topIdx = pile.length - 1;
+
+          // onFocus for a zone during hold: sync cursor to this column
+          const syncCursorToCol = (): void => {
+            if (!kbHeld) return;
+            const idx = kbValidTargets.findIndex(t => t.type === 'tableau' && t.col === col);
+            if (idx >= 0) setKbTargetCursor(idx);
+          };
+
+          return (
+            <div
+              key={col}
+              role="region"
+              aria-label={`Column ${col + 1}${pile.length === 0 ? ' — empty' : ` — ${pile.length} card${pile.length !== 1 ? 's' : ''}`}`}
+              className={`tableau-col${shaking === col ? ' shake' : ''}${dragTarget?.type === 'tableau' && dragTarget?.col === col ? ' drop-target' : ''}${isColKbTarget ? ' kb-target' : ''}`}
+              data-drop="tableau"
+              data-col={col}
+            >
+              {pile.length === 0
+                ? <div
+                    className="tableau-col-empty"
+                    tabIndex={0}
+                    data-kb-zone={`tableau-${col}`}
+                    aria-label={`Column ${col + 1}, empty. ${kbHeld ? 'Press Space or Enter to place here.' : ''}`}
+                    onFocus={syncCursorToCol}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (kbHeld) {
+                          const t = kbValidTargets.find(t => t.type === 'tableau' && t.col === col);
+                          if (t) kbDrop(t);
+                        }
+                      }
+                    }}
+                  />
+                : pile.map((c, idx) => {
+                    const isTop = idx === topIdx;
+                    const isKbHeldCard = kbHeld?.source === 'tableau'
+                      && kbHeld.col === col && kbHeld.idx === idx;
+                    // Top face-up card is the tab-stop for this column; others reachable via arrow keys
+                    const tabIdx: number | undefined = c.faceUp
+                      ? (isTop ? 0 : -1)
+                      : undefined;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`tableau-card${idx > 0 && pile[idx - 1].faceUp ? ' face-up' : ''}${dragRef.current?.source === 'tableau' && dragRef.current?.col === col && dragRef.current?.idx === idx ? ' dragging' : ''}${isKbHeldCard ? ' kb-held' : ''}`}
+                        onClick={(e) => handleTableauClick(col, idx, e)}
+                        onPointerDown={c.faceUp ? (e) => handleCardPointerDown(e, 'tableau', col, idx) : undefined}
+                        tabIndex={tabIdx}
+                        data-kb-zone={isTop && c.faceUp ? `tableau-${col}` : undefined}
+                        aria-label={c.faceUp ? `${cardLabel(c.card)}, column ${col + 1}` : undefined}
+                        onFocus={c.faceUp ? syncCursorToCol : undefined}
+                        onKeyDown={c.faceUp ? (e) => {
+                          if (e.key === ' ' || e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (kbHeld) {
+                              const t = kbValidTargets.find(t => t.type === 'tableau' && t.col === col);
+                              if (t) kbDrop(t);
+                            } else {
+                              kbPickUp('tableau', col, idx);
+                            }
+                          }
+                        } : undefined}
+                      >
+                        <Card card={c.card} faceUp={c.faceUp} />
+                      </div>
+                    );
+                  })
+              }
+            </div>
+          );
+        })}
       </div>
     </div>
   );
