@@ -161,17 +161,13 @@ struct LoginView: View {
     }
 
     private func signInWithGameCenter() {
-        // Full Game Center → backend auth is DEV-249/250 (Sprint iOS-2).
-        // This stub shows the native GK auth sheet and gates on isAuthenticated.
-        // Signature fetch + POST /api/v1/auth/game-center wired in GameCenterService (Sprint iOS-2).
+        // DEV-249/250: full GK → ECDSA signature → POST /api/v1/auth/game-center flow.
+        // GameCenterService handles the GK auth sheet and signature fetch.
+        // AuthStore.loginWithGameCenter() calls the service then POSTs to backend.
         isAuthenticatingGC = true
-        GKLocalPlayer.local.authenticateHandler = { _, error in
-            // GK may call this on a background thread — hop to MainActor before touching state.
-            Task { @MainActor in
-                self.isAuthenticatingGC = false
-                guard error == nil, GKLocalPlayer.local.isAuthenticated else { return }
-                // Sprint iOS-2 (DEV-249): call GameCenterService.authenticate(authStore:)
-            }
+        Task {
+            await authStore.loginWithGameCenter()
+            await MainActor.run { isAuthenticatingGC = false }
         }
     }
 

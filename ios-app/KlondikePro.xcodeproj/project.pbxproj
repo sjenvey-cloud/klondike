@@ -10,6 +10,7 @@
 		0AC5955F21710F4281B857D9 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA5F8625566E18782D12FB1 /* Card.swift */; };
 		29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82365454A46200A51A0D48B4 /* Keychain.swift */; };
 		3E88FFA7E516C0E63D8354DC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2D246F07A435E209062B79 /* APIClient.swift */; };
+		564D606F481EDAD8DFAE0A9B /* AuthStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 605A2895BA9BA8E4ACEAA5B6 /* AuthStoreTests.swift */; };
 		5A32BA858AB7C995C921D541 /* SeededShuffleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF36838332983CA9202004A5 /* SeededShuffleTests.swift */; };
 		815103FF922B4FB175CBF65F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17A4EAD55DC0F7E5F38C301 /* ContentView.swift */; };
 		891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6956EDB6ED3254EA6AB2B5 /* HomeView.swift */; };
@@ -20,6 +21,7 @@
 		E54F6D4D74D5946A577EAFC4 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC0A0B313941647498C4E3E /* AuthStore.swift */; };
 		E97D476A6AC6DCBD2E03CB4B /* KlondikeProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A83FD1B58530756EBABAE921 /* KlondikeProApp.swift */; };
 		EE2FC0FE98CCF9F5B2FA34B5 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3CA2C83876E42F975FAACB0 /* AuthService.swift */; };
+		F0A1B9C1A830EAE525C0F516 /* GameCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */; };
 		FB332A855C558F67B37BDD05 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B40829FA0B52D6FB76FADE /* LoginView.swift */; };
 /* End PBXBuildFile section */
 
@@ -38,6 +40,8 @@
 		07BBBCFE9CC9760EEC990E7C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1DC0A0B313941647498C4E3E /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		3AE03AFB1F2A3D0440CFF179 /* KlondikeProTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KlondikeProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterService.swift; sourceTree = "<group>"; };
+		605A2895BA9BA8E4ACEAA5B6 /* AuthStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStoreTests.swift; sourceTree = "<group>"; };
 		6E666186D530D52E62B08E28 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		7995B36BFD248C14BA9A66DE /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
 		82365454A46200A51A0D48B4 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
@@ -88,6 +92,7 @@
 				291AF2F97C740E36C52C2BD5 /* Models */,
 				EE2D246F07A435E209062B79 /* APIClient.swift */,
 				E3CA2C83876E42F975FAACB0 /* AuthService.swift */,
+				4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */,
 				82365454A46200A51A0D48B4 /* Keychain.swift */,
 			);
 			path = Network;
@@ -114,6 +119,7 @@
 		98A5D05F563FD9752D7D65C9 /* KlondikeProTests */ = {
 			isa = PBXGroup;
 			children = (
+				605A2895BA9BA8E4ACEAA5B6 /* AuthStoreTests.swift */,
 				CF36838332983CA9202004A5 /* SeededShuffleTests.swift */,
 			);
 			path = KlondikeProTests;
@@ -275,6 +281,7 @@
 				E54F6D4D74D5946A577EAFC4 /* AuthStore.swift in Sources */,
 				0AC5955F21710F4281B857D9 /* Card.swift in Sources */,
 				815103FF922B4FB175CBF65F /* ContentView.swift in Sources */,
+				F0A1B9C1A830EAE525C0F516 /* GameCenterService.swift in Sources */,
 				BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */,
 				891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */,
 				29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */,
@@ -288,6 +295,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				564D606F481EDAD8DFAE0A9B /* AuthStoreTests.swift in Sources */,
 				5A32BA858AB7C995C921D541 /* SeededShuffleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

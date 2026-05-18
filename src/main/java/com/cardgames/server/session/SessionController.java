@@ -61,16 +61,22 @@ public class SessionController {
 
         // Look up daily and random active sessions independently so each screen
         // can offer its own resume prompt without the two types conflating.
+        // DEV-252: include seed + turns so iOS can reconstruct game state without
+        //          an extra round-trip to GET /api/v1/hands/{uuid}.
         ActiveSessionResponse daily = sessionRepository
             .findFirstByUserIdAndStatusAndIsDailyTrueOrderByStartedAtDesc(userId, Session.STATUS_ACTIVE)
-            .map(s -> new ActiveSessionResponse(
-                s.getUuid(), s.getHandUuid(), s.getDrawMode(), s.getMoves(), s.getStartedAt(), true))
+            .flatMap(s -> handRepository.findById(s.getHandId())
+                .map(h -> new ActiveSessionResponse(
+                    s.getUuid(), s.getHandUuid(), s.getDrawMode(),
+                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getStartedAt(), true)))
             .orElse(null);
 
         ActiveSessionResponse random = sessionRepository
             .findFirstByUserIdAndStatusAndIsDailyFalseOrderByStartedAtDesc(userId, Session.STATUS_ACTIVE)
-            .map(s -> new ActiveSessionResponse(
-                s.getUuid(), s.getHandUuid(), s.getDrawMode(), s.getMoves(), s.getStartedAt(), false))
+            .flatMap(s -> handRepository.findById(s.getHandId())
+                .map(h -> new ActiveSessionResponse(
+                    s.getUuid(), s.getHandUuid(), s.getDrawMode(),
+                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getStartedAt(), false)))
             .orElse(null);
 
         return ResponseEntity.ok(new ActiveSessionsResponse(daily, random));

@@ -6,7 +6,7 @@ struct HomeView: View {
 
     @Environment(AuthStore.self) private var authStore
     @State private var drawMode: DrawMode = DrawMode(rawValue: UserDefaults.standard.string(forKey: "klondike_draw_mode") ?? "draw3") ?? .draw3
-    @State private var activeSession: ActiveSessionResponse?
+    @State private var activeSession: ActiveSessionItem?
     @State private var isCheckingSession = false
     @State private var showNewGame       = false
 
@@ -96,21 +96,24 @@ struct HomeView: View {
     private func checkActiveSession() async {
         isCheckingSession = true
         defer { isCheckingSession = false }
-        activeSession = try? await APIClient.shared.get("/api/v1/sessions/active")
+        // DEV-252: endpoint returns { daily, random } — surface the random session on Home
+        if let response: ActiveSessionsResponse = try? await APIClient.shared.get("/api/v1/sessions/active") {
+            activeSession = response.random
+        }
     }
 }
 
 // MARK: - Resume Banner
 
 private struct ResumeBanner: View {
-    let session: ActiveSessionResponse
+    let session: ActiveSessionItem
 
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Game in Progress")
                     .font(.subheadline.bold())
-                Text("\(session.session.moves) moves · \(session.session.drawMode.uppercased())")
+                Text("\(session.moves) moves · \(session.drawMode.uppercased())")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

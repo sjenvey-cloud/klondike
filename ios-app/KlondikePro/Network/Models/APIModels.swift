@@ -132,11 +132,26 @@ struct AbandonSessionRequest: Encodable {
     let turns: String
 }
 
-// MARK: - Active session (Sprint iOS-2 endpoint)
+// MARK: - Active sessions (DEV-252)
 
-struct ActiveSessionResponse: Decodable {
-    let session: Session
-    let hand: Hand
+/// Wrapper returned by GET /api/v1/sessions/active.
+/// Both fields are optional — null means no in-progress session of that type.
+struct ActiveSessionsResponse: Decodable {
+    let daily:  ActiveSessionItem?
+    let random: ActiveSessionItem?
+}
+
+/// A single in-progress session with enough data for the iOS client to
+/// reconstruct game state locally: seed → SeededShuffle → replay turns.
+struct ActiveSessionItem: Decodable {
+    let uuid:      UUID
+    let handUuid:  UUID
+    let drawMode:  String
+    let seed:      Int64
+    let turns:     String
+    let moves:     Int
+    let startedAt: Date
+    let isDaily:   Bool
 }
 
 // MARK: - Daily
@@ -288,10 +303,11 @@ struct ReplayResponse: Decodable {
 // MARK: - Game Center Auth
 
 struct GameCenterAuthRequest: Encodable {
-    let playerId: String
-    let bundleId: String
+    let playerId:    String
+    let bundleId:    String
     let publicKeyUrl: String
-    let signature: String   // base64
-    let salt: String        // base64
-    let timestamp: UInt64
+    let signature:   String   // base64
+    let salt:        String   // base64
+    let timestamp:   UInt64
+    let displayName: String?  // GKLocalPlayer.displayName — used when creating a new account
 }

@@ -83,18 +83,23 @@ final class AuthStore {
         }
     }
 
-    // MARK: - Game Center login (Sprint iOS-2)
+    // MARK: - Game Center login (DEV-249/250)
 
-    func loginWithGameCenter(request: GameCenterAuthRequest) async {
+    /// Calls GameCenterService to authenticate with GK and fetch the ECDSA
+    /// identity signature, then POSTs it to /api/v1/auth/game-center.
+    func loginWithGameCenter() async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
 
         do {
+            let request = try await GameCenterService.shared.authenticate()
             _ = try await authService.loginWithGameCenter(request: request)
             await wireRefreshHandler()
             await fetchProfile()
             isAuthenticated = true
+        } catch let gcError as GameCenterError {
+            errorMessage = gcError.localizedDescription
         } catch {
             errorMessage = friendlyError(error)
         }

@@ -11,12 +11,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class AuthService {
@@ -93,6 +105,108 @@ public class AuthService {
             .orElseThrow(InvalidTokenException::new);
 
         return issueTokenPair(user);
+    }
+
+    // ── Game Center SSO (DEV-250) ─────────────────────────────────────────
+
+    /**
+     * Verifies the Apple Game Center ECDSA identity signature and issues a JWT pair.
+     * If the teamPlayerID has never been seen before, a new user account is created.
+     * Existing users are looked up via user_identities (provider='game_center').
+     */
+    @Transactional
+    public AuthTokenPair loginWithGameCenter(GameCenterAuthRequest req) {
+        verifyGkSignature(req);
+
+        return userIdentityRepository
+            .findByProviderAndProviderUserId("game_center", req.playerId())
+            .map(identity -> {
+                User user = userRepository.findById(identity.getUserId())
+                    .orElseThrow(InvalidCredentialsException::new);
+                return issueTokenPair(user);
+            })
+            .orElseGet(() -> {
+                // New Game Center user — create account.
+                // Virtual email is guaranteed unique and clearly machine-generated.
+                String virtualEmail = "gc_" + req.playerId() + "@gamecenter.apple.com";
+                String displayName  = (req.displayName() != null && !req.displayName().isBlank())
+                    ? req.displayName()
+                    : "Player_" + req.playerId().substring(Math.max(0, req.playerId().length() - 6));
+
+                User user = new User(virtualEmail, null, displayName);
+                userRepository.save(user);
+                userIdentityRepository.save(new UserIdentity(user.getId(), "game_center", req.playerId()));
+                return issueTokenPair(user);
+            });
+    }
+
+    /**
+     * Verifies the ECDSA signature returned by GKLocalPlayer
+     * fetchItemsForIdentityVerificationSignature.
+     *
+     * Payload (concatenated, no delimiters):
+     *   teamPlayerID (UTF-8) | bundleID (UTF-8) | timestamp (big-endian UInt64) | salt (raw)
+     *
+     * Algorithm: SHA256withECDSA using the X.509 certificate at publicKeyUrl.
+     */
+    private void verifyGkSignature(GameCenterAuthRequest req) {
+        // 1. Validate that publicKeyUrl is on an Apple domain
+        URI uri;
+        try {
+            uri = new URI(req.publicKeyUrl());
+        } catch (URISyntaxException e) {
+            throw new GameCenterSignatureException("Invalid publicKeyUrl: " + e.getMessage());
+        }
+        String host = uri.getHost();
+        if (host == null || !host.endsWith(".apple.com")) {
+            throw new GameCenterSignatureException("publicKeyUrl must be on apple.com — got: " + host);
+        }
+
+        // 2. Download the X.509 certificate
+        byte[] certBytes;
+        try {
+            certBytes = uri.toURL().openStream().readAllBytes();
+        } catch (Exception e) {
+            throw new GameCenterSignatureException("Failed to download public key certificate: " + e.getMessage());
+        }
+
+        // 3. Parse certificate and extract public key
+        PublicKey publicKey;
+        try {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            X509Certificate cert  = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(certBytes));
+            publicKey = cert.getPublicKey();
+        } catch (Exception e) {
+            throw new GameCenterSignatureException("Failed to parse public key certificate: " + e.getMessage());
+        }
+
+        // 4. Build the payload: teamPlayerID + bundleID + timestamp (BE UInt64) + salt
+        byte[] payload;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            baos.write(req.playerId().getBytes(StandardCharsets.UTF_8));
+            baos.write(req.bundleId().getBytes(StandardCharsets.UTF_8));
+            ByteBuffer ts = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN);
+            ts.putLong(req.timestamp());
+            baos.write(ts.array());
+            baos.write(Base64.getDecoder().decode(req.salt()));
+            payload = baos.toByteArray();
+        } catch (Exception e) {
+            throw new GameCenterSignatureException("Failed to construct verification payload: " + e.getMessage());
+        }
+
+        // 5. Verify ECDSA signature
+        try {
+            Signature sig = Signature.getInstance("SHA256withECDSA");
+            sig.initVerify(publicKey);
+            sig.update(payload);
+            boolean valid = sig.verify(Base64.getDecoder().decode(req.signature()));
+            if (!valid) throw new GameCenterSignatureException("Signature verification failed");
+        } catch (GameCenterSignatureException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new GameCenterSignatureException("Signature verification error: " + e.getMessage());
+        }
     }
 
     // ── Logout ────────────────────────────────────────────────────────────

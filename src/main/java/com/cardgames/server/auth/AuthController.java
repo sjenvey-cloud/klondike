@@ -65,6 +65,22 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(pair.accessToken(), pair.user()));
     }
 
+    // ── DEV-250: Game Center SSO ──────────────────────────────────────────
+
+    @Operation(
+        summary     = "Sign in with Game Center",
+        description = "Verifies the GKLocalPlayer ECDSA identity signature and returns a JWT pair. "
+                    + "Creates a new account if the teamPlayerID is not yet registered.")
+    @PostMapping("/game-center")
+    public ResponseEntity<AuthResponse> gameCenter(
+            @Valid @RequestBody GameCenterAuthRequest body,
+            jakarta.servlet.http.HttpServletResponse response) {
+
+        AuthTokenPair pair = authService.loginWithGameCenter(body);
+        response.addHeader(HttpHeaders.SET_COOKIE, pair.refreshCookie().toString());
+        return ResponseEntity.ok(new AuthResponse(pair.accessToken(), pair.user()));
+    }
+
     // ── DEV-78: Logout ────────────────────────────────────────────────────
 
     @Operation(summary = "Revoke refresh token and invalidate access token JTI")
@@ -101,6 +117,12 @@ public class AuthController {
 
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<Map<String, String>> handleBadToken(InvalidTokenException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(GameCenterSignatureException.class)
+    public ResponseEntity<Map<String, String>> handleBadGkSignature(GameCenterSignatureException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(Map.of("error", e.getMessage()));
     }
