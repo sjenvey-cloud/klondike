@@ -48,7 +48,10 @@ struct GameState {
             idx += col + 1
         }
         self.tableau    = cols
-        self.stock      = Array(cards[idx...]).map { var c = $0; c.isFaceUp = false; return c }
+        // Stock top = cards[idx] (first card drawn), matching Java's poll() order.
+        // Swift uses removeLast() for O(1) pops, so the array is stored reversed:
+        // stock.last is drawn first, stock.first is drawn last.
+        self.stock      = Array(cards[idx...].reversed()).map { var c = $0; c.isFaceUp = false; return c }
         self.waste      = []
         self.foundation = [nil, nil, nil, nil]
     }
@@ -149,6 +152,57 @@ struct GameState {
         foundation[foundationIdx] = previousFoundationCard(suitIndex: foundationIdx)
         tableau[toCol].append(card)
         appendTurn("ft:\(foundationIdx):\(toCol)")
+        return true
+    }
+
+    // MARK: - Replay
+
+    /// Replay a comma-separated turns string produced by the Python/Java solver.
+    ///
+    /// Mirrors `GameState.replay()` in the Spring Boot backend (GameState.java)
+    /// so that any valid server-side turns string also validates here.
+    ///
+    /// - Returns: `true` if all tokens applied without error, `false` on the
+    ///   first invalid move (with `errorMessage` set on the returned copy).
+    @discardableResult
+    mutating func replay(turns: String) -> Bool {
+        guard !turns.isEmpty else { return false }
+        for token in turns.split(separator: ",").map(String.init) {
+            let parts = token.split(separator: ":").map(String.init)
+            guard !parts.isEmpty else { continue }
+            var ok = false
+            switch parts[0] {
+            case "draw":
+                draw()
+                ok = true
+            case "wf":
+                ok = moveWasteToFoundation()
+            case "wt":
+                if parts.count >= 2, let col = Int(parts[1]) {
+                    ok = moveWasteToTableau(col: col)
+                }
+            case "tf":
+                if parts.count >= 2, let col = Int(parts[1]) {
+                    ok = moveTableauToFoundation(col: col)
+                }
+            case "tt":
+                if parts.count >= 4,
+                   let from = Int(parts[1]),
+                   let fi   = Int(parts[2]),
+                   let to   = Int(parts[3]) {
+                    ok = moveTableau(fromCol: from, fromIdx: fi, toCol: to)
+                }
+            case "ft":
+                if parts.count >= 3,
+                   let fi  = Int(parts[1]),
+                   let col = Int(parts[2]) {
+                    ok = moveFoundationToTableau(foundationIdx: fi, toCol: col)
+                }
+            default:
+                break
+            }
+            if !ok { return false }
+        }
         return true
     }
 
