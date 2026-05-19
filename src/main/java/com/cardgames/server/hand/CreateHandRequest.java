@@ -1,3 +1,3 @@
 package com.cardgames.server.hand;
 
-public record CreateHandRequest(String drawMode) {}
+public record CreateHandRequest(String drawMode, Long seed) {}

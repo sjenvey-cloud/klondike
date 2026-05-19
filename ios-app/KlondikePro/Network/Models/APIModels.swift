@@ -15,6 +15,14 @@ struct RegisterRequest: Encodable {
 
 struct AuthResponse: Decodable {
     let accessToken: String
+    let user: UserDto
+
+    struct UserDto: Decodable {
+        let id: Int
+        let uuid: UUID
+        let email: String
+        let displayName: String
+    }
 }
 
 struct RefreshResponse: Decodable {
@@ -81,6 +89,12 @@ struct Hand: Decodable, Identifiable {
 
 struct CreateHandRequest: Encodable {
     let drawMode: String
+    let seed: Int64?
+
+    init(drawMode: String, seed: Int64? = nil) {
+        self.drawMode = drawMode
+        self.seed = seed
+    }
 }
 
 // MARK: - Sessions
@@ -102,10 +116,11 @@ struct Session: Decodable, Identifiable {
 }
 
 struct CreateSessionRequest: Encodable {
-    let handId: Int
+    let handUuid: UUID
     let userId: Int
     let isDaily: Bool
     let dailyDate: String?
+    let isRanked: Bool?
 }
 
 struct CreateSessionResponse: Decodable {

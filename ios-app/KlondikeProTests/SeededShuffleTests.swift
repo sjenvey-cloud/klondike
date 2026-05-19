@@ -321,62 +321,69 @@ final class GameEngineTests: XCTestCase {
         XCTAssertEqual(game.moveCount, 563)
     }
 
-    // MARK: - E2E turn submission (DEV-258)
+    // MARK: - E2E turn submission (DEV-258 / DEV-261)
 
-    /// Submits the pre-verified turns string for seed 2 to the live API.
+    /// Full end-to-end session submission using a seeded hand.
     ///
-    /// Pre-conditions:
-    ///   1. API must be reachable (skipped if offline).
-    ///   2. A hand must exist on the server for seed 2.
-    ///      Because POST /api/v1/hands uses random seeds, this test creates
-    ///      a new hand and skips if the returned seed ≠ 2.
-    ///      (In practice, a future HandController test endpoint will allow
-    ///      seeding — tracked as DEV-261.)
+    /// Requires a live API and test credentials in the scheme environment:
+    ///   TEST_EMAIL    – email of a registered test account
+    ///   TEST_PASSWORD – password for that account
+    ///
+    /// Set both in Product → Scheme → Edit Scheme → Test → Arguments →
+    /// Environment Variables.
+    ///
+    /// This test proves the complete iOS → server round trip:
+    ///   1. Authenticate via POST /api/v1/auth/login → JWT
+    ///   2. Create a deterministic hand via POST /api/v1/hands (seed 2, DEV-261)
+    ///   3. Open a session via POST /api/v1/sessions
+    ///   4. Submit the 563-move winning turns → server validates and marks won
     func testE2ECompleteSession() async throws {
         let reachable = (try? await APIClient.shared.healthCheck()) ?? false
         guard reachable else {
             throw XCTSkip("API unreachable — skipping E2E session test")
         }
 
-        // Create a fresh session (random seed)
-        struct HandRequest: Encodable { let drawMode: String }
-        struct HandResponse: Decodable { let uuid: String; let seed: Int64; let drawMode: String }
-
-        guard let hand: HandResponse =
-                try? await APIClient.shared.post("/api/v1/hands",
-                                                  body: HandRequest(drawMode: "draw1"))
-        else {
-            throw XCTSkip("Could not create hand — skipping E2E test")
+        let email    = ProcessInfo.processInfo.environment["TEST_EMAIL"] ?? ""
+        let password = ProcessInfo.processInfo.environment["TEST_PASSWORD"] ?? ""
+        guard !email.isEmpty, !password.isEmpty else {
+            throw XCTSkip("TEST_EMAIL / TEST_PASSWORD not set in scheme environment — skipping E2E (DEV-258)")
         }
 
-        guard hand.seed == knownWinSeed else {
-            throw XCTSkip("Created hand has seed \(hand.seed), not \(knownWinSeed) — skipping (DEV-261 needed for deterministic test seed)")
-        }
+        // 1. Authenticate — get JWT and user ID
+        let auth: AuthResponse = try await APIClient.shared.post(
+            "/api/v1/auth/login",
+            body: LoginRequest(email: email, password: password)
+        )
+        await APIClient.shared.setAccessToken(auth.accessToken)
 
-        // Create a session for that hand
-        struct SessionRequest: Encodable { let handUuid: String }
-        struct SessionResponse: Decodable { let uuid: String }
+        // 2. Create a hand with the known winning seed (DEV-261)
+        //    HandResponse JSON: { uuid, shuffleSeed, cards, drawMode } — no `id`
+        struct HandCreated: Decodable { let uuid: UUID; let shuffleSeed: Int64; let drawMode: String }
+        let hand: HandCreated = try await APIClient.shared.post(
+            "/api/v1/hands",
+            body: CreateHandRequest(drawMode: "draw1", seed: knownWinSeed)
+        )
+        XCTAssertEqual(hand.shuffleSeed, knownWinSeed,
+                       "Server must honour the requested seed — check DEV-261")
 
-        guard let session: SessionResponse =
-                try? await APIClient.shared.post("/api/v1/sessions",
-                                                  body: SessionRequest(handUuid: hand.uuid))
-        else {
-            throw XCTSkip("Could not create session — skipping E2E test")
-        }
+        // 3. Open a session for that hand
+        let sessionResp: CreateSessionResponse = try await APIClient.shared.post(
+            "/api/v1/sessions",
+            body: CreateSessionRequest(
+                handUuid: hand.uuid,
+                userId: auth.user.id,
+                isDaily: false,
+                dailyDate: nil,
+                isRanked: false
+            )
+        )
 
-        // Submit the verified winning turns
-        struct CompleteRequest: Encodable { let moves: Int; let timeSeconds: Int; let turns: String }
-        struct CompleteResponse: Decodable { let uuid: String; let completed: Bool }
-
-        let req = CompleteRequest(moves: 563, timeSeconds: 0, turns: knownWinTurns)
-        guard let result: CompleteResponse =
-                try? await APIClient.shared.post(
-                    "/api/v1/sessions/\(session.uuid)/complete", body: req)
-        else {
-            XCTFail("POST /api/v1/sessions/\(session.uuid)/complete failed")
-            return
-        }
-
-        XCTAssertTrue(result.completed, "Session should be marked completed after valid turns")
+        // 4. Submit the Python-verified 563-move winning turns (DEV-257)
+        let result: CompleteSessionResponse = try await APIClient.shared.post(
+            "/api/v1/sessions/\(sessionResp.session.uuid)/complete",
+            body: CompleteSessionRequest(moves: 563, timeSeconds: 0, turns: knownWinTurns)
+        )
+        XCTAssertTrue(result.valid,
+                      "Server rejected the turns: \(result.message)")
     }
 }

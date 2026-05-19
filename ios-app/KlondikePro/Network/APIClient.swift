@@ -71,7 +71,7 @@ actor APIClient {
         self.decoder = d
 
         let e = JSONEncoder()
-        e.keyEncodingStrategy  = .convertToSnakeCase
+        e.keyEncodingStrategy  = .useDefaultKeys   // backend uses camelCase (no snake_case mapping)
         e.dateEncodingStrategy = .iso8601
         self.encoder = e
     }

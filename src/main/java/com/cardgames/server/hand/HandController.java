@@ -51,6 +51,26 @@ public class HandController {
 
         String drawMode = (body != null && body.drawMode() != null) ? body.drawMode() : "draw3";
 
+        // DEV-261: honour an explicit seed (used by the iOS E2E test for a deterministic deal)
+        if (body != null && body.seed() != null) {
+            long seed = body.seed();
+            Hand hand;
+            try {
+                hand = handRepository.save(new Hand(seed, drawMode));
+            } catch (DataIntegrityViolationException e) {
+                // Seed already exists — return the existing hand idempotently
+                hand = handRepository.findByShuffleSeed(seed).orElse(null);
+                if (hand == null) {
+                    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+                }
+            }
+            int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
+            return new ResponseEntity<>(
+                new HandResponse(hand.getUuid(), hand.getShuffleSeed(), cards, hand.getDrawMode()),
+                HttpStatus.CREATED
+            );
+        }
+
         Hand hand = null;
         int attempts = 0;
         while (attempts < 5) {
