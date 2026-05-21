@@ -7,14 +7,15 @@ struct ContentView: View {
 
     @Environment(AuthStore.self) private var authStore
     @State private var selectedTab: AppTab = .home
+    @State private var gameStore = GameStore(userId: 0)
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeView()
+            HomeView(gameStore: gameStore, selectedTab: $selectedTab)
                 .tabItem { Label("Home", systemImage: "house.fill") }
                 .tag(AppTab.home)
 
-            Text("Game") // replaced Sprint iOS-4
+            GameView(store: gameStore)
                 .tabItem { Label("Game", systemImage: "suit.club.fill") }
                 .tag(AppTab.game)
 
@@ -31,6 +32,12 @@ struct ContentView: View {
                 .tag(AppTab.friends)
         }
         .tint(.yellow)
+        .onChange(of: authStore.userId) { _, newId in
+            if let id = newId { gameStore.userId = id }
+        }
+        .onAppear {
+            if let id = authStore.userId { gameStore.userId = id }
+        }
     }
 }
 

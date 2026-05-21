@@ -16,6 +16,7 @@ final class AuthStore {
     var isAuthenticated: Bool = false
     var isLoading: Bool = false
     var errorMessage: String?
+    var userId: Int?
 
     // MARK: - Private
 
@@ -37,6 +38,10 @@ final class AuthStore {
             try await self?.authService.refresh()
         }
 
+        // Restore userId from UserDefaults
+        let storedId = UserDefaults.standard.integer(forKey: "klondike_user_id")
+        if storedId > 0 { userId = storedId }
+
         do {
             try await authService.refresh()
             await fetchProfile()
@@ -56,7 +61,9 @@ final class AuthStore {
         defer { isLoading = false }
 
         do {
-            _ = try await authService.login(email: email, password: password)
+            let auth = try await authService.login(email: email, password: password)
+            userId = auth.user.id
+            UserDefaults.standard.set(auth.user.id, forKey: "klondike_user_id")
             await wireRefreshHandler()
             await fetchProfile()
             isAuthenticated = true
@@ -73,8 +80,10 @@ final class AuthStore {
         defer { isLoading = false }
 
         do {
-            _ = try await authService.register(
+            let auth = try await authService.register(
                 email: email, password: password, displayName: displayName)
+            userId = auth.user.id
+            UserDefaults.standard.set(auth.user.id, forKey: "klondike_user_id")
             await wireRefreshHandler()
             await fetchProfile()
             isAuthenticated = true
@@ -94,7 +103,9 @@ final class AuthStore {
 
         do {
             let request = try await GameCenterService.shared.authenticate()
-            _ = try await authService.loginWithGameCenter(request: request)
+            let auth = try await authService.loginWithGameCenter(request: request)
+            userId = auth.user.id
+            UserDefaults.standard.set(auth.user.id, forKey: "klondike_user_id")
             await wireRefreshHandler()
             await fetchProfile()
             isAuthenticated = true
@@ -111,6 +122,8 @@ final class AuthStore {
         try? await authService.logout()
         user = nil
         isAuthenticated = false
+        UserDefaults.standard.removeObject(forKey: "klondike_user_id")
+        userId = nil
     }
 
     // MARK: - Helpers

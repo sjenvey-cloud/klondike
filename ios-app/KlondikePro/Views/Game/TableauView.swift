@@ -1,0 +1,96 @@
+import SwiftUI
+
+/// Displays the seven tableau columns.
+struct TableauView: View {
+
+    let columns: [[Card]]
+    let cardWidth: CGFloat
+    let selected: CardSource?
+    var onTap: (Int, Int) -> Void
+    var onColumnTap: (Int) -> Void
+
+    private let faceDownOffset: CGFloat = 0.15
+    private let faceUpOffset: CGFloat   = 0.28
+
+    var body: some View {
+        HStack(alignment: .top, spacing: columnSpacing) {
+            ForEach(0..<7, id: \.self) { colIdx in
+                columnView(colIdx: colIdx)
+            }
+        }
+    }
+
+    private var columnSpacing: CGFloat {
+        max(2, (cardWidth * 0.1))
+    }
+
+    @ViewBuilder
+    private func columnView(colIdx: Int) -> some View {
+        let col = colIdx < columns.count ? columns[colIdx] : []
+
+        if col.isEmpty {
+            // Empty column placeholder — tap to place a King
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.white.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                style: StrokeStyle(lineWidth: 1, dash: [4])
+                            )
+                            .foregroundStyle(Color.secondary.opacity(0.4))
+                    )
+                Text("K")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: cardWidth, height: cardWidth * 1.4)
+            .onTapGesture { onColumnTap(colIdx) }
+            .accessibilityLabel("Empty column \(colIdx + 1), place a King here")
+            .accessibilityAddTraits(.isButton)
+        } else {
+            ZStack(alignment: .top) {
+                ForEach(Array(col.enumerated()), id: \.offset) { idx, card in
+                    let yOffset = cumulativeOffset(col: col, upToIdx: idx)
+                    CardView(
+                        card: card,
+                        isSelected: isCardSelected(colIdx: colIdx, idx: idx),
+                        width: cardWidth
+                    )
+                    .offset(y: yOffset)
+                    .onTapGesture { onTap(colIdx, idx) }
+                    .accessibilityLabel(card.isFaceUp ? card.accessibilityLabel : "Face down card in column \(colIdx + 1)")
+                    .accessibilityAddTraits(card.isFaceUp ? .isButton : [])
+                }
+            }
+            .frame(width: cardWidth, height: totalColumnHeight(col: col))
+        }
+    }
+
+    // MARK: - Geometry helpers
+
+    /// Cumulative Y offset for the card at `upToIdx` in the column.
+    private func cumulativeOffset(col: [Card], upToIdx: Int) -> CGFloat {
+        guard upToIdx > 0 else { return 0 }
+        var offset: CGFloat = 0
+        for i in 0..<upToIdx {
+            offset += cardWidth * (col[i].isFaceUp ? faceUpOffset : faceDownOffset)
+        }
+        return offset
+    }
+
+    /// Total height needed for the ZStack so it doesn't clip.
+    private func totalColumnHeight(col: [Card]) -> CGFloat {
+        let cardHeight = cardWidth * 1.4
+        guard !col.isEmpty else { return cardHeight }
+        let stackedHeight = cumulativeOffset(col: col, upToIdx: col.count - 1)
+        return stackedHeight + cardHeight
+    }
+
+    // MARK: - Selection helper
+
+    private func isCardSelected(colIdx: Int, idx: Int) -> Bool {
+        guard case .tableau(let selCol, let fromIdx) = selected else { return false }
+        return selCol == colIdx && idx >= fromIdx
+    }
+}

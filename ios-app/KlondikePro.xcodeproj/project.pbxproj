@@ -8,6 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		0AC5955F21710F4281B857D9 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA5F8625566E18782D12FB1 /* Card.swift */; };
+		AA000001AAAA0001AAAAAAAA /* GameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001AAAA0001AAAAAAAB /* GameStore.swift */; };
+		AA000002AAAA0002AAAAAAAA /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA0002AAAAAAAB /* CardView.swift */; };
+		AA000003AAAA0003AAAAAAAA /* StockWasteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003AAAA0003AAAAAAAB /* StockWasteView.swift */; };
+		AA000004AAAA0004AAAAAAAA /* FoundationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000004AAAA0004AAAAAAAB /* FoundationView.swift */; };
+		AA000005AAAA0005AAAAAAAA /* TableauView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005AAAA0005AAAAAAAB /* TableauView.swift */; };
+		AA000006AAAA0006AAAAAAAA /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006AAAA0006AAAAAAAB /* BoardView.swift */; };
+		AA000007AAAA0007AAAAAAAA /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000007AAAA0007AAAAAAAB /* GameView.swift */; };
+		AA000008AAAA0008AAAAAAAA /* WinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000008AAAA0008AAAAAAAB /* WinView.swift */; };
 		29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82365454A46200A51A0D48B4 /* Keychain.swift */; };
 		3E88FFA7E516C0E63D8354DC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2D246F07A435E209062B79 /* APIClient.swift */; };
 		564D606F481EDAD8DFAE0A9B /* AuthStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 605A2895BA9BA8E4ACEAA5B6 /* AuthStoreTests.swift */; };
@@ -39,6 +47,14 @@
 		010240EF3F62535CE4E5D304 /* KlondikePro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KlondikePro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		07BBBCFE9CC9760EEC990E7C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1DC0A0B313941647498C4E3E /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
+		AA000001AAAA0001AAAAAAAB /* GameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStore.swift; sourceTree = "<group>"; };
+		AA000002AAAA0002AAAAAAAB /* CardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardView.swift; sourceTree = "<group>"; };
+		AA000003AAAA0003AAAAAAAB /* StockWasteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockWasteView.swift; sourceTree = "<group>"; };
+		AA000004AAAA0004AAAAAAAB /* FoundationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationView.swift; sourceTree = "<group>"; };
+		AA000005AAAA0005AAAAAAAB /* TableauView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableauView.swift; sourceTree = "<group>"; };
+		AA000006AAAA0006AAAAAAAB /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
+		AA000007AAAA0007AAAAAAAB /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
+		AA000008AAAA0008AAAAAAAB /* WinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinView.swift; sourceTree = "<group>"; };
 		3AE03AFB1F2A3D0440CFF179 /* KlondikeProTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KlondikeProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterService.swift; sourceTree = "<group>"; };
 		605A2895BA9BA8E4ACEAA5B6 /* AuthStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStoreTests.swift; sourceTree = "<group>"; };
@@ -111,6 +127,7 @@
 			isa = PBXGroup;
 			children = (
 				AB129A26A83780794D310561 /* Auth */,
+				AA000009AAAA0009AAAAAAAB /* Game */,
 				CC0EF45334AB3BD2A16AD838 /* Home */,
 			);
 			path = Views;
@@ -137,8 +154,23 @@
 			isa = PBXGroup;
 			children = (
 				1DC0A0B313941647498C4E3E /* AuthStore.swift */,
+				AA000001AAAA0001AAAAAAAB /* GameStore.swift */,
 			);
 			path = Stores;
+			sourceTree = "<group>";
+		};
+		AA000009AAAA0009AAAAAAAB /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				AA000002AAAA0002AAAAAAAB /* CardView.swift */,
+				AA000003AAAA0003AAAAAAAB /* StockWasteView.swift */,
+				AA000004AAAA0004AAAAAAAB /* FoundationView.swift */,
+				AA000005AAAA0005AAAAAAAB /* TableauView.swift */,
+				AA000006AAAA0006AAAAAAAB /* BoardView.swift */,
+				AA000007AAAA0007AAAAAAAB /* GameView.swift */,
+				AA000008AAAA0008AAAAAAAB /* WinView.swift */,
+			);
+			path = Game;
 			sourceTree = "<group>";
 		};
 		B97924C42FC27647E09D2417 /* Products */ = {
@@ -279,14 +311,22 @@
 				EE2FC0FE98CCF9F5B2FA34B5 /* AuthService.swift in Sources */,
 				E54F6D4D74D5946A577EAFC4 /* AuthStore.swift in Sources */,
 				0AC5955F21710F4281B857D9 /* Card.swift in Sources */,
+				AA000002AAAA0002AAAAAAAA /* CardView.swift in Sources */,
+				AA000006AAAA0006AAAAAAAA /* BoardView.swift in Sources */,
 				815103FF922B4FB175CBF65F /* ContentView.swift in Sources */,
+				AA000004AAAA0004AAAAAAAA /* FoundationView.swift in Sources */,
 				F0A1B9C1A830EAE525C0F516 /* GameCenterService.swift in Sources */,
 				BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */,
+				AA000001AAAA0001AAAAAAAA /* GameStore.swift in Sources */,
+				AA000007AAAA0007AAAAAAAA /* GameView.swift in Sources */,
 				891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */,
 				29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */,
 				E97D476A6AC6DCBD2E03CB4B /* KlondikeProApp.swift in Sources */,
 				FB332A855C558F67B37BDD05 /* LoginView.swift in Sources */,
 				9A2C3EE0CC7F5636D8547790 /* SeededShuffle.swift in Sources */,
+				AA000003AAAA0003AAAAAAAA /* StockWasteView.swift in Sources */,
+				AA000005AAAA0005AAAAAAAA /* TableauView.swift in Sources */,
+				AA000008AAAA0008AAAAAAAA /* WinView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

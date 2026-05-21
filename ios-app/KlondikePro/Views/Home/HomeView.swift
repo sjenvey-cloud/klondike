@@ -4,6 +4,9 @@ import SwiftUI
 /// Full game integration completed Sprint iOS-4.
 struct HomeView: View {
 
+    let gameStore: GameStore
+    @Binding var selectedTab: AppTab
+
     @Environment(AuthStore.self) private var authStore
     @State private var drawMode: DrawMode = DrawMode(rawValue: UserDefaults.standard.string(forKey: "klondike_draw_mode") ?? "draw3") ?? .draw3
     @State private var activeSession: ActiveSessionItem?
@@ -27,7 +30,15 @@ struct HomeView: View {
 
                     // ── Resume banner ─────────────────────────────────────
                     if let active = activeSession {
-                        ResumeBanner(session: active)
+                        Button {
+                            Task {
+                                await gameStore.resumeGame(item: active)
+                                selectedTab = .game
+                            }
+                        } label: {
+                            ResumeBanner(session: active)
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     // ── Draw mode selector ────────────────────────────────
@@ -66,7 +77,10 @@ struct HomeView: View {
 
                     // ── New game button ───────────────────────────────────
                     Button {
-                        showNewGame = true
+                        Task {
+                            await gameStore.newGame(drawMode: drawMode.rawValue)
+                            selectedTab = .game
+                        }
                     } label: {
                         Label("New Game", systemImage: "play.fill")
                             .font(.headline)
