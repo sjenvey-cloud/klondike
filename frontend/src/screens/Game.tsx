@@ -222,10 +222,13 @@ export function Game({
       const hand = await getHand(currentHandId);
       if (dailyHand) {
         // Preserve daily context so the redealt session is still tagged correctly.
+        // Use the dailyDate prop (the actual challenge date) — NOT today's client date —
+        // so prior-daily redeals don't get mis-tagged with today and silently excluded
+        // from the correct day's leaderboard.
         // Backend will force isRanked=false if the user has already used their ranked slot.
         await game.startGame(hand, currentDrawMode, {
           isDaily:   true,
-          dailyDate: localDateString(new Date()),
+          dailyDate: dailyDate ?? localDateString(new Date()),
           isRanked:  true,
         });
       } else {

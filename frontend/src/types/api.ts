@@ -158,7 +158,6 @@ export interface DaySession {
 
 export interface DailyHandResponse {
   uuid: string;
-  date: string;
   cards: number[];
   drawMode: string;
 }

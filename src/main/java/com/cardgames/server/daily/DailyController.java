@@ -103,7 +103,7 @@ public class DailyController {
                     new String[]{ Session.STATUS_WON });
         }
 
-        return ResponseEntity.ok(new DailyHandResponse(handResponse, userHasRankedAttempt));
+        return ResponseEntity.ok(new DailyHandResponse(handResponse, userHasRankedAttempt, today.toString()));
     }
 
     /**
@@ -214,13 +214,26 @@ public class DailyController {
         // Determine the authenticated user's status per hand.
         // Only daily-challenge sessions (is_daily=true) count — casual replays of the
         // same hand must not affect the calendar dot / played / won indicator.
+        // Sessions are additionally filtered to only those whose daily_date matches the
+        // challenge date exactly, so a mis-tagged redeal (e.g. a prior-daily redeal that
+        // accidentally inherited today's date) does not light up the wrong calendar cell.
         Map<Integer, String> statusByHandId = new HashMap<>();
         if (auth != null) {
             int userId = (Integer) auth.getPrincipal();
             List<Integer> handIds = challenges.stream()
                 .map(DailyChallenge::getHandId).collect(Collectors.toList());
+
+            // Build a lookup from handId → the authoritative challenge date
+            Map<Integer, LocalDate> challengeDateByHandId = challenges.stream()
+                .collect(Collectors.toMap(DailyChallenge::getHandId, DailyChallenge::getChallengeDate));
+
             List<Session> sessions = sessionRepo.findDailySessionsByUserIdAndHandIdIn(userId, handIds);
             for (Session s : sessions) {
+                // Reject sessions whose daily_date doesn't match the challenge's actual date —
+                // guards against redeals of prior-day challenges that were mis-tagged with today.
+                LocalDate challengeDate = challengeDateByHandId.get(s.getHandId());
+                if (challengeDate == null || !challengeDate.equals(s.getDailyDate())) continue;
+
                 String cur = statusByHandId.getOrDefault(s.getHandId(), "not_played");
                 if ("won".equals(s.getStatus())) {
                     statusByHandId.put(s.getHandId(), "won");
@@ -272,7 +285,7 @@ public class DailyController {
         HandResponse handResponse = new HandResponse(
             hand.getUuid(), hand.getShuffleSeed(), cards, drawMode);
         // Past challenges are always practice (unranked)
-        return ResponseEntity.ok(new DailyHandResponse(handResponse, true));
+        return ResponseEntity.ok(new DailyHandResponse(handResponse, true, localDate.toString()));
     }
 
     /**

@@ -20,6 +20,7 @@ function formatTime(s: number | null | undefined): string {
 interface DailyResponse {
   hand: DailyHandResponse;
   userHasRankedAttempt: boolean;
+  date?: string; // ISO date string returned by the backend — authoritative challenge date
 }
 
 interface DailyWinData {
@@ -56,9 +57,10 @@ export function Daily(): React.JSX.Element {
   const [priorDailyWinData, setPriorDailyWinData] = useState<DailyWinData | null>(null);
 
   const drawMode = daily?.hand?.drawMode ?? 'draw3';
-  // Use the date from the backend response so the header always matches the actual
-  // challenge being played — client clock can be ahead of the backend after midnight.
-  const handDate   = daily?.hand?.date ?? localDateString(new Date());
+  // Use the date the backend returned with the challenge payload — not the client
+  // clock — so the header stays correct past local midnight when the backend is
+  // still serving the previous day's hand.
+  const handDate   = daily?.date ?? localDateString(new Date());
   const activeDate = priorDailyInfo?.date ?? handDate;
 
   useEffect(() => { document.title = 'Daily Challenge – Klondike Pro'; }, []);
