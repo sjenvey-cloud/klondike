@@ -97,10 +97,10 @@ html.game-fullwidth {
 }
 
 /* Draw-3: waste area is wider to accommodate the fanned cards.
-   FAN ≈ card-w × 0.31, max fan offset = 2×FAN ≈ 0.62×card-w.
-   Box = card-w + 1.5×FAN ≈ card-w × 1.46; top card overflows slightly into the spacer. */
+   FAN ≈ card-w × 0.46, max fan offset = 2×FAN ≈ 0.92×card-w.
+   Box = card-w + 1.5×FAN ≈ card-w × 1.69; top card overflows slightly into the spacer. */
 .waste-area--draw3 {
-  width: calc(var(--card-w) * 1.46);
+  width: calc(var(--card-w) * 1.69);
 }
 
 .waste-card {

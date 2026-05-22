@@ -426,7 +426,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
 
   const isDraw3 = drawMode === 'draw3';
   const cardW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-w')) || 52;
-  const FAN   = Math.round(cardW * 0.31);
+  const FAN   = Math.round(cardW * 0.46);
 
   const wasteTop    = waste.length > 0 ? waste[waste.length - 1] : null;
   const wasteSecond = isDraw3 && waste.length > 1 ? waste[waste.length - 2] : null;
