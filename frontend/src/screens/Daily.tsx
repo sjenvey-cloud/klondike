@@ -55,9 +55,11 @@ export function Daily(): React.JSX.Element {
   const [priorDailyInfo,    setPriorDailyInfo]    = useState<PriorDailyInfo | null>(null);
   const [priorDailyWinData, setPriorDailyWinData] = useState<DailyWinData | null>(null);
 
-  const today    = localDateString(new Date());
   const drawMode = daily?.hand?.drawMode ?? 'draw3';
-  const activeDate = priorDailyInfo?.date ?? today;
+  // Use the date from the backend response so the header always matches the actual
+  // challenge being played — client clock can be ahead of the backend after midnight.
+  const handDate   = daily?.hand?.date ?? localDateString(new Date());
+  const activeDate = priorDailyInfo?.date ?? handDate;
 
   useEffect(() => { document.title = 'Daily Challenge – Klondike Pro'; }, []);
   useEffect(() => {
@@ -248,7 +250,7 @@ export function Daily(): React.JSX.Element {
           moves={dailyWinData.moves}
           timeFormatted={dailyWinData.timeFormatted}
           rank={dailyWinData.rank}
-          date={today}
+          date={handDate}
           drawMode={drawMode}
           userUuid={user?.uuid}
           sessionUuid={dailyWinData.sessionUuid}
