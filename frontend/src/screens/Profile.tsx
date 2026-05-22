@@ -154,26 +154,66 @@ export function Profile(): React.JSX.Element {
     setAvatarUploading(true);
     setAvatarError('');
     try {
-      const { uploadUrl, publicUrl } = await requestAvatarUpload(file.type);
-
-      // PUT the file directly to S3 using the presigned URL
-      const s3Res = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-      if (!s3Res.ok) {
-        throw new Error(`S3 upload failed: ${s3Res.status}`);
+      // Step 1: Request presigned URL from backend
+      let uploadUrl: string;
+      let publicUrl: string;
+      try {
+        ({ uploadUrl, publicUrl } = await requestAvatarUpload(file.type));
+      } catch (err) {
+        const code = err instanceof Error ? err.message : String(err);
+        console.error('[Avatar] Step 1 (requestAvatarUpload) failed:', code);
+        throw new Error(`step1:${code}`);
       }
 
-      await confirmAvatarUpload(publicUrl);
+      // Step 2: PUT file directly to S3 via presigned URL
+      let s3Res: Response;
+      try {
+        s3Res = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type },
+        });
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        console.error('[Avatar] Step 2 (S3 PUT) network/CORS error:', detail);
+        throw new Error(`step2-network:${detail}`);
+      }
+      if (!s3Res.ok) {
+        console.error('[Avatar] Step 2 (S3 PUT) HTTP error:', s3Res.status);
+        throw new Error(`step2-http:${s3Res.status}`);
+      }
+
+      // Step 3: Confirm URL on user account
+      try {
+        await confirmAvatarUpload(publicUrl);
+      } catch (err) {
+        const code = err instanceof Error ? err.message : String(err);
+        console.error('[Avatar] Step 3 (confirmAvatarUpload) failed:', code);
+        throw new Error(`step3:${code}`);
+      }
+
       setAvatarUrl(publicUrl);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('S3 upload failed')) {
-        setAvatarError('Image upload failed. Please try again.');
+      const msg = err instanceof Error ? err.message : 'unknown';
+      if (msg.startsWith('step1:')) {
+        const code = msg.slice(6);
+        setAvatarError(
+          code === '400' ? 'Image type not supported. Please use JPEG or PNG.' :
+          code === '401' ? 'Session expired. Please sign in again.' :
+          `Upload failed (preparing: ${code}). Please try again.`
+        );
+      } else if (msg.startsWith('step2-network:')) {
+        setAvatarError('Upload failed: could not reach the image server. Please check your connection and try again.');
+      } else if (msg.startsWith('step2-http:')) {
+        const code = msg.slice(11);
+        setAvatarError(
+          code === '403' ? 'Upload rejected (permission denied). Please contact support.' :
+          `Upload failed (image server error ${code}). Please try again.`
+        );
+      } else if (msg.startsWith('step3:')) {
+        setAvatarError('Image uploaded but profile save failed. Please try again.');
       } else {
-        setAvatarError('Upload failed. Please check your connection and try again.');
+        setAvatarError('Upload failed. Please try again.');
       }
     } finally {
       setAvatarUploading(false);
