@@ -154,17 +154,27 @@ export function Profile(): React.JSX.Element {
     setAvatarUploading(true);
     setAvatarError('');
     try {
-      const { uploadUrl, cdnUrl, publicUrl } = await requestAvatarUpload(file.type);
-      await fetch(uploadUrl, {
+      const { uploadUrl, publicUrl } = await requestAvatarUpload(file.type);
+
+      // PUT the file directly to S3 using the presigned URL
+      const s3Res = await fetch(uploadUrl, {
         method: 'PUT',
         body: file,
         headers: { 'Content-Type': file.type },
       });
-      const finalUrl = publicUrl ?? cdnUrl;
-      await confirmAvatarUpload(finalUrl);
-      setAvatarUrl(finalUrl);
-    } catch {
-      setAvatarError('Upload failed. Please try again.');
+      if (!s3Res.ok) {
+        throw new Error(`S3 upload failed: ${s3Res.status}`);
+      }
+
+      await confirmAvatarUpload(publicUrl);
+      setAvatarUrl(publicUrl);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('S3 upload failed')) {
+        setAvatarError('Image upload failed. Please try again.');
+      } else {
+        setAvatarError('Upload failed. Please check your connection and try again.');
+      }
     } finally {
       setAvatarUploading(false);
       e.target.value = '';

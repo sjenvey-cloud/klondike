@@ -47,9 +47,8 @@ export interface ProfileResponse {
 }
 
 export interface AvatarUploadResponse {
-  uploadUrl: string;
-  cdnUrl: string;
-  publicUrl?: string;
+  uploadUrl: string;  // presigned S3 PUT URL — browser PUTs the file here directly
+  publicUrl: string;  // final CDN/S3 URL to save on the user's profile after upload
 }
 
 export interface StatsResponse {
