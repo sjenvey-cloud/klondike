@@ -25,7 +25,8 @@ export function ReplayBoard({ tableau, stock, waste, foundations, drawMode }: Re
   const wasteTop    = waste.length > 0 ? waste[waste.length - 1] : null;
   const wasteSecond = isDraw3 && waste.length > 1 ? waste[waste.length - 2] : null;
   const wasteThird  = isDraw3 && waste.length > 2 ? waste[waste.length - 3] : null;
-  const wasteTopLeft = isDraw3 ? Math.min(waste.length - 1, 2) * FAN : 0;
+  const wasteTopLeft    = isDraw3 ? Math.min(waste.length - 1, 2) * FAN : 0;
+  const wasteSecondLeft = isDraw3 ? Math.min(waste.length - 2, 1) * FAN : 0;
 
   return (
     <div className="rb-board">
@@ -42,7 +43,7 @@ export function ReplayBoard({ tableau, stock, waste, foundations, drawMode }: Re
             </div>
           )}
           {wasteSecond && (
-            <div className="rb-waste-card rb-waste-card--peek" style={{ left: FAN }}>
+            <div className="rb-waste-card rb-waste-card--peek" style={{ left: wasteSecondLeft }}>
               <Card card={wasteSecond.card} faceUp={true} />
             </div>
           )}

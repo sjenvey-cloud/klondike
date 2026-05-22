@@ -431,7 +431,13 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
   const wasteTop    = waste.length > 0 ? waste[waste.length - 1] : null;
   const wasteSecond = isDraw3 && waste.length > 1 ? waste[waste.length - 2] : null;
   const wasteThird  = isDraw3 && waste.length > 2 ? waste[waste.length - 3] : null;
-  const wasteTopLeft = isDraw3 ? Math.min(waste.length - 1, 2) * FAN : 0;
+  // Each card's left offset = its rank from the top clamped to its max slot.
+  // rank 1 (top):    min(waste-1, 2) * FAN  →  0 | FAN | 2×FAN
+  // rank 2 (second): min(waste-2, 1) * FAN  →  0 | FAN          (fixes 2-card case where both
+  //                                                                previously landed on FAN)
+  // rank 3 (third):  always 0
+  const wasteTopLeft    = isDraw3 ? Math.min(waste.length - 1, 2) * FAN : 0;
+  const wasteSecondLeft = isDraw3 ? Math.min(waste.length - 2, 1) * FAN : 0;
 
   return (
     <div className="board" onKeyDown={handleBoardKeyDown}>
@@ -552,7 +558,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
             </div>
           )}
           {wasteSecond && (
-            <div className="waste-card waste-card--peek" style={{ left: FAN }}>
+            <div className="waste-card waste-card--peek" style={{ left: wasteSecondLeft }}>
               <Card card={wasteSecond.card} faceUp={true} />
             </div>
           )}
