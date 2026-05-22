@@ -18,6 +18,7 @@ final class GameStore {
 
     var isWon: Bool { state?.isWon ?? false }
     var canUndo: Bool { !(state?.history.isEmpty ?? true) }
+    var lastDrawMode: String = "draw3"   // remembered across games
 
     // MARK: - Private
 
@@ -36,6 +37,8 @@ final class GameStore {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+
+        lastDrawMode = drawMode
 
         do {
             // Inline struct — HandResponse has no `id` field
@@ -90,6 +93,7 @@ final class GameStore {
         sessionUuid = item.uuid
 
         // Compute elapsed seconds from how long ago the session started
+        lastDrawMode = item.drawMode
         let elapsed = Int(Date().timeIntervalSince(item.startedAt))
         elapsedSeconds = max(0, elapsed)
 
