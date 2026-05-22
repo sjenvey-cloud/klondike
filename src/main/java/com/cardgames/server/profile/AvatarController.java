@@ -15,6 +15,9 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
@@ -31,6 +34,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/profile")
 public class AvatarController {
+
+    private static final Logger log = LoggerFactory.getLogger(AvatarController.class);
 
     private static final Set<String> ALLOWED_TYPES = Set.of("image/jpeg", "image/png");
 
@@ -84,6 +89,7 @@ public class AvatarController {
         PresignedPutObjectRequest presigned = presigner.presignPutObject(presignReq);
 
         String uploadUrl = presigned.url().toString();
+        log.info("Avatar presign: userId={} key={} uploadHost={}", userId, key, presigned.url().getHost());
         String publicUrl = cdnBaseUrl.stripTrailing() + "/" + key;
 
         return ResponseEntity.ok(new AvatarUploadResponse(uploadUrl, publicUrl));
