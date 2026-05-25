@@ -14,6 +14,7 @@ import { Replay }      from './screens/Replay';
 import { Login } from './screens/Login';
 import { AcceptInvite } from './screens/AcceptInvite';
 import { getPendingChallengeCount } from './services/api';
+import { flushPendingWin } from './hooks/useGame';
 
 // Ensure stores are initialised (side-effects: token refresh, prefs load, theme apply)
 import './stores/authStore';
@@ -26,6 +27,17 @@ import './index.css';
 export default function App(): React.JSX.Element {
   const { user } = useAuth();
   const [challengeCount, setChallengeCount] = useState(0);
+
+  // Re-submit any win that failed to reach the server (e.g. connection dropped
+  // exactly at the win moment).  Runs on auth and again whenever the browser
+  // reports that connectivity has been restored.
+  useEffect(() => {
+    if (!user) return;
+    flushPendingWin().catch(() => {});
+    const onOnline = (): void => { flushPendingWin().catch(() => {}); };
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;

@@ -31,6 +31,44 @@ import type {
 
 const BASE = '/api/v1';
 
+// ── Network retry ──────────────────────────────────────────────────────────
+
+/**
+ * Retry a fetch-based operation on network failure only (TypeError: Failed to fetch).
+ * HTTP error responses (4xx / 5xx) are never retried — they carry server-side meaning
+ * and retrying would not help.
+ *
+ * Delays are exponential: baseDelayMs × 2^attempt  (0.8s, 1.6s, 3.2s …).
+ *
+ * @param fn          Zero-arg factory that fires the request each attempt
+ * @param maxAttempts Total attempts before giving up (default 3)
+ * @param baseDelayMs Initial wait before the second attempt in ms (default 800)
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts = 3,
+  baseDelayMs = 800,
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      // TypeError means the fetch itself never reached the server (offline,
+      // DNS, connection reset, etc.).  HTTP-level errors are plain Error
+      // instances thrown by handleResponse and should not be retried.
+      if (!(err instanceof TypeError)) throw err;
+      if (attempt < maxAttempts - 1) {
+        await new Promise<void>(resolve =>
+          setTimeout(resolve, baseDelayMs * 2 ** attempt),
+        );
+      }
+    }
+  }
+  throw lastErr;
+}
+
 // ── Auth-aware fetch helpers ───────────────────────────────────────────────
 
 function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
@@ -131,13 +169,21 @@ export const createSession = (
   post('/sessions', { handUuid, userId, isDaily, dailyDate, isRanked }) as Promise<CreateSessionResponse>;
 
 // POST /api/v1/sessions/{uuid}/complete → { valid, message, moveCount, session }
+// Retried up to 4 times on network failure — submitting a win is too important to drop
+// on the first flaky request.  The endpoint is effectively idempotent (same UUID + turns
+// → same result), so retrying is safe even if the server processed a previous attempt
+// but the response never reached the client.
 export const completeSession = (
   uuid: string,
   moves: number,
   timeSeconds: number,
   turns: string,
 ): Promise<CompleteSessionResponse> =>
-  post(`/sessions/${uuid}/complete`, { moves, timeSeconds, turns }) as Promise<CompleteSessionResponse>;
+  withRetry(
+    () => post(`/sessions/${uuid}/complete`, { moves, timeSeconds, turns }),
+    4,    // attempts: immediate, +0.8 s, +1.6 s, +3.2 s  (~5.6 s total)
+    800,
+  ) as Promise<CompleteSessionResponse>;
 
 // POST /api/v1/sessions/{uuid}/abandon
 export const abandonSession = (
@@ -154,8 +200,14 @@ export const getActiveSession = (): Promise<ActiveSessionsResponse> =>
   get('/sessions/active') as Promise<ActiveSessionsResponse>;
 
 // ── Daily ─────────────────────────────────────────────────────────────────
+// Retried silently so transient connectivity blips don't immediately surface
+// the "Daily Challenge not available" error screen.
 export const getDaily = (drawMode = 'draw3'): Promise<DailyHandResponse> =>
-  get(`/daily?drawMode=${drawMode}`) as Promise<DailyHandResponse>;
+  withRetry(
+    () => get(`/daily?drawMode=${drawMode}`),
+    3,   // attempts: immediate, +0.8 s, +1.6 s  (~2.4 s max before error UI shows)
+    800,
+  ) as Promise<DailyHandResponse>;
 export const getDailyCalendar = (drawMode = 'draw3', months = 4): Promise<DailyCalendarEntry[]> =>
   get(`/daily/calendar?drawMode=${drawMode}&months=${months}`) as Promise<DailyCalendarEntry[]>;
 export const getDailyByDate = (date: string, drawMode = 'draw3'): Promise<DailyHandResponse> =>

@@ -8,6 +8,16 @@ import { createHand, createSession, completeSession, abandonSession } from '../s
 import type { CompleteSessionResponse } from '../types/api';
 
 // ── DEV-66: Session persistence ────────────────────────────────────────────
+//
+// Game state is stored in localStorage (not sessionStorage) so it survives:
+//   • tab close / reopen
+//   • mobile browser moving the app to the background
+//   • browser restarts / crashes (on the same device)
+//   • accidental page refresh mid-game
+//
+// localStorage is shared across tabs of the same origin, but collisions are
+// avoided by the separate keys for daily vs random games.
+
 const SESSION_KEY       = 'klondike_session';
 export const DAILY_SESSION_KEY = 'klondike_daily_session';
 
@@ -30,7 +40,7 @@ function saveSession(
   key = SESSION_KEY,
 ): void {
   try {
-    sessionStorage.setItem(key, JSON.stringify({
+    localStorage.setItem(key, JSON.stringify({
       sessionId,
       handId,
       gameState: {
@@ -48,18 +58,75 @@ function saveSession(
 
 function loadSession(key = SESSION_KEY): PersistedSession | null {
   try {
-    const raw = sessionStorage.getItem(key);
+    const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as PersistedSession) : null;
   } catch { return null; }
 }
 
 function clearSession(key = SESSION_KEY): void {
-  sessionStorage.removeItem(key);
+  localStorage.removeItem(key);
 }
 
 // Kept for any external callers (currently none, but exported for safety).
 export function clearSavedSession(): void {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
+}
+
+// ── Pending-win queue ──────────────────────────────────────────────────────
+//
+// If completeSession() fails after all network retries (e.g. the device goes
+// offline exactly at the win moment), the win payload is stored here so it can
+// be re-submitted the next time the user comes back online or opens the app.
+//
+// Only one pending win is stored — the most recent one.  The endpoint is
+// effectively idempotent (same session UUID + same turns → same server result)
+// so retrying is safe even if a previous attempt partially succeeded.
+
+const PENDING_WIN_KEY = 'klondike_pending_win';
+
+interface PendingWin {
+  sessionUuid: string;
+  moves: number;
+  timeSeconds: number;
+  turns: string;
+}
+
+function savePendingWin(data: PendingWin): void {
+  try { localStorage.setItem(PENDING_WIN_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+}
+
+function clearPendingWin(): void {
+  localStorage.removeItem(PENDING_WIN_KEY);
+}
+
+function loadPendingWin(): PendingWin | null {
+  try {
+    const raw = localStorage.getItem(PENDING_WIN_KEY);
+    return raw ? (JSON.parse(raw) as PendingWin) : null;
+  } catch { return null; }
+}
+
+/**
+ * Attempt to submit any win that previously failed due to a network error.
+ * Call this on app boot (when the user is authenticated) and whenever the
+ * browser fires the "online" event.  Safe to call repeatedly — exits
+ * immediately if there is no pending win.
+ */
+export async function flushPendingWin(): Promise<void> {
+  const pending = loadPendingWin();
+  if (!pending) return;
+  try {
+    await completeSession(
+      pending.sessionUuid,
+      pending.moves,
+      pending.timeSeconds,
+      pending.turns,
+    );
+    clearPendingWin();
+  } catch {
+    // Still offline or server error — leave the pending win in place for the
+    // next attempt.  Do not re-throw: callers should not crash on this path.
+  }
 }
 
 // ── Reducer types ─────────────────────────────────────────────────────────
@@ -483,9 +550,31 @@ export function useGame(userId: number | null, sessionKey = SESSION_KEY): UseGam
 
   const finishGame = useCallback(async (): Promise<CompleteSessionResponse> => {
     const timeSeconds = Math.floor((Date.now() - startTimeRef.current!) / 1000);
-    const result = await completeSession(sessionId!, state.moves, timeSeconds, state.turns.join(','));
-    clearSession(sessionKey);
-    return result;
+    const winPayload: PendingWin = {
+      sessionUuid: sessionId!,
+      moves:       state.moves,
+      timeSeconds,
+      turns:       state.turns.join(','),
+    };
+    try {
+      const result = await completeSession(
+        winPayload.sessionUuid,
+        winPayload.moves,
+        winPayload.timeSeconds,
+        winPayload.turns,
+      );
+      clearSession(sessionKey);
+      clearPendingWin(); // clear any stale pending win from a previous crash
+      return result;
+    } catch (err) {
+      // Network still down after all retries — persist the win so it can be
+      // re-submitted when connectivity returns (see flushPendingWin).
+      // The local game state is cleared regardless so the player sees the win
+      // animation and is not stuck on a completed board.
+      savePendingWin(winPayload);
+      clearSession(sessionKey);
+      throw err;
+    }
   }, [sessionId, state.moves, state.turns, sessionKey]);
 
   const abandon = useCallback(async (): Promise<void> => {
