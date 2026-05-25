@@ -294,7 +294,7 @@ export function Game({
         game={game}
         timer={timer}
         drawMode={game.drawMode}
-        onNewGame={handleNewGame}
+        onNewGame={dailyHand ? undefined : handleNewGame}
         onLeaderboard={handleOpenLeaderboard}
         onRedeal={handleRedeal}
         stockSide={preferences?.stockSide || 'left'}
