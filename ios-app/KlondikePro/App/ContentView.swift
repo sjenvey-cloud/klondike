@@ -7,7 +7,8 @@ struct ContentView: View {
 
     @Environment(AuthStore.self) private var authStore
     @State private var selectedTab: AppTab = .home
-    @State private var gameStore = GameStore(userId: 0)
+    @State private var gameStore  = GameStore(userId: 0)
+    @State private var dailyStore = DailyStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -19,7 +20,8 @@ struct ContentView: View {
                 .tabItem { Label("Game", systemImage: "suit.club.fill") }
                 .tag(AppTab.game)
 
-            Text("Daily") // replaced Sprint iOS-5
+            DailyView()
+                .environment(dailyStore)
                 .tabItem { Label("Daily", systemImage: "calendar") }
                 .tag(AppTab.daily)
 
@@ -33,10 +35,16 @@ struct ContentView: View {
         }
         .tint(.yellow)
         .onChange(of: authStore.userId) { _, newId in
-            if let id = newId { gameStore.userId = id }
+            if let id = newId {
+                gameStore.userId  = id
+                dailyStore.userId = id
+            }
         }
         .onAppear {
-            if let id = authStore.userId { gameStore.userId = id }
+            if let id = authStore.userId {
+                gameStore.userId  = id
+                dailyStore.userId = id
+            }
         }
     }
 }

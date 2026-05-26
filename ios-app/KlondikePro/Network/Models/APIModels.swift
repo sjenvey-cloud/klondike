@@ -171,30 +171,46 @@ struct ActiveSessionItem: Decodable {
 
 // MARK: - Daily
 
+/// The hand payload inside a DailyHandResponse.
+/// Matches the server's HandResponse record — no `id` field.
+struct DailyHand: Decodable {
+    let uuid: UUID
+    let shuffleSeed: Int64
+    let cards: [Int]
+    let drawMode: String
+}
+
+/// Top-level response from GET /api/v1/daily and GET /api/v1/daily/{date}.
+/// The `date` field is the authoritative challenge date from the backend —
+/// use this, not the device clock, to tag sessions and display the header.
 struct DailyResponse: Decodable {
-    let hand: Hand
+    let hand: DailyHand
     let userHasRankedAttempt: Bool
+    let date: String   // "yyyy-MM-dd" — canonical challenge date
 }
 
 struct DailyCalendarEntry: Decodable, Identifiable {
     let date: String
-    let handId: Int
+    let handUuid: UUID?    // nil when no challenge exists for this day
     let drawMode: String
-    let userStatus: String   // won | played | not_played
+    let userStatus: String // won | played | not_played
 
     var id: String { date }
 }
 
 // MARK: - Leaderboard
 
+/// One row in the daily leaderboard.
+/// `sessionUuid` is present when the entry can be replayed.
 struct DailyLeaderboardEntry: Decodable, Identifiable {
     let rank: Int
-    let userId: Int
+    let userUuid: UUID?
     let displayName: String
     let moves: Int
     let timeSeconds: Int
+    let sessionUuid: UUID?
 
-    var id: Int { userId }
+    var id: String { userUuid?.uuidString ?? displayName }
 }
 
 struct GlobalLeaderboardEntry: Decodable, Identifiable {

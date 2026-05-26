@@ -20,6 +20,11 @@ final class GameStore {
     var canUndo: Bool { !(state?.history.isEmpty ?? true) }
     var lastDrawMode: String = "draw3"   // remembered across games
 
+    /// Set when this store is running a daily challenge session.
+    /// Used by DailyWinView to display ranked/practice badge and fetch rank.
+    var isRankedSession: Bool = false
+    var dailyDate: String? = nil
+
     // MARK: - Private
 
     private var timerTask: Task<Void, Never>?
@@ -67,6 +72,53 @@ final class GameStore {
             let newState = GameState(seed: hand.shuffleSeed, drawMode: hand.drawMode)
             state = newState
             handUuid = hand.uuid
+            sessionUuid = sessionResp.session.uuid
+            elapsedSeconds = 0
+            stopTimer()
+            startTimer()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Start Daily Game (DEV-273)
+
+    /// Starts a daily challenge session for a pre-fetched hand.
+    /// Uses the `date` string from the backend response — never the device clock —
+    /// so sessions are tagged with the correct challenge date past local midnight.
+    func startDaily(
+        handUuid: UUID,
+        shuffleSeed: Int64,
+        drawMode: String,
+        date: String,
+        isRanked: Bool
+    ) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        lastDrawMode = drawMode
+        dailyDate = date
+
+        do {
+            let sessionResp: CreateSessionResponse = try await APIClient.shared.post(
+                "/api/v1/sessions",
+                body: CreateSessionRequest(
+                    handUuid: handUuid,
+                    userId: userId,
+                    isDaily: true,
+                    dailyDate: date,
+                    isRanked: isRanked
+                )
+            )
+
+            // Honour the server's isRanked decision — it may downgrade if the user
+            // already has a ranked win for this date and draw mode.
+            isRankedSession = sessionResp.isRanked
+
+            let newState = GameState(seed: shuffleSeed, drawMode: drawMode)
+            state = newState
+            self.handUuid = handUuid
             sessionUuid = sessionResp.session.uuid
             elapsedSeconds = 0
             stopTimer()
