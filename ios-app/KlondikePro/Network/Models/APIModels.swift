@@ -99,20 +99,18 @@ struct CreateHandRequest: Encodable {
 
 // MARK: - Sessions
 
+/// Minimal session representation returned by the server.
+/// The backend @JsonIgnore's id/handId/userId and LocalDateTime fields
+/// serialise without a timezone, so we only decode what's reliably present.
+/// Matches the web frontend's SessionSummary shape.
 struct Session: Decodable, Identifiable {
-    let id: Int
     let uuid: UUID
-    let handId: Int
-    let handUuid: UUID?
-    let userId: Int
     let status: String   // active | won | abandoned
     let moves: Int
     let timeSeconds: Int
-    let drawMode: String
-    let isDaily: Bool
-    let isRanked: Bool?
-    let startedAt: Date?
-    let completedAt: Date?
+    let isRanked: Bool?  // optional — guards against is* naming variants across Jackson versions
+
+    var id: UUID { uuid }
 }
 
 struct CreateSessionRequest: Encodable {
