@@ -26,6 +26,11 @@ final class AuthStore {
 
     /// Called from KlondikeProApp.task — attempts silent refresh using stored
     /// Keychain token. If Keychain is empty the user sees LoginView.
+    ///
+    /// Uses optimistic auth: if a stored token exists we mark the user as
+    /// authenticated immediately (so ContentView renders without waiting for a
+    /// network round-trip), then refresh silently in the background.  If the
+    /// refresh fails we revert to unauthenticated state so LoginView is shown.
     func tryRefreshOnLaunch() async {
         guard let storedToken = Keychain.load(.accessToken) else {
             return  // no token → show login
@@ -42,14 +47,23 @@ final class AuthStore {
         let storedId = UserDefaults.standard.integer(forKey: "klondike_user_id")
         if storedId > 0 { userId = storedId }
 
-        do {
-            try await authService.refresh()
-            await fetchProfile()
-            isAuthenticated = true
-        } catch {
-            // Refresh failed — clear tokens and show login
-            Keychain.clearAll()
-            await APIClient.shared.setAccessToken(nil)
+        // Optimistically authenticate now — ContentView appears immediately.
+        // The background refresh below will revert if the token is no longer valid.
+        isAuthenticated = true
+
+        // Background refresh: renew the access token without blocking the UI.
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await authService.refresh()
+                await fetchProfile()
+            } catch {
+                // Refresh failed — stored token is no longer valid; show login.
+                Keychain.clearAll()
+                await APIClient.shared.setAccessToken(nil)
+                userId = nil
+                isAuthenticated = false
+            }
         }
     }
 
