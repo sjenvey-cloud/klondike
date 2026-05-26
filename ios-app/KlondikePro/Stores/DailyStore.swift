@@ -37,7 +37,8 @@ final class DailyStore {
 
     // MARK: - Auth context (set by ContentView after login)
 
-    var userId: Int = 0
+    /// Seeded from UserDefaults so it's valid even before ContentView.onAppear fires.
+    var userId: Int = UserDefaults.standard.integer(forKey: "klondike_user_id")
 
     // MARK: - Draw mode (DEV-278) — persisted across launches
 
@@ -113,6 +114,10 @@ final class DailyStore {
 
     func startGame() async {
         guard let hand = dailyHand else { return }
+        guard userId > 0 else {
+            handError = "Not signed in. Please restart the app and sign in again."
+            return
+        }
         priorDate = nil
         winResult  = nil
 
@@ -138,6 +143,10 @@ final class DailyStore {
     // MARK: - Start prior daily game (DEV-277)
 
     func startPriorGame(handUuid: UUID, shuffleSeed: Int64, drawMode: String, date: String) async {
+        guard userId > 0 else {
+            handError = "Not signed in. Please restart the app and sign in again."
+            return
+        }
         priorDate = date
         winResult  = nil
 
