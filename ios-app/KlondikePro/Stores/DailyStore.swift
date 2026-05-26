@@ -32,6 +32,7 @@ enum LeaderboardSort: String, CaseIterable {
 /// today's hand, active game session, leaderboard, calendar, and win result.
 ///
 /// One instance lives in ContentView and is injected via the environment.
+@MainActor
 @Observable
 final class DailyStore {
 

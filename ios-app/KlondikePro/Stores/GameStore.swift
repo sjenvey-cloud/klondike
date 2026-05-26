@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 
+@MainActor
 @Observable
 final class GameStore {
 
@@ -239,7 +240,7 @@ final class GameStore {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
                 if Task.isCancelled { break }
-                await MainActor.run { elapsedSeconds += 1 }
+                elapsedSeconds += 1   // already on @MainActor
             }
         }
     }

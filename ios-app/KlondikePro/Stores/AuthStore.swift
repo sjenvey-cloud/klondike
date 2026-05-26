@@ -7,6 +7,7 @@ import Observation
 ///  1. Load access token from Keychain — if present, mark authenticated and push
 ///     token into APIClient, then attempt a silent refresh to renew it.
 ///  2. If no token, remain unauthenticated → LoginView shown.
+@MainActor
 @Observable
 final class AuthStore {
 
