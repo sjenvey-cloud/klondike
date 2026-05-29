@@ -16,22 +16,21 @@ struct GameView: View {
 
             } else if store.state != nil {
                 // ── Live game board ──────────────────────────────────────
-                NavigationStack {
-                    VStack(spacing: 0) {
-                        statsBar
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
+                // No NavigationStack needed here — this view has no nav destinations
+                // and the deprecated .navigationBarHidden(true) can leave an invisible
+                // touch-absorbing bar region.
+                VStack(spacing: 0) {
+                    statsBar
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
 
-                        GeometryReader { proxy in
-                            let totalSpacing: CGFloat = 16 * 2 + 6 * 2
-                            let cardWidth = (proxy.size.width - totalSpacing) / 7
-                            BoardView(store: store, cardWidth: max(36, cardWidth))
-                        }
+                    GeometryReader { proxy in
+                        let totalSpacing: CGFloat = 16 * 2 + 6 * 2
+                        let cardWidth = (proxy.size.width - totalSpacing) / 7
+                        BoardView(store: store, cardWidth: max(36, cardWidth))
                     }
-                    .background(Color(red: 0.05, green: 0.07, blue: 0.10))
-                    .navigationTitle("")
-                    .navigationBarHidden(true)
                 }
+                .background(Color(red: 0.05, green: 0.07, blue: 0.10))
                 .sheet(isPresented: winBinding) {
                     WinView(
                         store: store,
@@ -49,10 +48,13 @@ struct GameView: View {
             }
 
             // ── Error banner (floats above everything) ───────────────────
+            // The Spacer is non-interactive so touches on the game board
+            // below the banner still register while the error is visible.
             if let msg = store.errorMessage {
                 VStack {
                     errorBanner(msg)
                     Spacer()
+                        .allowsHitTesting(false)
                 }
             }
         }
