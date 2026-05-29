@@ -6,9 +6,10 @@ import SwiftUI
 struct ContentView: View {
 
     @Environment(AuthStore.self) private var authStore
-    @State private var selectedTab: AppTab = .home
-    @State private var gameStore  = GameStore(userId: 0)
-    @State private var dailyStore = DailyStore()
+    @State private var selectedTab: AppTab  = .home
+    @State private var gameStore            = GameStore(userId: 0)
+    @State private var dailyStore           = DailyStore()
+    @State private var profileStore         = ProfileStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -25,7 +26,9 @@ struct ContentView: View {
                 .tabItem { Label("Daily", systemImage: "calendar") }
                 .tag(AppTab.daily)
 
-            Text("Profile") // replaced Sprint iOS-6
+            ProfileView()
+                .environment(profileStore)
+                .environment(authStore)
                 .tabItem { Label("Profile", systemImage: "person.fill") }
                 .tag(AppTab.profile)
 
@@ -36,14 +39,16 @@ struct ContentView: View {
         .tint(.yellow)
         .onChange(of: authStore.userId) { _, newId in
             if let id = newId {
-                gameStore.userId  = id
-                dailyStore.userId = id
+                gameStore.userId    = id
+                dailyStore.userId   = id
+                profileStore.userId = id
             }
         }
         .onAppear {
             if let id = authStore.userId {
-                gameStore.userId  = id
-                dailyStore.userId = id
+                gameStore.userId    = id
+                dailyStore.userId   = id
+                profileStore.userId = id
             }
         }
     }

@@ -8,34 +8,41 @@
 
 /* Begin PBXBuildFile section */
 		0AC5955F21710F4281B857D9 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA5F8625566E18782D12FB1 /* Card.swift */; };
+		11381BD6A0654CA502614B5A /* TableauView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B586AE464A839F50DD86EC2 /* TableauView.swift */; };
+		135F4806B77BC89CC4583B22 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512C19ACC3F203901D591FEE /* ProfileStore.swift */; };
+		19F7B984B7563959AB7936E9 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F67D46359EB2AD9D45B287 /* GameView.swift */; };
+		1CBE34606C20571FA47A8355 /* GameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 050FBCCA8BF16FE4B8308A2C /* GameStore.swift */; };
 		29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82365454A46200A51A0D48B4 /* Keychain.swift */; };
+		34CA6723F2BBA5A1FC57D1CB /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */; };
+		3D20D85B7C25A5999717A991 /* DailyLeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172A33CB1603974D48FADA11 /* DailyLeaderboardView.swift */; };
+		3D2D5485E0F2A3A0C6ABE05D /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C555469E834A3638D6EF661 /* ProfileView.swift */; };
 		3E88FFA7E516C0E63D8354DC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2D246F07A435E209062B79 /* APIClient.swift */; };
+		3F977C01278905F811FAD3CA /* DailyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E70966DB3F67149055BD6E76 /* DailyView.swift */; };
+		41E9F93F85EA8DC164A98E38 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C9246235BCE70EC74AAC3C9 /* CardView.swift */; };
+		44FCFE39E0A5632C10A57A21 /* WinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0860FB7279BDC4BC02B0FEEE /* WinView.swift */; };
+		4D26C50E9E2E6FE0380A38AE /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A6C3E2CBE1DEBDFA65B69D /* AccountView.swift */; };
+		50FEF06FA2A6C8CA99616433 /* ProfileStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F055786853EEE1805565D2EE /* ProfileStatsView.swift */; };
 		564D606F481EDAD8DFAE0A9B /* AuthStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 605A2895BA9BA8E4ACEAA5B6 /* AuthStoreTests.swift */; };
 		5A32BA858AB7C995C921D541 /* SeededShuffleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF36838332983CA9202004A5 /* SeededShuffleTests.swift */; };
+		62DC05719C2E4CE496A24331 /* DayDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3570B70567E1C167B66EC95D /* DayDetailSheet.swift */; };
+		7062161B2FD9EF601A969512 /* ProfileCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB006AC5513E0020BBEDCF5 /* ProfileCalendarView.swift */; };
 		815103FF922B4FB175CBF65F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17A4EAD55DC0F7E5F38C301 /* ContentView.swift */; };
 		891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6956EDB6ED3254EA6AB2B5 /* HomeView.swift */; };
 		9A2C3EE0CC7F5636D8547790 /* SeededShuffle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E80BD7ADE0BC91094C3DC96A /* SeededShuffle.swift */; };
 		A07CBA79AF0F1BFC100C3C5D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D81F41C477341AC64871155A /* Assets.xcassets */; };
-		AA000001AAAA0001AAAAAAAA /* GameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001AAAA0001AAAAAAAB /* GameStore.swift */; };
-		AA000002AAAA0002AAAAAAAA /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AAAA0002AAAAAAAB /* CardView.swift */; };
-		AA000003AAAA0003AAAAAAAA /* StockWasteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003AAAA0003AAAAAAAB /* StockWasteView.swift */; };
-		AA000004AAAA0004AAAAAAAA /* FoundationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000004AAAA0004AAAAAAAB /* FoundationView.swift */; };
-		AA000005AAAA0005AAAAAAAA /* TableauView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005AAAA0005AAAAAAAB /* TableauView.swift */; };
-		AA000006AAAA0006AAAAAAAA /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006AAAA0006AAAAAAAB /* BoardView.swift */; };
-		AA000007AAAA0007AAAAAAAA /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000007AAAA0007AAAAAAAB /* GameView.swift */; };
-		AA000008AAAA0008AAAAAAAA /* WinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000008AAAA0008AAAAAAAB /* WinView.swift */; };
+		B147C731D18BF780686F1CEA /* ProfileRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5363B86050F2A607F9998C1 /* ProfileRecordsView.swift */; };
+		B3CA39B583DCE12999B7D419 /* DailyGameTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00BCB2B6EC3339DE55C4934 /* DailyGameTab.swift */; };
 		BBAFF4C5DC976F0EB69AAC87 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7995B36BFD248C14BA9A66DE /* APIModels.swift */; };
-		DD000001DD000001DDBBBBBB /* DailyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000001DD000001DD000001 /* DailyStore.swift */; };
-		DD000002DD000002DDBBBBBB /* DailyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000002DD000002DD000002 /* DailyView.swift */; };
-		DD000003DD000003DDBBBBBB /* DailyGameTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000003DD000003DD000003 /* DailyGameTab.swift */; };
-		DD000004DD000004DDBBBBBB /* DailyLeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000004DD000004DD000004 /* DailyLeaderboardView.swift */; };
-		DD000005DD000005DDBBBBBB /* DailyCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000005DD000005DD000005 /* DailyCalendarView.swift */; };
-		DD000006DD000006DDBBBBBB /* DailyWinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD000006DD000006DD000006 /* DailyWinView.swift */; };
 		BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E666186D530D52E62B08E28 /* GameState.swift */; };
+		C78AE489D607225776C2B84D /* DailyWinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E187E3C12127F39A68A308F7 /* DailyWinView.swift */; };
+		CE94FBF611C29081570A04A0 /* DailyCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2953A3E7308E64EAA05071F2 /* DailyCalendarView.swift */; };
 		E54F6D4D74D5946A577EAFC4 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC0A0B313941647498C4E3E /* AuthStore.swift */; };
 		E97D476A6AC6DCBD2E03CB4B /* KlondikeProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A83FD1B58530756EBABAE921 /* KlondikeProApp.swift */; };
+		EA1FC02E10AD9DB01F7E71A2 /* FoundationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A05CF0FE2083FEA0A5BB61 /* FoundationView.swift */; };
 		EE2FC0FE98CCF9F5B2FA34B5 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3CA2C83876E42F975FAACB0 /* AuthService.swift */; };
 		F0A1B9C1A830EAE525C0F516 /* GameCenterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */; };
+		F142C993F5BAAE149B2CCD0D /* StockWasteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31BE7CE29DE51A25AC6FA604 /* StockWasteView.swift */; };
+		FA6FEBDA8F754DE0D2B015E4 /* DailyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 961A5F1798DF826DF989EFE2 /* DailyStore.swift */; };
 		FB332A855C558F67B37BDD05 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B40829FA0B52D6FB76FADE /* LoginView.swift */; };
 /* End PBXBuildFile section */
 
@@ -50,40 +57,47 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		010240EF3F62535CE4E5D304 /* KlondikePro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KlondikePro.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		010240EF3F62535CE4E5D304 /* KlondikePro.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KlondikePro.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		050FBCCA8BF16FE4B8308A2C /* GameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStore.swift; sourceTree = "<group>"; };
 		07BBBCFE9CC9760EEC990E7C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		0860FB7279BDC4BC02B0FEEE /* WinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinView.swift; sourceTree = "<group>"; };
+		172A33CB1603974D48FADA11 /* DailyLeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyLeaderboardView.swift; sourceTree = "<group>"; };
 		1DC0A0B313941647498C4E3E /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
-		3AE03AFB1F2A3D0440CFF179 /* KlondikeProTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KlondikeProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
+		2953A3E7308E64EAA05071F2 /* DailyCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCalendarView.swift; sourceTree = "<group>"; };
+		2C555469E834A3638D6EF661 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		31BE7CE29DE51A25AC6FA604 /* StockWasteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockWasteView.swift; sourceTree = "<group>"; };
+		3570B70567E1C167B66EC95D /* DayDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailSheet.swift; sourceTree = "<group>"; };
+		35A6C3E2CBE1DEBDFA65B69D /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		37A05CF0FE2083FEA0A5BB61 /* FoundationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationView.swift; sourceTree = "<group>"; };
+		3AE03AFB1F2A3D0440CFF179 /* KlondikeProTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KlondikeProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterService.swift; sourceTree = "<group>"; };
+		512C19ACC3F203901D591FEE /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
 		605A2895BA9BA8E4ACEAA5B6 /* AuthStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStoreTests.swift; sourceTree = "<group>"; };
+		64F67D46359EB2AD9D45B287 /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
+		6C9246235BCE70EC74AAC3C9 /* CardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardView.swift; sourceTree = "<group>"; };
 		6E666186D530D52E62B08E28 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		7995B36BFD248C14BA9A66DE /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
 		82365454A46200A51A0D48B4 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		8B586AE464A839F50DD86EC2 /* TableauView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableauView.swift; sourceTree = "<group>"; };
+		961A5F1798DF826DF989EFE2 /* DailyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStore.swift; sourceTree = "<group>"; };
+		A5363B86050F2A607F9998C1 /* ProfileRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRecordsView.swift; sourceTree = "<group>"; };
 		A83FD1B58530756EBABAE921 /* KlondikeProApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KlondikeProApp.swift; sourceTree = "<group>"; };
-		AA000001AAAA0001AAAAAAAB /* GameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStore.swift; sourceTree = "<group>"; };
-		AA000002AAAA0002AAAAAAAB /* CardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardView.swift; sourceTree = "<group>"; };
-		AA000003AAAA0003AAAAAAAB /* StockWasteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockWasteView.swift; sourceTree = "<group>"; };
-		AA000004AAAA0004AAAAAAAB /* FoundationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationView.swift; sourceTree = "<group>"; };
-		AA000005AAAA0005AAAAAAAB /* TableauView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableauView.swift; sourceTree = "<group>"; };
-		AA000006AAAA0006AAAAAAAB /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
-		AA000007AAAA0007AAAAAAAB /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
-		AA000008AAAA0008AAAAAAAB /* WinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinView.swift; sourceTree = "<group>"; };
 		ACA5F8625566E18782D12FB1 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
 		B17A4EAD55DC0F7E5F38C301 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		BD6956EDB6ED3254EA6AB2B5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		CF36838332983CA9202004A5 /* SeededShuffleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeededShuffleTests.swift; sourceTree = "<group>"; };
 		D81F41C477341AC64871155A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E00BCB2B6EC3339DE55C4934 /* DailyGameTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyGameTab.swift; sourceTree = "<group>"; };
+		E187E3C12127F39A68A308F7 /* DailyWinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyWinView.swift; sourceTree = "<group>"; };
 		E3CA2C83876E42F975FAACB0 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		E70966DB3F67149055BD6E76 /* DailyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyView.swift; sourceTree = "<group>"; };
 		E80BD7ADE0BC91094C3DC96A /* SeededShuffle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeededShuffle.swift; sourceTree = "<group>"; };
 		E9B40829FA0B52D6FB76FADE /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		EE2D246F07A435E209062B79 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		F055786853EEE1805565D2EE /* ProfileStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStatsView.swift; sourceTree = "<group>"; };
 		F44F3479FF0410BDF907AB0A /* KlondikePro.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KlondikePro.entitlements; sourceTree = "<group>"; };
-		DD000001DD000001DD000001 /* DailyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStore.swift; sourceTree = "<group>"; };
-		DD000002DD000002DD000002 /* DailyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyView.swift; sourceTree = "<group>"; };
-		DD000003DD000003DD000003 /* DailyGameTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyGameTab.swift; sourceTree = "<group>"; };
-		DD000004DD000004DD000004 /* DailyLeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyLeaderboardView.swift; sourceTree = "<group>"; };
-		DD000005DD000005DD000005 /* DailyCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCalendarView.swift; sourceTree = "<group>"; };
-		DD000006DD000006DD000006 /* DailyWinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyWinView.swift; sourceTree = "<group>"; };
+		FFB006AC5513E0020BBEDCF5 /* ProfileCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCalendarView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -139,23 +153,26 @@
 			isa = PBXGroup;
 			children = (
 				AB129A26A83780794D310561 /* Auth */,
-				DD000007DD000007DD000007 /* Daily */,
-				AA000009AAAA0009AAAAAAAB /* Game */,
+				993CFAB786201142C5268760 /* Daily */,
+				91DC5C1B5B4FE9599A9CAD15 /* Game */,
 				CC0EF45334AB3BD2A16AD838 /* Home */,
+				A98F1A822D80C90FDCB9F391 /* Profile */,
 			);
 			path = Views;
 			sourceTree = "<group>";
 		};
-		DD000007DD000007DD000007 /* Daily */ = {
+		91DC5C1B5B4FE9599A9CAD15 /* Game */ = {
 			isa = PBXGroup;
 			children = (
-				DD000002DD000002DD000002 /* DailyView.swift */,
-				DD000003DD000003DD000003 /* DailyGameTab.swift */,
-				DD000004DD000004DD000004 /* DailyLeaderboardView.swift */,
-				DD000005DD000005DD000005 /* DailyCalendarView.swift */,
-				DD000006DD000006DD000006 /* DailyWinView.swift */,
+				22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */,
+				6C9246235BCE70EC74AAC3C9 /* CardView.swift */,
+				37A05CF0FE2083FEA0A5BB61 /* FoundationView.swift */,
+				64F67D46359EB2AD9D45B287 /* GameView.swift */,
+				31BE7CE29DE51A25AC6FA604 /* StockWasteView.swift */,
+				8B586AE464A839F50DD86EC2 /* TableauView.swift */,
+				0860FB7279BDC4BC02B0FEEE /* WinView.swift */,
 			);
-			path = Daily;
+			path = Game;
 			sourceTree = "<group>";
 		};
 		98A5D05F563FD9752D7D65C9 /* KlondikeProTests */ = {
@@ -167,18 +184,29 @@
 			path = KlondikeProTests;
 			sourceTree = "<group>";
 		};
-		AA000009AAAA0009AAAAAAAB /* Game */ = {
+		993CFAB786201142C5268760 /* Daily */ = {
 			isa = PBXGroup;
 			children = (
-				AA000002AAAA0002AAAAAAAB /* CardView.swift */,
-				AA000003AAAA0003AAAAAAAB /* StockWasteView.swift */,
-				AA000004AAAA0004AAAAAAAB /* FoundationView.swift */,
-				AA000005AAAA0005AAAAAAAB /* TableauView.swift */,
-				AA000006AAAA0006AAAAAAAB /* BoardView.swift */,
-				AA000007AAAA0007AAAAAAAB /* GameView.swift */,
-				AA000008AAAA0008AAAAAAAB /* WinView.swift */,
+				2953A3E7308E64EAA05071F2 /* DailyCalendarView.swift */,
+				E00BCB2B6EC3339DE55C4934 /* DailyGameTab.swift */,
+				172A33CB1603974D48FADA11 /* DailyLeaderboardView.swift */,
+				E70966DB3F67149055BD6E76 /* DailyView.swift */,
+				E187E3C12127F39A68A308F7 /* DailyWinView.swift */,
 			);
-			path = Game;
+			path = Daily;
+			sourceTree = "<group>";
+		};
+		A98F1A822D80C90FDCB9F391 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				35A6C3E2CBE1DEBDFA65B69D /* AccountView.swift */,
+				3570B70567E1C167B66EC95D /* DayDetailSheet.swift */,
+				FFB006AC5513E0020BBEDCF5 /* ProfileCalendarView.swift */,
+				A5363B86050F2A607F9998C1 /* ProfileRecordsView.swift */,
+				F055786853EEE1805565D2EE /* ProfileStatsView.swift */,
+				2C555469E834A3638D6EF661 /* ProfileView.swift */,
+			);
+			path = Profile;
 			sourceTree = "<group>";
 		};
 		AB129A26A83780794D310561 /* Auth */ = {
@@ -193,8 +221,9 @@
 			isa = PBXGroup;
 			children = (
 				1DC0A0B313941647498C4E3E /* AuthStore.swift */,
-				DD000001DD000001DD000001 /* DailyStore.swift */,
-				AA000001AAAA0001AAAAAAAB /* GameStore.swift */,
+				961A5F1798DF826DF989EFE2 /* DailyStore.swift */,
+				050FBCCA8BF16FE4B8308A2C /* GameStore.swift */,
+				512C19ACC3F203901D591FEE /* ProfileStore.swift */,
 			);
 			path = Stores;
 			sourceTree = "<group>";
@@ -285,12 +314,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2650;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					04106F44462DBF9C3E2D5947 = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					14EB51E71295F83FAFB67E3A = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -333,31 +364,38 @@
 			files = (
 				3E88FFA7E516C0E63D8354DC /* APIClient.swift in Sources */,
 				BBAFF4C5DC976F0EB69AAC87 /* APIModels.swift in Sources */,
+				4D26C50E9E2E6FE0380A38AE /* AccountView.swift in Sources */,
 				EE2FC0FE98CCF9F5B2FA34B5 /* AuthService.swift in Sources */,
 				E54F6D4D74D5946A577EAFC4 /* AuthStore.swift in Sources */,
+				34CA6723F2BBA5A1FC57D1CB /* BoardView.swift in Sources */,
 				0AC5955F21710F4281B857D9 /* Card.swift in Sources */,
-				AA000002AAAA0002AAAAAAAA /* CardView.swift in Sources */,
-				AA000006AAAA0006AAAAAAAA /* BoardView.swift in Sources */,
+				41E9F93F85EA8DC164A98E38 /* CardView.swift in Sources */,
 				815103FF922B4FB175CBF65F /* ContentView.swift in Sources */,
-				DD000005DD000005DDBBBBBB /* DailyCalendarView.swift in Sources */,
-				DD000003DD000003DDBBBBBB /* DailyGameTab.swift in Sources */,
-				DD000004DD000004DDBBBBBB /* DailyLeaderboardView.swift in Sources */,
-				DD000001DD000001DDBBBBBB /* DailyStore.swift in Sources */,
-				DD000002DD000002DDBBBBBB /* DailyView.swift in Sources */,
-				DD000006DD000006DDBBBBBB /* DailyWinView.swift in Sources */,
-				AA000004AAAA0004AAAAAAAA /* FoundationView.swift in Sources */,
+				CE94FBF611C29081570A04A0 /* DailyCalendarView.swift in Sources */,
+				B3CA39B583DCE12999B7D419 /* DailyGameTab.swift in Sources */,
+				3D20D85B7C25A5999717A991 /* DailyLeaderboardView.swift in Sources */,
+				FA6FEBDA8F754DE0D2B015E4 /* DailyStore.swift in Sources */,
+				3F977C01278905F811FAD3CA /* DailyView.swift in Sources */,
+				C78AE489D607225776C2B84D /* DailyWinView.swift in Sources */,
+				62DC05719C2E4CE496A24331 /* DayDetailSheet.swift in Sources */,
+				EA1FC02E10AD9DB01F7E71A2 /* FoundationView.swift in Sources */,
 				F0A1B9C1A830EAE525C0F516 /* GameCenterService.swift in Sources */,
 				BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */,
-				AA000001AAAA0001AAAAAAAA /* GameStore.swift in Sources */,
-				AA000007AAAA0007AAAAAAAA /* GameView.swift in Sources */,
+				1CBE34606C20571FA47A8355 /* GameStore.swift in Sources */,
+				19F7B984B7563959AB7936E9 /* GameView.swift in Sources */,
 				891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */,
 				29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */,
 				E97D476A6AC6DCBD2E03CB4B /* KlondikeProApp.swift in Sources */,
 				FB332A855C558F67B37BDD05 /* LoginView.swift in Sources */,
+				7062161B2FD9EF601A969512 /* ProfileCalendarView.swift in Sources */,
+				B147C731D18BF780686F1CEA /* ProfileRecordsView.swift in Sources */,
+				50FEF06FA2A6C8CA99616433 /* ProfileStatsView.swift in Sources */,
+				135F4806B77BC89CC4583B22 /* ProfileStore.swift in Sources */,
+				3D2D5485E0F2A3A0C6ABE05D /* ProfileView.swift in Sources */,
 				9A2C3EE0CC7F5636D8547790 /* SeededShuffle.swift in Sources */,
-				AA000003AAAA0003AAAAAAAA /* StockWasteView.swift in Sources */,
-				AA000005AAAA0005AAAAAAAA /* TableauView.swift in Sources */,
-				AA000008AAAA0008AAAAAAAA /* WinView.swift in Sources */,
+				F142C993F5BAAE149B2CCD0D /* StockWasteView.swift in Sources */,
+				11381BD6A0654CA502614B5A /* TableauView.swift in Sources */,
+				44FCFE39E0A5632C10A57A21 /* WinView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -418,11 +456,10 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = TYV42MNUN3;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -445,7 +482,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -562,11 +598,10 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = TYV42MNUN3;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -582,7 +617,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";

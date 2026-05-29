@@ -288,6 +288,44 @@ struct SocialChallengeDetail: Decodable {
     let leaderboard: [SocialLeaderboardEntry]
 }
 
+// MARK: - Profile Calendar + Day Sessions (DEV-281, DEV-282)
+
+/// One day's activity summary — used by the profile calendar heatmap.
+/// Returned by GET /api/v1/profile/calendar?weeks=N
+struct ProfileCalendarEntry: Decodable, Identifiable {
+    let date: String       // "yyyy-MM-dd"
+    let gamesPlayed: Int
+    let gamesWon: Int
+    var id: String { date }
+}
+
+/// One session within a day — used by DayDetailSheet.
+/// Returned by GET /api/v1/profile/sessions?date=yyyy-MM-dd
+struct ProfileDaySession: Decodable, Identifiable {
+    let uuid: UUID
+    let drawMode: String
+    let moves: Int
+    let timeSeconds: Int
+    let isWon: Bool
+    let completedAt: Date?
+    var id: UUID { uuid }
+}
+
+// MARK: - Avatar Upload (DEV-284)
+
+/// Response from POST /api/v1/profile/avatar/presigned
+struct PresignedAvatarResponse: Decodable {
+    let presignedUrl: String
+    let avatarUrl: String   // final CDN URL that will be stored on the profile
+}
+
+// MARK: - Account Management (DEV-285)
+
+struct ChangePasswordRequest: Encodable {
+    let currentPassword: String
+    let newPassword: String
+}
+
 // MARK: - Stats & Records
 
 struct StatsResponse: Decodable {

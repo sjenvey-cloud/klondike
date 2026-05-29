@@ -130,6 +130,14 @@ actor APIClient {
         let _: EmptyResponse = try await perform(req, allow204: true)
     }
 
+    /// POST with an Encodable body, no response body expected (204).
+    func postBodyVoid<Body: Encodable>(_ path: String, body: Body) async throws {
+        var req = try makeRequest(method: "POST", path: path)
+        req.httpBody = try encoder.encode(body)
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let _: EmptyResponse = try await perform(req, allow204: true)
+    }
+
     /// DELETE with an Encodable body (e.g. account deletion requires password).
     func deleteWithBody<Body: Encodable>(_ path: String, body: Body) async throws {
         var req = try makeRequest(method: "DELETE", path: path)
