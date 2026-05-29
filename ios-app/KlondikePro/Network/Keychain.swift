@@ -10,6 +10,7 @@ enum Keychain {
     enum Key: String {
         case accessToken  = "access_token"
         case refreshToken = "refresh_token"
+        case userId       = "user_id"       // integer stored as decimal string; survives reinstall
     }
 
     // MARK: - Save

@@ -44,8 +44,15 @@ final class AuthStore {
             try await self?.authService.refresh()
         }
 
-        // Restore userId from UserDefaults
-        let storedId = UserDefaults.standard.integer(forKey: "klondike_user_id")
+        // Restore userId — try UserDefaults first (fast path), fall back to
+        // Keychain which persists across Xcode reinstalls unlike UserDefaults.
+        var storedId = UserDefaults.standard.integer(forKey: "klondike_user_id")
+        if storedId == 0,
+           let raw = Keychain.load(.userId),
+           let keychainId = Int(raw), keychainId > 0 {
+            storedId = keychainId
+            UserDefaults.standard.set(keychainId, forKey: "klondike_user_id")
+        }
         if storedId > 0 { userId = storedId }
 
         // Optimistically authenticate now — ContentView appears immediately.
@@ -79,6 +86,7 @@ final class AuthStore {
             let auth = try await authService.login(email: email, password: password)
             userId = auth.user.id
             UserDefaults.standard.set(auth.user.id, forKey: "klondike_user_id")
+            Keychain.save(String(auth.user.id), for: .userId)
             await wireRefreshHandler()
             await fetchProfile()
             isAuthenticated = true
@@ -99,6 +107,7 @@ final class AuthStore {
                 email: email, password: password, displayName: displayName)
             userId = auth.user.id
             UserDefaults.standard.set(auth.user.id, forKey: "klondike_user_id")
+            Keychain.save(String(auth.user.id), for: .userId)
             await wireRefreshHandler()
             await fetchProfile()
             isAuthenticated = true
@@ -121,6 +130,7 @@ final class AuthStore {
             let auth = try await authService.loginWithGameCenter(request: request)
             userId = auth.user.id
             UserDefaults.standard.set(auth.user.id, forKey: "klondike_user_id")
+            Keychain.save(String(auth.user.id), for: .userId)
             await wireRefreshHandler()
             await fetchProfile()
             isAuthenticated = true
@@ -138,6 +148,7 @@ final class AuthStore {
         user = nil
         isAuthenticated = false
         UserDefaults.standard.removeObject(forKey: "klondike_user_id")
+        Keychain.delete(.userId)
         userId = nil
     }
 

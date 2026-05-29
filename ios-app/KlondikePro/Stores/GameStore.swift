@@ -40,6 +40,10 @@ final class GameStore {
 
     /// Creates a new hand on the server and starts a session.
     func newGame(drawMode: String) async {
+        guard userId > 0 else {
+            errorMessage = "Not signed in. Please restart the app and sign in again."
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -94,6 +98,10 @@ final class GameStore {
         date: String,
         isRanked: Bool
     ) async {
+        guard userId > 0 else {
+            errorMessage = "Not signed in. Please restart the app and sign in again."
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
