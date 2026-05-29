@@ -108,6 +108,7 @@ public class AvatarController {
         userRepository.save(user);
 
         return ResponseEntity.ok(new ProfileResponse(
+                user.getId(),
                 user.getUuid(),
                 user.getDisplayName(),
                 user.getEmail(),
