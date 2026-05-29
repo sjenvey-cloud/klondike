@@ -161,6 +161,7 @@ public class ProfileController {
 
     private ProfileResponse toResponse(User user) {
         return new ProfileResponse(
+            user.getId(),
             user.getUuid(),
             user.getDisplayName(),
             user.getEmail(),

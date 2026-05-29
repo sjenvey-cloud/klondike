@@ -155,7 +155,15 @@ final class AuthStore {
     // MARK: - Helpers
 
     private func fetchProfile() async {
-        user = try? await APIClient.shared.get("/api/v1/profile")
+        guard let profile: ProfileResponse = try? await APIClient.shared.get("/api/v1/profile") else { return }
+        user = profile
+        // Recovery path: if userId is missing (e.g. UserDefaults cleared after reinstall and
+        // Keychain was populated before this fix), seed it from the profile response.
+        if (userId ?? 0) == 0, let recoveredId = profile.userId, recoveredId > 0 {
+            userId = recoveredId
+            UserDefaults.standard.set(recoveredId, forKey: "klondike_user_id")
+            Keychain.save(String(recoveredId), for: .userId)
+        }
     }
 
     private func wireRefreshHandler() async {

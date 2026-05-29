@@ -32,6 +32,7 @@ struct RefreshResponse: Decodable {
 // MARK: - Profile
 
 struct ProfileResponse: Decodable, Identifiable {
+    let userId: Int?        // integer PK — used to recover userId if UserDefaults/Keychain is empty
     let uuid: UUID
     let displayName: String
     let email: String
@@ -42,6 +43,11 @@ struct ProfileResponse: Decodable, Identifiable {
 
     // Conform to Identifiable using UUID
     var id: UUID { uuid }
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "id"
+        case uuid, displayName, email, theme, avatarUrl, createdAt, lastHand
+    }
 }
 
 struct PatchProfileRequest: Encodable {
