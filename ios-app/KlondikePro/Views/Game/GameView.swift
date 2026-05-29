@@ -207,6 +207,13 @@ private struct GameMenuView: View {
                 }
                 .disabled(!store.canUndo)
 
+                Button {
+                    Task { await store.redeal() }
+                    dismiss()
+                } label: {
+                    Label("Redeal", systemImage: "arrow.clockwise")
+                }
+
                 Button(role: .destructive) {
                     Task { await store.abandonSession() }
                     dismiss()

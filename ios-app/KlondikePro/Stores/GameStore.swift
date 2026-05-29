@@ -217,6 +217,55 @@ final class GameStore {
         }
     }
 
+    // MARK: - Redeal
+
+    /// Abandons the current session and starts a brand-new session for the
+    /// same hand (same seed / draw mode), resetting the board to deal-order.
+    func redeal() async {
+        guard let currentHandUuid = handUuid,
+              let currentState    = state else { return }
+
+        isLoading     = true
+        errorMessage  = nil
+        defer { isLoading = false }
+
+        stopTimer()
+
+        // Silently abandon the active session so it doesn't dangle on the server
+        if let uuid = sessionUuid {
+            do {
+                let _: CompleteSessionResponse = try await APIClient.shared.post(
+                    "/api/v1/sessions/\(uuid)/abandon",
+                    body: AbandonSessionRequest(
+                        moves: currentState.moveCount,
+                        timeSeconds: elapsedSeconds,
+                        turns: currentState.turns
+                    )
+                )
+            } catch { /* swallow — redeal continues regardless */ }
+        }
+
+        // Open a fresh session for the same hand
+        do {
+            let sessionResp: CreateSessionResponse = try await APIClient.shared.post(
+                "/api/v1/sessions",
+                body: CreateSessionRequest(
+                    handUuid: currentHandUuid,
+                    userId: userId,
+                    isDaily: false,
+                    dailyDate: nil,
+                    isRanked: false
+                )
+            )
+            state       = GameState(seed: currentState.seed, drawMode: currentState.drawMode)
+            sessionUuid = sessionResp.session.uuid
+            elapsedSeconds = 0
+            startTimer()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Abandon Session
 
     /// Abandons the current session on the server.
