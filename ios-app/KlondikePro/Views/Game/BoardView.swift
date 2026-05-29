@@ -1,22 +1,20 @@
 import SwiftUI
 
-// MARK: - CardSource
-
-/// Identifies where a selected card (or stack of cards) came from.
-enum CardSource: Equatable {
-    case waste
-    case tableau(col: Int, fromIdx: Int)
-    case foundation(slot: Int)
-}
-
 // MARK: - BoardView
 
-/// Core interaction view: wires tap handlers and manages selection state.
+/// Core interaction view.
+///
+/// Single-tap UX: tapping any face-up card immediately auto-moves it to the
+/// best legal destination without requiring a second "drop" tap.
+///
+/// Priority order:
+///   1. Foundation (single bottom-of-column card or waste top only)
+///   2. Tableau columns left → right (skipping source column)
+///   Foundation cards tap back to the first legal tableau column.
 struct BoardView: View {
 
     let store: GameStore
     let cardWidth: CGFloat
-    @State private var selected: CardSource? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -25,14 +23,14 @@ struct BoardView: View {
                 StockWasteView(
                     store: store,
                     cardWidth: cardWidth,
-                    onWasteTap: { handleWasteTap() },
-                    onStockTap: { store.draw(); selected = nil }
+                    onWasteTap: { autoMoveWaste() },
+                    onStockTap: { store.draw() }
                 )
                 Spacer()
                 FoundationView(
                     foundation: store.state?.foundation ?? [nil, nil, nil, nil],
                     cardWidth: cardWidth,
-                    onTap: { slot in handleFoundationTap(slot: slot) }
+                    onTap: { slot in autoMoveFoundation(slot: slot) }
                 )
             }
             .padding(.horizontal, 16)
@@ -42,9 +40,7 @@ struct BoardView: View {
                 TableauView(
                     columns: store.state?.tableau ?? Array(repeating: [], count: 7),
                     cardWidth: cardWidth,
-                    selected: selected,
-                    onTap: { col, idx in handleTableauTap(col: col, idx: idx) },
-                    onColumnTap: { col in handleColumnTap(col: col) }
+                    onTap: { col, idx in autoMoveTableau(col: col, idx: idx) }
                 )
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
@@ -52,78 +48,45 @@ struct BoardView: View {
         }
     }
 
-    // MARK: - Tap Handlers
+    // MARK: - Auto-move: Waste top card
 
-    private func handleWasteTap() {
-        guard let state = store.state, state.wasteTop != nil else { return }
-        switch selected {
-        case .waste:
-            selected = nil  // deselect
-        case .some:
-            selected = .waste  // switch selection to waste
-        case nil:
-            selected = .waste
+    /// Foundation first, then tableau left → right.
+    private func autoMoveWaste() {
+        guard store.state?.wasteTop != nil else { return }
+        if store.moveWasteToFoundation() { return }
+        for col in 0..<7 {
+            if store.moveWasteToTableau(col: col) { return }
         }
     }
 
-    private func handleFoundationTap(slot: Int) {
-        switch selected {
-        case .waste:
-            if store.moveWasteToFoundation() { selected = nil }
-        case .tableau(let col, _):
-            if store.moveTableauToFoundation(col: col) { selected = nil }
-        case .foundation:
-            selected = .foundation(slot: slot)  // switch foundation selection
-        case nil:
-            if store.state?.foundation[slot] != nil {
-                selected = .foundation(slot: slot)
-            }
-        }
-    }
+    // MARK: - Auto-move: Tableau card or stack
 
-    private func handleTableauTap(col: Int, idx: Int) {
+    /// - Single bottom card: foundation first, then tableau L→R.
+    /// - Sub-stack from the middle: tableau L→R only (stacks cannot go to foundation).
+    /// - Face-down cards: ignored.
+    private func autoMoveTableau(col: Int, idx: Int) {
         guard let state = store.state else { return }
         guard idx < state.tableau[col].count else { return }
-        let card = state.tableau[col][idx]
+        guard state.tableau[col][idx].isFaceUp else { return }
 
-        switch selected {
-        case .waste:
-            if store.moveWasteToTableau(col: col) {
-                selected = nil
-            } else {
-                selected = card.isFaceUp ? .tableau(col: col, fromIdx: idx) : nil
-            }
-        case .tableau(let fromCol, let fromIdx):
-            if store.moveTableau(fromCol: fromCol, fromIdx: fromIdx, toCol: col) {
-                selected = nil
-            } else if card.isFaceUp {
-                selected = .tableau(col: col, fromIdx: idx)
-            } else {
-                selected = nil
-            }
-        case .foundation(let slot):
-            if store.moveFoundationToTableau(foundationIdx: slot, toCol: col) {
-                selected = nil
-            } else if card.isFaceUp {
-                selected = .tableau(col: col, fromIdx: idx)
-            }
-        case nil:
-            if card.isFaceUp {
-                selected = .tableau(col: col, fromIdx: idx)
-            }
+        let isBottomCard = (idx == state.tableau[col].count - 1)
+
+        // Foundation has priority for the bottom (top-of-column) card
+        if isBottomCard, store.moveTableauToFoundation(col: col) { return }
+
+        // Scan tableau columns left → right, skip source
+        for toCol in 0..<7 where toCol != col {
+            if store.moveTableau(fromCol: col, fromIdx: idx, toCol: toCol) { return }
         }
     }
 
-    private func handleColumnTap(col: Int) {
-        switch selected {
-        case .waste:
-            if store.moveWasteToTableau(col: col) { selected = nil }
-        case .tableau(let fromCol, let fromIdx):
-            if store.moveTableau(fromCol: fromCol, fromIdx: fromIdx, toCol: col) { selected = nil }
-        case .foundation(let slot):
-            if store.moveFoundationToTableau(foundationIdx: slot, toCol: col) { selected = nil }
-        case nil:
-            break
+    // MARK: - Auto-move: Foundation → Tableau
+
+    /// Scans tableau columns left → right for the first legal landing spot.
+    private func autoMoveFoundation(slot: Int) {
+        guard store.state?.foundation[slot] != nil else { return }
+        for col in 0..<7 {
+            if store.moveFoundationToTableau(foundationIdx: slot, toCol: col) { return }
         }
     }
 }

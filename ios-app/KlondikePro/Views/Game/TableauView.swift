@@ -5,9 +5,7 @@ struct TableauView: View {
 
     let columns: [[Card]]
     let cardWidth: CGFloat
-    let selected: CardSource?
     var onTap: (Int, Int) -> Void
-    var onColumnTap: (Int) -> Void
 
     private let faceDownOffset: CGFloat = 0.15
     private let faceUpOffset: CGFloat   = 0.28
@@ -30,7 +28,8 @@ struct TableauView: View {
         let cardHeight = cardWidth * 1.4
 
         if col.isEmpty {
-            // Empty column placeholder — tap to place a King
+            // Empty column placeholder — King hint only, no tap action needed
+            // (auto-move routes Kings here automatically when you tap the King)
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.white.opacity(0.05))
@@ -46,9 +45,7 @@ struct TableauView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(width: cardWidth, height: cardHeight)
-            .onTapGesture { onColumnTap(colIdx) }
             .accessibilityLabel("Empty column \(colIdx + 1), place a King here")
-            .accessibilityAddTraits(.isButton)
         } else {
             // VStack(spacing: 0) with constrained layout heights so that each
             // card's hit-test region sits at its true visual position.
@@ -64,7 +61,7 @@ struct TableauView: View {
                     let peekH   = cardWidth * (card.isFaceUp ? faceUpOffset : faceDownOffset)
                     CardView(
                         card: card,
-                        isSelected: isCardSelected(colIdx: colIdx, idx: idx),
+                        isSelected: false,
                         width: cardWidth
                     )
                     .frame(width: cardWidth,
@@ -92,18 +89,11 @@ struct TableauView: View {
         return offset
     }
 
-    /// Total height needed for the ZStack so it doesn't clip.
+    /// Total height needed for the VStack so it doesn't clip.
     private func totalColumnHeight(col: [Card]) -> CGFloat {
         let cardHeight = cardWidth * 1.4
         guard !col.isEmpty else { return cardHeight }
         let stackedHeight = cumulativeOffset(col: col, upToIdx: col.count - 1)
         return stackedHeight + cardHeight
-    }
-
-    // MARK: - Selection helper
-
-    private func isCardSelected(colIdx: Int, idx: Int) -> Bool {
-        guard case .tableau(let selCol, let fromIdx) = selected else { return false }
-        return selCol == colIdx && idx >= fromIdx
     }
 }
