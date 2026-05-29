@@ -27,6 +27,7 @@ struct TableauView: View {
     @ViewBuilder
     private func columnView(colIdx: Int) -> some View {
         let col = colIdx < columns.count ? columns[colIdx] : []
+        let cardHeight = cardWidth * 1.4
 
         if col.isEmpty {
             // Empty column placeholder — tap to place a King
@@ -44,20 +45,32 @@ struct TableauView: View {
                     .font(.title2)
                     .foregroundStyle(.secondary)
             }
-            .frame(width: cardWidth, height: cardWidth * 1.4)
+            .frame(width: cardWidth, height: cardHeight)
             .onTapGesture { onColumnTap(colIdx) }
             .accessibilityLabel("Empty column \(colIdx + 1), place a King here")
             .accessibilityAddTraits(.isButton)
         } else {
-            ZStack(alignment: .top) {
+            // VStack(spacing: 0) with constrained layout heights so that each
+            // card's hit-test region sits at its true visual position.
+            //
+            // .offset() is a pure visual transform — it does NOT move the hit
+            // region. Using a layout height of `peekHeight` for every card except
+            // the last means the VStack places each card at the correct y, and
+            // the card renders at full height (overflowing below its layout frame)
+            // to create the natural stacking effect.
+            VStack(spacing: 0) {
                 ForEach(Array(col.enumerated()), id: \.offset) { idx, card in
-                    let yOffset = cumulativeOffset(col: col, upToIdx: idx)
+                    let isLast  = idx == col.count - 1
+                    let peekH   = cardWidth * (card.isFaceUp ? faceUpOffset : faceDownOffset)
                     CardView(
                         card: card,
                         isSelected: isCardSelected(colIdx: colIdx, idx: idx),
                         width: cardWidth
                     )
-                    .offset(y: yOffset)
+                    .frame(width: cardWidth,
+                           height: isLast ? cardHeight : peekH,
+                           alignment: .top)
+                    .contentShape(Rectangle())
                     .onTapGesture { onTap(colIdx, idx) }
                     .accessibilityLabel(card.isFaceUp ? card.accessibilityLabel : "Face down card in column \(colIdx + 1)")
                     .accessibilityAddTraits(card.isFaceUp ? .isButton : [])
