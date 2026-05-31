@@ -17,7 +17,7 @@ struct ProfileStatsView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         ForEach(stats.byDrawMode, id: \.drawMode) { row in
-                            drawModeCard(row)
+                            drawModeCard(row)   // LabelledStats — drawMode injected for display
                         }
                     }
                     .padding(16)
@@ -32,7 +32,7 @@ struct ProfileStatsView: View {
 
     // MARK: - Draw mode card
 
-    private func drawModeCard(_ row: StatsResponse.DrawModeStats) -> some View {
+    private func drawModeCard(_ row: StatsResponse.LabelledStats) -> some View {
         VStack(spacing: 14) {
             // Mode header
             HStack {

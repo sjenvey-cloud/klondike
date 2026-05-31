@@ -17,8 +17,9 @@ struct AccountView: View {
     @State private var confirmPassword = ""
     @State private var showPasswords   = false
 
-    // Delete account
-    @State private var showDeleteConfirm = false
+    // Delete account — requires password confirmation
+    @State private var showDeleteConfirm  = false
+    @State private var deletePassword     = ""
 
     // Local validation
     private var passwordMismatch: Bool { !newPassword.isEmpty && newPassword != confirmPassword }
@@ -51,12 +52,16 @@ struct AccountView: View {
                 }
             }
             .alert("Delete Account", isPresented: $showDeleteConfirm) {
+                SecureField("Your password", text: $deletePassword)
                 Button("Delete", role: .destructive) {
-                    Task { await store.deleteAccount() }
+                    let pw = deletePassword
+                    deletePassword = ""
+                    Task { await store.deleteAccount(password: pw) }
                 }
-                Button("Cancel", role: .cancel) {}
+                .disabled(deletePassword.isEmpty)
+                Button("Cancel", role: .cancel) { deletePassword = "" }
             } message: {
-                Text("This will permanently delete your account and all game history. This action cannot be undone.")
+                Text("Enter your password to permanently delete your account and all game history. This cannot be undone.")
             }
             .onChange(of: store.passwordChangeSuccess) { _, success in
                 if success {

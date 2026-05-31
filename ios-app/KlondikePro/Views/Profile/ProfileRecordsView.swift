@@ -17,6 +17,7 @@ struct ProfileRecordsView: View {
                       records.fewestMoves != nil || records.fastestTime != nil {
                 ScrollView {
                     VStack(spacing: 16) {
+                        // PersonalBest — uses sessionUuid/handUuid (UUIDs), completedAt optional Date
                         if let best = records.fewestMoves {
                             recordCard(
                                 title:     "Fewest Moves",

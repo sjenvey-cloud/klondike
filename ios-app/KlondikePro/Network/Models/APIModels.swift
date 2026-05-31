@@ -313,10 +313,21 @@ struct ProfileDaySession: Decodable, Identifiable {
 
 // MARK: - Avatar Upload (DEV-284)
 
-/// Response from POST /api/v1/profile/avatar/presigned
-struct PresignedAvatarResponse: Decodable {
-    let presignedUrl: String
-    let avatarUrl: String   // final CDN URL that will be stored on the profile
+/// Step 1: POST /api/v1/profile/avatar { contentType }
+/// → backend returns { uploadUrl, publicUrl }
+struct AvatarUploadRequest: Encodable {
+    let contentType: String
+}
+
+/// Response from POST /api/v1/profile/avatar — matches AvatarUploadResponse.java
+struct AvatarUploadResponse: Decodable {
+    let uploadUrl: String   // presigned S3 PUT URL (15-min expiry)
+    let publicUrl: String   // CDN URL to save after a successful PUT
+}
+
+/// Step 3: PATCH /api/v1/profile/avatar { avatarUrl } — matches AvatarConfirmRequest.java
+struct AvatarConfirmRequest: Encodable {
+    let avatarUrl: String
 }
 
 // MARK: - Account Management (DEV-285)
@@ -326,10 +337,28 @@ struct ChangePasswordRequest: Encodable {
     let newPassword: String
 }
 
+/// DELETE /api/v1/profile requires password confirmation — matches DeleteAccountRequest.java
+struct DeleteAccountRequest: Encodable {
+    let password: String
+}
+
 // MARK: - Stats & Records
 
+/// Backend returns { draw1: {...}, draw3: {...} } — an object with two named keys,
+/// NOT an array. This shape matches StatsResponse.java exactly.
 struct StatsResponse: Decodable {
     struct DrawModeStats: Decodable {
+        let gamesPlayed: Int
+        let wins: Int
+        let winRate: Double
+        let avgMoves: Double
+        let avgTimeSeconds: Double
+    }
+    let draw1: DrawModeStats
+    let draw3: DrawModeStats
+
+    /// Convenience: flat list with the draw-mode label injected for display.
+    struct LabelledStats {
         let drawMode: String
         let gamesPlayed: Int
         let wins: Int
@@ -337,20 +366,32 @@ struct StatsResponse: Decodable {
         let avgMoves: Double
         let avgTimeSeconds: Double
     }
-    let byDrawMode: [DrawModeStats]
+
+    var byDrawMode: [LabelledStats] {
+        [
+            LabelledStats(drawMode: "draw1", gamesPlayed: draw1.gamesPlayed,
+                         wins: draw1.wins, winRate: draw1.winRate,
+                         avgMoves: draw1.avgMoves, avgTimeSeconds: draw1.avgTimeSeconds),
+            LabelledStats(drawMode: "draw3", gamesPlayed: draw3.gamesPlayed,
+                         wins: draw3.wins, winRate: draw3.winRate,
+                         avgMoves: draw3.avgMoves, avgTimeSeconds: draw3.avgTimeSeconds),
+        ].filter { $0.gamesPlayed > 0 }
+    }
 }
 
+/// Backend PersonalBest uses sessionUuid/handUuid (UUIDs), not Int IDs.
+/// completedAt is a LocalDateTime serialised as "yyyy-MM-ddTHH:mm:ss" — no timezone.
 struct RecordsResponse: Decodable {
-    struct SessionRecord: Decodable {
-        let sessionId: Int
-        let handId: Int
+    struct PersonalBest: Decodable {
+        let sessionUuid: UUID
+        let handUuid: UUID
         let drawMode: String
         let moves: Int
         let timeSeconds: Int
-        let completedAt: Date?
+        let completedAt: Date?   // decoded via iso8601 strategy in APIClient
     }
-    let fewestMoves: SessionRecord?
-    let fastestTime: SessionRecord?
+    let fewestMoves: PersonalBest?
+    let fastestTime: PersonalBest?
 }
 
 // MARK: - Replay

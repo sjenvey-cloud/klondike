@@ -144,6 +144,11 @@ final class ProfileStore {
     }
 
     // MARK: - Avatar upload (DEV-284)
+    //
+    // Three-step flow matching AvatarController.java (DEV-229):
+    //   1. POST /api/v1/profile/avatar   { contentType }  → { uploadUrl, publicUrl }
+    //   2. PUT  <uploadUrl>              raw image bytes   (direct S3, no auth)
+    //   3. PATCH /api/v1/profile/avatar  { avatarUrl }    → confirms CDN URL on server
 
     func uploadAvatar(imageData: Data, mimeType: String) async {
         isUploadingAvatar = true
@@ -151,13 +156,14 @@ final class ProfileStore {
         defer { isUploadingAvatar = false }
 
         do {
-            // 1. Obtain a presigned S3 PUT URL from the backend
-            let presigned: PresignedAvatarResponse = try await APIClient.shared.postEmpty(
-                "/api/v1/profile/avatar/presigned"
+            // Step 1 — obtain presigned PUT URL
+            let uploadInfo: AvatarUploadResponse = try await APIClient.shared.post(
+                "/api/v1/profile/avatar",
+                body: AvatarUploadRequest(contentType: mimeType)
             )
 
-            // 2. Upload directly to S3 — no auth header needed; presigned URL carries credentials
-            guard let s3URL = URL(string: presigned.presignedUrl) else {
+            // Step 2 — upload directly to S3 (no auth header needed)
+            guard let s3URL = URL(string: uploadInfo.uploadUrl) else {
                 avatarError = "Invalid upload URL."
                 return
             }
@@ -173,7 +179,13 @@ final class ProfileStore {
                 return
             }
 
-            // 3. Refresh profile so avatarUrl propagates across the app
+            // Step 3 — confirm CDN URL on the backend
+            let _: ProfileResponse = try await APIClient.shared.patch(
+                "/api/v1/profile/avatar",
+                body: AvatarConfirmRequest(avatarUrl: uploadInfo.publicUrl)
+            )
+
+            // Refresh profile so avatarUrl propagates across the app
             await fetchProfile()
         } catch {
             avatarError = "Avatar upload failed. Please try again."
@@ -181,6 +193,7 @@ final class ProfileStore {
     }
 
     // MARK: - Change password (DEV-285)
+    // Endpoint: PATCH /api/v1/profile/password — matches ProfileController.java
 
     func changePassword(current: String, new: String) async {
         isChangingPassword    = true
@@ -189,8 +202,8 @@ final class ProfileStore {
         defer { isChangingPassword = false }
 
         do {
-            try await APIClient.shared.postBodyVoid(
-                "/api/v1/auth/change-password",
+            try await APIClient.shared.patchVoid(
+                "/api/v1/profile/password",
                 body: ChangePasswordRequest(currentPassword: current, newPassword: new)
             )
             passwordChangeSuccess = true
@@ -206,18 +219,26 @@ final class ProfileStore {
     }
 
     // MARK: - Delete account (DEV-285)
+    // Endpoint: DELETE /api/v1/profile requires password in body — matches DeleteAccountRequest.java
 
-    func deleteAccount() async {
+    func deleteAccount(password: String) async {
         isDeletingAccount = true
         accountError      = nil
         defer { isDeletingAccount = false }
 
         do {
-            try await APIClient.shared.deleteVoid("/api/v1/profile")
-            // Clear all persisted state
+            try await APIClient.shared.deleteWithBody(
+                "/api/v1/profile",
+                body: DeleteAccountRequest(password: password)
+            )
             Keychain.clearAll()
             UserDefaults.standard.removeObject(forKey: "klondike_user_id")
             onAccountDeleted?()
+        } catch let apiErr as APIError {
+            switch apiErr {
+            case .httpError(401, _): accountError = "Incorrect password."
+            default: accountError = "Failed to delete account. Please try again."
+            }
         } catch {
             accountError = "Failed to delete account. Please try again."
         }
