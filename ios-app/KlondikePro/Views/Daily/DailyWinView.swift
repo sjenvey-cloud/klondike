@@ -16,9 +16,9 @@ struct DailyWinView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    /// Drives the number counter animation for rank
-    @State private var animatedRank: Int = 0
-    @State private var showDetails: Bool = false
+    @State private var animatedRank: Int  = 0
+    @State private var showDetails: Bool  = false
+    @State private var showReplay: Bool   = false   // DEV-307
 
     var body: some View {
         ZStack {
@@ -123,6 +123,24 @@ struct DailyWinView: View {
                             .buttonStyle(.bordered)
                             .tint(.white.opacity(0.5))
                             .foregroundStyle(.white.opacity(0.7))
+                        }
+
+                        // Watch Replay (DEV-307)
+                        if let uuid = result.sessionUuid {
+                            Button {
+                                showReplay = true
+                            } label: {
+                                Label("Watch Replay", systemImage: "play.rectangle.fill")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 52)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.white.opacity(0.5))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .sheet(isPresented: $showReplay) {
+                                ReplayView(sessionUuid: uuid)
+                            }
                         }
 
                         Button {

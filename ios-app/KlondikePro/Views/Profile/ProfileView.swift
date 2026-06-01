@@ -7,11 +7,13 @@ import PhotosUI
 /// Tabs:   Stats | Calendar | Records | History
 struct ProfileView: View {
 
-    @Environment(ProfileStore.self) private var store
-    @Environment(AuthStore.self)    private var authStore
+    @Environment(ProfileStore.self)     private var store
+    @Environment(AuthStore.self)        private var authStore
+    @Environment(PreferencesStore.self) private var preferencesStore
 
     @State private var selectedTab: ProfileTab = .stats
     @State private var showAccount             = false
+    @State private var showSettings            = false
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var editingName             = false
     @State private var nameInput               = ""
@@ -39,6 +41,10 @@ struct ProfileView: View {
             AccountView()
                 .environment(store)
                 .environment(authStore)
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .environment(preferencesStore)
         }
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }
@@ -82,17 +88,28 @@ struct ProfileView: View {
 
                 Spacer()
 
-                // ── Gear button ─────────────────────────────────────────
-                Button {
-                    showAccount = true
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.title3)
-                        .foregroundStyle(.white.opacity(0.6))
+                // ── Settings + Gear buttons ─────────────────────────────
+                HStack(spacing: 14) {
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.title3)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .accessibilityLabel("App settings")
+
+                    Button {
+                        showAccount = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.title3)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .accessibilityLabel("Account settings")
                 }
                 .padding(.trailing, 16)
                 .padding(.top, 4)
-                .accessibilityLabel("Account settings")
             }
 
             // ── Display name ─────────────────────────────────────────────

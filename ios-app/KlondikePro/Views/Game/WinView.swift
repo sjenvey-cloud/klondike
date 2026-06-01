@@ -9,6 +9,8 @@ struct WinView: View {
     var onNewGame: () -> Void
     @Environment(\.dismiss) private var dismiss
 
+    @State private var showReplay = false
+
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
@@ -49,6 +51,26 @@ struct WinView: View {
                 .foregroundStyle(.black)
                 .padding(.horizontal)
                 .accessibilityLabel("Start a new game")
+
+                // Watch Replay (DEV-307)
+                if let uuid = store.sessionUuid {
+                    Button {
+                        showReplay = true
+                    } label: {
+                        Label("Watch Replay", systemImage: "play.rectangle.fill")
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.yellow)
+                    .foregroundStyle(.yellow)
+                    .padding(.horizontal)
+                    .accessibilityLabel("Watch session replay")
+                    .sheet(isPresented: $showReplay) {
+                        ReplayView(sessionUuid: uuid)
+                    }
+                }
 
                 Button {
                     dismiss()

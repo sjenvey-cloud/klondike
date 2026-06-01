@@ -270,4 +270,32 @@ struct GameState {
         let prevId = current.id - 1
         return Card(id: prevId, isFaceUp: true)
     }
+
+    // MARK: - Replay support
+
+    /// Construct a board from a pre-shuffled card-ID array (from the backend replay response)
+    /// rather than from a seed. Used by ReplayView to avoid needing the original seed.
+    init(cardIDs: [Int], drawMode: String) {
+        self.seed     = 0
+        self.drawMode = drawMode
+        let cards = cardIDs.compactMap { Card(id: $0, isFaceUp: false) }
+        var idx = 0
+        var cols = [[Card]]()
+        for col in 0..<7 {
+            var column = Array(cards[idx ..< idx + col + 1])
+            for j in 0..<column.count { column[j].isFaceUp = (j == column.count - 1) }
+            cols.append(column)
+            idx += col + 1
+        }
+        self.tableau    = cols
+        self.stock      = Array(cards[idx...].reversed()).map { var c = $0; c.isFaceUp = false; return c }
+        self.waste      = []
+        self.foundation = [nil, nil, nil, nil]
+    }
+
+    /// Clears the undo history. Used during replay snapshot building to avoid
+    /// quadratic memory growth (each snapshot would otherwise embed all prior snapshots).
+    mutating func clearHistory() {
+        history = []
+    }
 }

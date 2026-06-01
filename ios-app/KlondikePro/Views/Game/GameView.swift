@@ -6,9 +6,11 @@ struct GameView: View {
     let store: GameStore
     @State private var showMenu = false
 
+    @Environment(\.feltColor) private var feltColor
+
     var body: some View {
         ZStack {
-            Color(red: 0.05, green: 0.07, blue: 0.10).ignoresSafeArea()
+            feltColor.ignoresSafeArea()
 
             if store.isLoading {
                 // ── Dealing in progress ──────────────────────────────────
@@ -30,7 +32,7 @@ struct GameView: View {
                         BoardView(store: store, cardWidth: max(36, cardWidth))
                     }
                 }
-                .background(Color(red: 0.05, green: 0.07, blue: 0.10))
+                .background(feltColor)
                 .sheet(isPresented: winBinding) {
                     WinView(
                         store: store,

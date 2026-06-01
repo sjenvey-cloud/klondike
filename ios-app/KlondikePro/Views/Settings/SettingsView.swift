@@ -1,0 +1,335 @@
+import SwiftUI
+
+// MARK: - Theme definition
+
+private struct AppTheme: Identifiable {
+    let id: String          // feltColour hex
+    let name: String
+    let felt: Color
+    let accent: Color
+}
+
+private let themes: [AppTheme] = [
+    AppTheme(id: "#0d1117", name: "Dark Premium",   felt: Color(hex: "#0d1117"), accent: .yellow),
+    AppTheme(id: "#1a4a2e", name: "Classic Felt",   felt: Color(hex: "#1a4a2e"), accent: .green),
+    AppTheme(id: "#2d2d2d", name: "Modern Minimal", felt: Color(hex: "#2d2d2d"), accent: .white),
+]
+
+private struct CardBackOption: Identifiable {
+    let id: String   // hex
+    let color: Color
+}
+
+private let cardBackOptions: [CardBackOption] = [
+    CardBackOption(id: "#1c2333", color: Color(hex: "#1c2333")),
+    CardBackOption(id: "#1a3a2a", color: Color(hex: "#1a3a2a")),
+    CardBackOption(id: "#0f1b2e", color: Color(hex: "#0f1b2e")),
+    CardBackOption(id: "#3a1a1a", color: Color(hex: "#3a1a1a")),
+    CardBackOption(id: "#2a1a3a", color: Color(hex: "#2a1a3a")),
+    CardBackOption(id: "#2a2a2a", color: Color(hex: "#2a2a2a")),
+]
+
+// MARK: - SettingsView (DEV-287)
+
+/// Full settings screen: theme, card back, gameplay, animations, accessibility.
+/// Each change is immediately PATCHed to /api/v1/profile/preferences via PreferencesStore.
+struct SettingsView: View {
+
+    @Environment(PreferencesStore.self) private var store
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion  // DEV-292
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color(red: 0.05, green: 0.07, blue: 0.10).ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 24) {
+                        themeSection        // DEV-288
+                        cardBackSection     // DEV-289
+                        gameplaySection     // DEV-290
+                        animationSection    // DEV-291
+                        accessibilitySection // DEV-292
+                    }
+                    .padding(16)
+                }
+            }
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") { dismiss() }
+                        .foregroundStyle(.yellow)
+                }
+            }
+        }
+    }
+
+    // MARK: - Theme (DEV-288)
+
+    private var themeSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("Appearance", icon: "paintbrush.fill")
+
+            Text("Theme")
+                .font(.subheadline.bold())
+                .foregroundStyle(.white)
+
+            HStack(spacing: 12) {
+                ForEach(themes) { theme in
+                    let selected = store.preferences.feltColour == theme.id
+                    Button {
+                        Task { await store.setFeltColour(theme.id) }
+                    } label: {
+                        VStack(spacing: 8) {
+                            // Mini board preview
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(theme.felt)
+                                    .frame(height: 54)
+                                HStack(spacing: 4) {
+                                    ForEach(0..<3) { _ in
+                                        RoundedRectangle(cornerRadius: 3)
+                                            .fill(Color.white.opacity(0.85))
+                                            .frame(width: 16, height: 22)
+                                    }
+                                }
+                            }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(
+                                        selected ? theme.accent : Color.white.opacity(0.15),
+                                        lineWidth: selected ? 2 : 1
+                                    )
+                            )
+
+                            Text(theme.name)
+                                .font(.caption2)
+                                .foregroundStyle(selected ? theme.accent : .white.opacity(0.55))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel("Theme: \(theme.name)")
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Card Back (DEV-289)
+
+    private var cardBackSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Card Back")
+                .font(.subheadline.bold())
+                .foregroundStyle(.white)
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 6), spacing: 10) {
+                ForEach(cardBackOptions) { option in
+                    let selected = store.preferences.cardBackColour == option.id
+                    Button {
+                        Task { await store.setCardBackColour(option.id) }
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(option.color)
+                                .aspectRatio(0.7, contentMode: .fit)
+                            RoundedRectangle(cornerRadius: 6)
+                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+                                .padding(3)
+                        }
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(selected ? Color.yellow : Color.clear, lineWidth: 2)
+                        )
+                    }
+                    .accessibilityLabel("Card back colour \(option.id)")
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Gameplay (DEV-290)
+
+    private var gameplaySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("Gameplay", icon: "gamecontroller.fill")
+
+            // Draw mode default
+            settingsRow(label: "Default Draw Mode") {
+                pillPicker(
+                    options: [("Draw 1", "draw1"), ("Draw 3", "draw3")],
+                    selected: store.preferences.drawModeDefault
+                ) { value in
+                    Task { await store.setDrawModeDefault(value) }
+                }
+            }
+
+            Divider().background(Color.white.opacity(0.08))
+
+            // Stock side
+            settingsRow(label: "Stock Side") {
+                pillPicker(
+                    options: [("Left", "left"), ("Right", "right")],
+                    selected: store.preferences.stockSide
+                ) { value in
+                    Task { await store.setStockSide(value) }
+                }
+            }
+
+            Divider().background(Color.white.opacity(0.08))
+
+            // Animation speed
+            settingsRow(label: "Animation Speed") {
+                pillPicker(
+                    options: [("Slow", "slow"), ("Normal", "normal"), ("Fast", "fast")],
+                    selected: store.preferences.animationSpeed
+                ) { value in
+                    Task { await store.setAnimationSpeed(value) }
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Animation / Win preference (DEV-291)
+
+    private var animationSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("Win Animation", icon: "party.popper.fill")
+
+            HStack(spacing: 12) {
+                winAnimOption(
+                    id: "confetti",
+                    icon: "sparkles",
+                    label: "Confetti",
+                    description: "Full particle show"
+                )
+                winAnimOption(
+                    id: "simple",
+                    icon: "checkmark.circle.fill",
+                    label: "Simple",
+                    description: "Clean & minimal"
+                )
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func winAnimOption(id: String, icon: String, label: String, description: String) -> some View {
+        let selected = store.preferences.winAnimation == id
+        return Button {
+            Task { await store.setWinAnimation(id) }
+        } label: {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 28))
+                    .foregroundStyle(selected ? .yellow : .white.opacity(0.4))
+                Text(label)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(selected ? .yellow : .white.opacity(0.7))
+                Text(description)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.4))
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(14)
+            .background(selected ? Color.yellow.opacity(0.1) : Color.white.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(selected ? Color.yellow.opacity(0.5) : Color.clear, lineWidth: 1)
+            )
+        }
+        .accessibilityLabel("Win animation: \(label)")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    // MARK: - Accessibility (DEV-292)
+
+    private var accessibilitySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader("Accessibility", icon: "figure.wave")
+
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Reduce Motion")
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                    Text(reduceMotion
+                         ? "Enabled — controlled by iOS Settings"
+                         : "Off — change in iOS Settings → Accessibility")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+                Spacer()
+                Image(systemName: reduceMotion ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(reduceMotion ? .green : .white.opacity(0.3))
+                    .font(.title3)
+            }
+
+            if reduceMotion {
+                Label("Animations are suppressed throughout the app.", systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Shared helpers
+
+    private func sectionHeader(_ title: String, icon: String) -> some View {
+        Label(title, systemImage: icon)
+            .font(.headline)
+            .foregroundStyle(.white)
+    }
+
+    private func settingsRow<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.7))
+            content()
+        }
+    }
+
+    private func pillPicker(
+        options: [(String, String)],
+        selected: String,
+        onSelect: @escaping (String) -> Void
+    ) -> some View {
+        HStack(spacing: 8) {
+            ForEach(options, id: \.1) { label, value in
+                let active = selected == value
+                Button { onSelect(value) } label: {
+                    Text(label)
+                        .font(.caption.weight(active ? .bold : .regular))
+                        .foregroundStyle(active ? .black : .white.opacity(0.7))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(active ? Color.yellow : Color.white.opacity(0.1))
+                        .clipShape(Capsule())
+                }
+                .accessibilityLabel(label)
+                .accessibilityAddTraits(active ? .isSelected : [])
+            }
+            Spacer()
+        }
+    }
+}

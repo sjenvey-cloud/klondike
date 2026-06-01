@@ -330,6 +330,23 @@ struct AvatarConfirmRequest: Encodable {
     let avatarUrl: String
 }
 
+// MARK: - Preferences PATCH (DEV-286)
+
+/// Partial-update request for PATCH /api/v1/profile/preferences.
+/// Nil fields are encoded as JSON null — the backend treats null as "leave unchanged".
+struct PatchPreferencesRequest: Encodable {
+    var drawModeDefault:  String?
+    var cardFaceDesign:   String?
+    var cardStyle:        String?
+    var cardBackColour:   String?
+    var cardBackPattern:  String?
+    var feltColour:       String?
+    var animationsEnabled: Bool?
+    var stockSide:        String?
+    var animationSpeed:   String?
+    var winAnimation:     String?
+}
+
 // MARK: - Account Management (DEV-285)
 
 struct ChangePasswordRequest: Encodable {

@@ -79,15 +79,14 @@ struct CardView: View {
 
     // MARK: - Face Down
 
-    private var faceDownView: some View {
-        let navy = Color(red: 0.11, green: 0.14, blue: 0.20)
-        let innerBorder = Color(red: 0.18, green: 0.22, blue: 0.30)
+    @Environment(\.cardBackColor) private var cardBackColor
 
-        return ZStack {
+    private var faceDownView: some View {
+        ZStack {
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(navy)
+                .fill(cardBackColor)
             RoundedRectangle(cornerRadius: cornerRadius - 2)
-                .strokeBorder(innerBorder, lineWidth: 1.5)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: 1.5)
                 .padding(4)
         }
         .overlay(

@@ -6,6 +6,8 @@ struct DailyLeaderboardView: View {
 
     @Environment(DailyStore.self) private var store
 
+    @State private var replayUuid: UUID? = nil   // DEV-307
+
     var body: some View {
         VStack(spacing: 0) {
             // ── Personal rank banner ─────────────────────────────────────
@@ -58,6 +60,19 @@ struct DailyLeaderboardView: View {
             guard !newDate.isEmpty else { return }
             Task { await loadLeaderboard() }
         }
+        // DEV-307: replay sheet
+        .sheet(item: Binding(
+            get: { replayUuid.map { ReplayID(uuid: $0) } },
+            set: { replayUuid = $0?.uuid }
+        )) { item in
+            ReplayView(sessionUuid: item.uuid)
+        }
+    }
+
+    // Wrapper to satisfy sheet(item:) Identifiable requirement
+    private struct ReplayID: Identifiable {
+        let uuid: UUID
+        var id: UUID { uuid }
     }
 
     // MARK: - Personal rank banner
@@ -128,7 +143,18 @@ struct DailyLeaderboardView: View {
     private func leaderboardRow(_ entry: DailyLeaderboardEntry) -> some View {
         let isMe = entry.userUuid != nil && entry.userUuid == myUserUuid
 
-        return HStack(spacing: 12) {
+        return Button {
+            // DEV-307: tap row with a sessionUuid to open replay
+            if let uuid = entry.sessionUuid {
+                replayUuid = uuid
+            }
+        } label: { rowContent(entry: entry, isMe: isMe) }
+        .buttonStyle(.plain)
+        .disabled(entry.sessionUuid == nil)
+    }
+
+    private func rowContent(entry: DailyLeaderboardEntry, isMe: Bool) -> some View {
+        HStack(spacing: 12) {
             // Rank
             Text("#\(entry.rank)")
                 .font(.system(.subheadline, design: .monospaced).bold())
@@ -163,12 +189,22 @@ struct DailyLeaderboardView: View {
                     .foregroundStyle(.white.opacity(0.4))
             }
             .frame(width: 54, alignment: .trailing)
+
+            // Replay icon (DEV-307) — only shown when session can be replayed
+            if entry.sessionUuid != nil {
+                Image(systemName: "play.rectangle")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.3))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 11)
         .background(isMe ? Color.yellow.opacity(0.07) : Color.clear)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Rank \(entry.rank): \(entry.displayName), \(entry.moves) moves, \(formattedTime(entry.timeSeconds))")
+        .accessibilityLabel(
+            "Rank \(entry.rank): \(entry.displayName), \(entry.moves) moves, \(formattedTime(entry.timeSeconds))"
+            + (entry.sessionUuid != nil ? ", tap to replay" : "")
+        )
     }
 
     // MARK: - Helpers
