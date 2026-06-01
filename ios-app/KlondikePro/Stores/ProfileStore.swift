@@ -103,7 +103,7 @@ final class ProfileStore {
         do {
             calendarEntries = try await APIClient.shared.get(
                 "/api/v1/profile/calendar",
-                query: ["weeks": "5"]
+                query: ["weeks": "26"]   // 6 months supports backward month navigation
             )
         } catch {
             calendarEntries = []
