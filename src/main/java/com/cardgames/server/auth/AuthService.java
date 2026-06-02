@@ -140,6 +140,38 @@ public class AuthService {
             });
     }
 
+    // ── Link Game Center to an existing account (DEV-333) ─────────────────
+
+    /**
+     * Links a verified Game Center identity to an already-authenticated user.
+     * Unlike {@link #loginWithGameCenter}, this never creates a new account — it
+     * attaches the GC provider to the current user so social features (Sprint iOS-8)
+     * can match Game Center friends against linked accounts.
+     *
+     * <ul>
+     *   <li>If the GC identity is unclaimed → insert a new user_identities row.</li>
+     *   <li>If it already belongs to this user → no-op (idempotent).</li>
+     *   <li>If it belongs to a different user → {@link GameCenterAlreadyLinkedException} (409).</li>
+     * </ul>
+     */
+    @Transactional
+    public void linkGameCenter(int userId, GameCenterAuthRequest req) {
+        verifyGkSignature(req);
+
+        userIdentityRepository
+            .findByProviderAndProviderUserId("game_center", req.playerId())
+            .ifPresentOrElse(
+                identity -> {
+                    if (identity.getUserId() != userId) {
+                        throw new GameCenterAlreadyLinkedException();
+                    }
+                    // Same user — already linked, nothing to do (idempotent).
+                },
+                () -> userIdentityRepository.save(
+                    new UserIdentity(userId, "game_center", req.playerId()))
+            );
+    }
+
     /**
      * Verifies the ECDSA signature returned by GKLocalPlayer
      * fetchItemsForIdentityVerificationSignature.

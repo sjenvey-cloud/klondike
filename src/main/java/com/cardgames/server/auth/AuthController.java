@@ -81,6 +81,23 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(pair.accessToken(), pair.user()));
     }
 
+    // ── DEV-333: Link Game Center to the authenticated account ────────────
+
+    @Operation(
+        summary     = "Link a Game Center identity to the signed-in account",
+        description = "Authenticated. Verifies the GKLocalPlayer ECDSA signature and attaches the "
+                    + "Game Center provider to the current user. 409 if the Game Center account is "
+                    + "already linked to a different user. Idempotent if already linked to this user.")
+    @PostMapping("/game-center/link")
+    public ResponseEntity<Void> linkGameCenter(
+            @Valid @RequestBody GameCenterAuthRequest body,
+            org.springframework.security.core.Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        authService.linkGameCenter(userId, body);
+        return ResponseEntity.noContent().build();
+    }
+
     // ── DEV-78: Logout ────────────────────────────────────────────────────
 
     @Operation(summary = "Revoke refresh token and invalidate access token JTI")
@@ -124,6 +141,12 @@ public class AuthController {
     @ExceptionHandler(GameCenterSignatureException.class)
     public ResponseEntity<Map<String, String>> handleBadGkSignature(GameCenterSignatureException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(GameCenterAlreadyLinkedException.class)
+    public ResponseEntity<Map<String, String>> handleGcAlreadyLinked(GameCenterAlreadyLinkedException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(Map.of("error", e.getMessage()));
     }
 

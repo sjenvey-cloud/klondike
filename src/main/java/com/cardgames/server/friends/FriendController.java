@@ -36,17 +36,20 @@ public class FriendController {
     private final FriendRequestRepository requestRepository;
     private final UserRepository          userRepository;
     private final SessionRepository       sessionRepository;
+    private final com.cardgames.server.identity.UserIdentityRepository userIdentityRepository;
 
     public FriendController(FriendRepository friendRepository,
                             FriendInviteRepository inviteRepository,
                             FriendRequestRepository requestRepository,
                             UserRepository userRepository,
-                            SessionRepository sessionRepository) {
+                            SessionRepository sessionRepository,
+                            com.cardgames.server.identity.UserIdentityRepository userIdentityRepository) {
         this.friendRepository  = friendRepository;
         this.inviteRepository  = inviteRepository;
         this.requestRepository = requestRepository;
         this.userRepository    = userRepository;
         this.sessionRepository = sessionRepository;
+        this.userIdentityRepository = userIdentityRepository;
     }
 
     // ── DEV-155: POST /api/v1/friends/invite ─────────────────────────────
@@ -165,6 +168,61 @@ public class FriendController {
 
         friendRepository.delete(friendship);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── DEV-334: POST /api/v1/friends/game-center/import ──────────────────
+    // Matches the device's Game Center friends (teamPlayerIDs) against Klondike
+    // accounts that have linked Game Center (provider=game_center). For each match
+    // that isn't already a friend, a pending friend request is created.
+
+    @Operation(summary = "Import Game Center friends",
+               description = "Matches Game Center teamPlayerIDs to linked accounts and sends pending "
+                           + "friend requests to any that aren't already friends.")
+    @PostMapping("/game-center/import")
+    public ResponseEntity<List<GameCenterMatchEntry>> importGameCenterFriends(
+            @RequestBody GameCenterImportRequest body, Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        List<GameCenterMatchEntry> matches = new java.util.ArrayList<>();
+
+        if (body == null || body.playerIds() == null) {
+            return ResponseEntity.ok(matches);
+        }
+
+        for (String playerId : body.playerIds().stream().distinct().collect(Collectors.toList())) {
+            Optional<com.cardgames.server.identity.UserIdentity> identity =
+                userIdentityRepository.findByProviderAndProviderUserId("game_center", playerId);
+            if (identity.isEmpty()) continue;
+
+            int matchedId = identity.get().getUserId();
+            if (matchedId == userId) continue;   // skip self
+
+            User matchedUser = userRepository.findById(matchedId).orElse(null);
+            if (matchedUser == null) continue;
+
+            boolean alreadyFriend = friendRepository.findFriendship(userId, matchedId).isPresent();
+            boolean addedAsRequest = false;
+
+            if (!alreadyFriend) {
+                // Auto-accept if they already requested us; otherwise create a pending request
+                Optional<FriendRequest> reverse =
+                    requestRepository.findByRequesterIdAndRequesteeId(matchedId, userId);
+                if (reverse.isPresent()) {
+                    friendRepository.save(new Friend(userId, matchedId));
+                    requestRepository.delete(reverse.get());
+                    alreadyFriend = true;
+                } else if (!requestRepository.existsByRequesterIdAndRequesteeId(userId, matchedId)) {
+                    requestRepository.save(new FriendRequest(userId, matchedId));
+                    addedAsRequest = true;
+                }
+            }
+
+            matches.add(new GameCenterMatchEntry(
+                matchedId, matchedUser.getDisplayName(), matchedUser.getAvatarUrl(),
+                alreadyFriend, addedAsRequest));
+        }
+
+        return ResponseEntity.ok(matches);
     }
 
     // ── GET /api/v1/friends/invites — list my pending sent invites ────────

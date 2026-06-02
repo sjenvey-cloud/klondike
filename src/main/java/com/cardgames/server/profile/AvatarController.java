@@ -35,19 +35,22 @@ public class AvatarController {
     private static final Set<String> ALLOWED_TYPES = Set.of("image/jpeg", "image/png");
 
     private final UserRepository userRepository;
+    private final com.cardgames.server.identity.UserIdentityRepository userIdentityRepository;
     private final S3Presigner    presigner;
     private final String         bucket;
     private final String         cdnBaseUrl;
 
     public AvatarController(
             UserRepository userRepository,
+            com.cardgames.server.identity.UserIdentityRepository userIdentityRepository,
             S3Presigner presigner,
             @Value("${app.avatar.bucket}") String bucket,
             @Value("${app.avatar.cdn-url}") String cdnBaseUrl) {
-        this.userRepository = userRepository;
-        this.presigner      = presigner;
-        this.bucket         = bucket;
-        this.cdnBaseUrl     = cdnBaseUrl;
+        this.userRepository         = userRepository;
+        this.userIdentityRepository = userIdentityRepository;
+        this.presigner              = presigner;
+        this.bucket                 = bucket;
+        this.cdnBaseUrl             = cdnBaseUrl;
     }
 
     /**
@@ -107,14 +110,11 @@ public class AvatarController {
         user.setAvatarUrl(req.avatarUrl());
         userRepository.save(user);
 
-        return ResponseEntity.ok(new ProfileResponse(
-                user.getId(),
-                user.getUuid(),
-                user.getDisplayName(),
-                user.getEmail(),
-                user.getdatecreated(),
-                user.getlasthand(),
-                user.getAvatarUrl()
-        ));
+        java.util.List<String> linkedProviders = userIdentityRepository.findByUserId(userId).stream()
+                .map(com.cardgames.server.identity.UserIdentity::getProvider)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+
+        return ResponseEntity.ok(ProfileResponse.from(user, linkedProviders));
     }
 }

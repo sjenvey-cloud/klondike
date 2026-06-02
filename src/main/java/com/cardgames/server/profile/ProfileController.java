@@ -30,16 +30,19 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/profile")
 public class ProfileController {
 
-    private final UserRepository    userRepository;
-    private final SessionRepository sessionRepository;
-    private final AccountService    accountService;
+    private final UserRepository         userRepository;
+    private final SessionRepository      sessionRepository;
+    private final AccountService         accountService;
+    private final com.cardgames.server.identity.UserIdentityRepository userIdentityRepository;
 
     public ProfileController(UserRepository userRepository,
                              SessionRepository sessionRepository,
-                             AccountService accountService) {
-        this.userRepository    = userRepository;
-        this.sessionRepository = sessionRepository;
-        this.accountService    = accountService;
+                             AccountService accountService,
+                             com.cardgames.server.identity.UserIdentityRepository userIdentityRepository) {
+        this.userRepository         = userRepository;
+        this.sessionRepository      = sessionRepository;
+        this.accountService         = accountService;
+        this.userIdentityRepository = userIdentityRepository;
     }
 
     // ── DEV-81: GET /api/v1/profile ───────────────────────────────────────
@@ -247,14 +250,11 @@ public class ProfileController {
     }
 
     private ProfileResponse toResponse(User user) {
-        return new ProfileResponse(
-            user.getId(),
-            user.getUuid(),
-            user.getDisplayName(),
-            user.getEmail(),
-            user.getdatecreated(),
-            user.getlasthand(),
-            user.getAvatarUrl()
-        );
+        // DEV-333: include the auth providers linked to this account (e.g. local, game_center)
+        List<String> linkedProviders = userIdentityRepository.findByUserId(user.getId()).stream()
+            .map(com.cardgames.server.identity.UserIdentity::getProvider)
+            .distinct()
+            .collect(Collectors.toList());
+        return ProfileResponse.from(user, linkedProviders);
     }
 }
