@@ -248,7 +248,7 @@ final class DailyStore {
         do {
             calendarEntries = try await APIClient.shared.get(
                 "/api/v1/daily/calendar",
-                query: ["drawMode": drawMode, "months": "4"]
+                query: ["drawMode": drawMode, "months": "12"]
             )
         } catch {
             calendarEntries = []

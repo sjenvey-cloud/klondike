@@ -89,7 +89,8 @@ struct DailyCalendarView: View {
     }
 
     private var canGoPrev: Bool {
-        guard let earliest = store.calendarEntries.first else { return false }
+        // Use min(by:) — calendarEntries is unordered; .first is not guaranteed to be earliest.
+        guard let earliest = store.calendarEntries.min(by: { $0.date < $1.date }) else { return false }
         return YearMonth(from: earliest.date) < displayedMonth
     }
 

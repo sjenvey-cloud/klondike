@@ -40,13 +40,15 @@ struct ProfileResponse: Decodable, Identifiable {
     let avatarUrl: String?
     let createdAt: Date?
     let lastHand: Date?
+    /// Auth providers linked to this account, e.g. ["email", "game_center"] (DEV-332)
+    let linkedProviders: [String]?
 
     // Conform to Identifiable using UUID
     var id: UUID { uuid }
 
     enum CodingKeys: String, CodingKey {
         case userId = "id"
-        case uuid, displayName, email, theme, avatarUrl, createdAt, lastHand
+        case uuid, displayName, email, theme, avatarUrl, createdAt, lastHand, linkedProviders
     }
 }
 

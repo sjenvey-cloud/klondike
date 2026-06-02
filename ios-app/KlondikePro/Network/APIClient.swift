@@ -67,7 +67,30 @@ actor APIClient {
 
         let d = JSONDecoder()
         d.keyDecodingStrategy  = .convertFromSnakeCase
-        d.dateDecodingStrategy = .iso8601
+        // Custom date strategy: handles both the standard "...Z" Instant format and
+        // the legacy LocalDateTime format "yyyy-MM-dd'T'HH:mm:ss" (no timezone) that
+        // some older backend endpoints emit. Legacy strings are treated as UTC.
+        d.dateDecodingStrategy = .custom { decoder in
+            let container  = try decoder.singleValueContainer()
+            let raw        = try container.decode(String.self)
+            // Preferred: ISO 8601 with timezone (produced by Instant / ZonedDateTime)
+            let withTZ = ISO8601DateFormatter()
+            withTZ.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = withTZ.date(from: raw) { return date }
+            withTZ.formatOptions = [.withInternetDateTime]
+            if let date = withTZ.date(from: raw) { return date }
+            // Fallback: LocalDateTime without timezone — treat as UTC
+            let noTZ = DateFormatter()
+            noTZ.locale   = Locale(identifier: "en_US_POSIX")
+            noTZ.timeZone = TimeZone(secondsFromGMT: 0)
+            noTZ.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+            if let date = noTZ.date(from: raw) { return date }
+            noTZ.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+            if let date = noTZ.date(from: raw) { return date }
+            throw DecodingError.dataCorrupted(
+                .init(codingPath: decoder.codingPath,
+                      debugDescription: "Date string not recognised: \(raw)"))
+        }
         self.decoder = d
 
         let e = JSONEncoder()

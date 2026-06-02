@@ -45,6 +45,7 @@ struct ProfileView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .environment(preferencesStore)
+                .environment(authStore)
         }
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }

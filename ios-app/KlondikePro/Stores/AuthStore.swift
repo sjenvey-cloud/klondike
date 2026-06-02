@@ -141,6 +141,46 @@ final class AuthStore {
         }
     }
 
+    // MARK: - Link Game Center (DEV-332)
+
+    var isLinkingGameCenter: Bool = false
+    var gameCenterLinkError: String?
+
+    /// Whether the currently authenticated user has a Game Center provider linked.
+    var isGameCenterLinked: Bool {
+        user?.linkedProviders?.contains("game_center") ?? false
+    }
+
+    /// Prompts Game Center authentication, then calls POST /api/v1/auth/game-center/link
+    /// to associate the GC identity with the current account. A successful link allows
+    /// social features (Sprint iOS-8) to import GC friends automatically.
+    func linkGameCenter() async {
+        isLinkingGameCenter  = true
+        gameCenterLinkError  = nil
+        defer { isLinkingGameCenter = false }
+
+        do {
+            let request = try await GameCenterService.shared.authenticate()
+            try await APIClient.shared.postBodyVoid(
+                "/api/v1/auth/game-center/link",
+                body: request
+            )
+            // Refresh profile so linkedProviders reflects the new link
+            await fetchProfile()
+        } catch let gcError as GameCenterError {
+            gameCenterLinkError = gcError.localizedDescription
+        } catch let apiErr as APIError {
+            switch apiErr {
+            case .httpError(409, _):
+                gameCenterLinkError = "This Game Center account is already linked to another user."
+            default:
+                gameCenterLinkError = "Could not link Game Center. Please try again."
+            }
+        } catch {
+            gameCenterLinkError = "Could not link Game Center. Please try again."
+        }
+    }
+
     // MARK: - Logout
 
     func logout() async {
