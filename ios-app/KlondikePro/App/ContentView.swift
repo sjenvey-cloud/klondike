@@ -43,7 +43,8 @@ struct ContentView: View {
             .tag(AppTab.rankings)
         }
         .tint(.yellow)
-        // Propagate felt + card-back colours from PreferencesStore into the whole hierarchy
+        // Propagate PreferencesStore and derived environment values to the whole hierarchy
+        .environment(preferencesStore)
         .environment(\.feltColor,     preferencesStore.feltColor)
         .environment(\.cardBackColor, preferencesStore.cardBackColor)
         .onChange(of: authStore.userId) { _, newId in

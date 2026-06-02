@@ -16,22 +16,41 @@ struct BoardView: View {
     let store: GameStore
     let cardWidth: CGFloat
 
+    @Environment(PreferencesStore.self) private var prefs
+
+    private var stockOnRight: Bool { prefs.preferences.stockSide == "right" }
+
     var body: some View {
         VStack(spacing: 8) {
-            // Top row: stock/waste on the left, foundations on the right
+            // Top row: stock/waste and foundations — order driven by stockSide preference
             HStack(alignment: .top) {
-                StockWasteView(
-                    store: store,
-                    cardWidth: cardWidth,
-                    onWasteTap: { autoMoveWaste() },
-                    onStockTap: { store.draw() }
-                )
-                Spacer()
-                FoundationView(
-                    foundation: store.state?.foundation ?? [nil, nil, nil, nil],
-                    cardWidth: cardWidth,
-                    onTap: { slot in autoMoveFoundation(slot: slot) }
-                )
+                if stockOnRight {
+                    FoundationView(
+                        foundation: store.state?.foundation ?? [nil, nil, nil, nil],
+                        cardWidth: cardWidth,
+                        onTap: { slot in autoMoveFoundation(slot: slot) }
+                    )
+                    Spacer()
+                    StockWasteView(
+                        store: store,
+                        cardWidth: cardWidth,
+                        onWasteTap: { autoMoveWaste() },
+                        onStockTap: { store.draw() }
+                    )
+                } else {
+                    StockWasteView(
+                        store: store,
+                        cardWidth: cardWidth,
+                        onWasteTap: { autoMoveWaste() },
+                        onStockTap: { store.draw() }
+                    )
+                    Spacer()
+                    FoundationView(
+                        foundation: store.state?.foundation ?? [nil, nil, nil, nil],
+                        cardWidth: cardWidth,
+                        onTap: { slot in autoMoveFoundation(slot: slot) }
+                    )
+                }
             }
             .padding(.horizontal, 16)
 
