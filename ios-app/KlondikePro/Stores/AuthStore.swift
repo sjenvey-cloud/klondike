@@ -190,6 +190,9 @@ final class AuthStore {
         UserDefaults.standard.removeObject(forKey: "klondike_user_id")
         Keychain.delete(.userId)
         userId = nil
+        // DEV-309: forget the cached APNs token so the next login re-registers
+        // this device against the new account.
+        PushNotificationManager.shared.resetOnLogout()
     }
 
     // MARK: - Helpers

@@ -16,6 +16,7 @@
 		277789E56B816744E88B280C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B0A39ABBC75A474D95DC5DF /* SettingsView.swift */; };
 		28653064D2DA2F22B860364F /* LeagueTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B23D02238356CFBD543517 /* LeagueTab.swift */; };
 		29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82365454A46200A51A0D48B4 /* Keychain.swift */; };
+		2F70FD5BBE576E4720E27CE9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B678B6C4BEC0B57C9B1488F /* AppDelegate.swift */; };
 		34CA6723F2BBA5A1FC57D1CB /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */; };
 		3594D4FB5E4F72E8310766A9 /* ChallengesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AD70B4FEBB4C3087626A4B /* ChallengesTab.swift */; };
 		3D20D85B7C25A5999717A991 /* DailyLeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172A33CB1603974D48FADA11 /* DailyLeaderboardView.swift */; };
@@ -33,6 +34,7 @@
 		62DC05719C2E4CE496A24331 /* DayDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3570B70567E1C167B66EC95D /* DayDetailSheet.swift */; };
 		665B0AABC3A828326ACDB9F5 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B563896AA9BEE53D29F393 /* FriendsView.swift */; };
 		7062161B2FD9EF601A969512 /* ProfileCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB006AC5513E0020BBEDCF5 /* ProfileCalendarView.swift */; };
+		7E1483AA0AF87F0F74DA522B /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E7116A4EAEB40A0E5DC7E0 /* PushNotificationManager.swift */; };
 		7F3038B004ADDB09D4C07088 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098E0B1E21F7C58E47D80C56 /* LeaderboardView.swift */; };
 		815103FF922B4FB175CBF65F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17A4EAD55DC0F7E5F38C301 /* ContentView.swift */; };
 		891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6956EDB6ED3254EA6AB2B5 /* HomeView.swift */; };
@@ -78,6 +80,7 @@
 		10B563896AA9BEE53D29F393 /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		172A33CB1603974D48FADA11 /* DailyLeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyLeaderboardView.swift; sourceTree = "<group>"; };
 		1DC0A0B313941647498C4E3E /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
+		20E7116A4EAEB40A0E5DC7E0 /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationManager.swift; sourceTree = "<group>"; };
 		22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
 		2953A3E7308E64EAA05071F2 /* DailyCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCalendarView.swift; sourceTree = "<group>"; };
 		2C555469E834A3638D6EF661 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -104,6 +107,7 @@
 		8B586AE464A839F50DD86EC2 /* TableauView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableauView.swift; sourceTree = "<group>"; };
 		8F9CC531152B8D3688C454FB /* FriendsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsStore.swift; sourceTree = "<group>"; };
 		961A5F1798DF826DF989EFE2 /* DailyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStore.swift; sourceTree = "<group>"; };
+		9B678B6C4BEC0B57C9B1488F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A5363B86050F2A607F9998C1 /* ProfileRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRecordsView.swift; sourceTree = "<group>"; };
 		A83FD1B58530756EBABAE921 /* KlondikeProApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KlondikeProApp.swift; sourceTree = "<group>"; };
 		ACA5F8625566E18782D12FB1 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
@@ -167,6 +171,7 @@
 		2BA14DE9AC86A81F1DDF2EED /* App */ = {
 			isa = PBXGroup;
 			children = (
+				9B678B6C4BEC0B57C9B1488F /* AppDelegate.swift */,
 				B17A4EAD55DC0F7E5F38C301 /* ContentView.swift */,
 				A83FD1B58530756EBABAE921 /* KlondikeProApp.swift */,
 			);
@@ -191,6 +196,7 @@
 				E3CA2C83876E42F975FAACB0 /* AuthService.swift */,
 				4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */,
 				82365454A46200A51A0D48B4 /* Keychain.swift */,
+				20E7116A4EAEB40A0E5DC7E0 /* PushNotificationManager.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -445,6 +451,7 @@
 				BBAFF4C5DC976F0EB69AAC87 /* APIModels.swift in Sources */,
 				93FF9D53A8F3A3FBD4E65410 /* AcceptInviteView.swift in Sources */,
 				4D26C50E9E2E6FE0380A38AE /* AccountView.swift in Sources */,
+				2F70FD5BBE576E4720E27CE9 /* AppDelegate.swift in Sources */,
 				E7FDCF4719FE769C0C50BE21 /* AppEnvironment.swift in Sources */,
 				EE2FC0FE98CCF9F5B2FA34B5 /* AuthService.swift in Sources */,
 				E54F6D4D74D5946A577EAFC4 /* AuthStore.swift in Sources */,
@@ -481,6 +488,7 @@
 				50FEF06FA2A6C8CA99616433 /* ProfileStatsView.swift in Sources */,
 				135F4806B77BC89CC4583B22 /* ProfileStore.swift in Sources */,
 				3D2D5485E0F2A3A0C6ABE05D /* ProfileView.swift in Sources */,
+				7E1483AA0AF87F0F74DA522B /* PushNotificationManager.swift in Sources */,
 				8D995C2EC98127A5E47BBBF5 /* ReplayBoardView.swift in Sources */,
 				6201B44EA3D251200CD7A2DF /* ReplayView.swift in Sources */,
 				9A2C3EE0CC7F5636D8547790 /* SeededShuffle.swift in Sources */,

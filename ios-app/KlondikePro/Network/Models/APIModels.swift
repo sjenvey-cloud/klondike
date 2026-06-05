@@ -533,3 +533,13 @@ struct GameCenterAuthRequest: Encodable {
     let timestamp:   UInt64
     let displayName: String?  // GKLocalPlayer.displayName — used when creating a new account
 }
+
+// MARK: - Push Notifications (DEV-309)
+
+/// Body for POST /api/v1/profile/device-token.
+/// `deviceId` is UIDevice.identifierForVendor; `platform` is always "ios" here.
+struct RegisterDeviceTokenRequest: Encodable {
+    let token: String
+    let deviceId: String
+    let platform: String
+}

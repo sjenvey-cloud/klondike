@@ -3,6 +3,9 @@ import SwiftUI
 @main
 struct KlondikeProApp: App {
 
+    /// DEV-309: receives APNs device-token callbacks and forwards them to PushNotificationManager.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     @State private var authStore = AuthStore()
     /// True while tryRefreshOnLaunch is running so we show a neutral splash
     /// instead of flashing LoginView before the auth check completes.
@@ -32,6 +35,16 @@ struct KlondikeProApp: App {
             .task {
                 await authStore.tryRefreshOnLaunch()
                 isCheckingAuth = false
+                // DEV-308/309: if already signed in on launch, request push permission + register.
+                if authStore.isAuthenticated {
+                    await PushNotificationManager.shared.requestAuthorizationAndRegister()
+                }
+            }
+            // DEV-308/309: also register right after a fresh login.
+            .onChange(of: authStore.isAuthenticated) { _, isAuthed in
+                if isAuthed {
+                    Task { await PushNotificationManager.shared.requestAuthorizationAndRegister() }
+                }
             }
             // DEV-301: handle klondikepro://friends/invite/{token}
             .onOpenURL { url in
