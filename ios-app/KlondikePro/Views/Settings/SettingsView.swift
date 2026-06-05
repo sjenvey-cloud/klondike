@@ -42,6 +42,10 @@ struct SettingsView: View {
 
     @State private var showSignOutAlert = false
 
+    // DEV-314: daily reminder local state, seeded from preferences on appear.
+    @State private var reminderEnabled = false
+    @State private var reminderTime    = Self.defaultReminderTime()
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -53,6 +57,7 @@ struct SettingsView: View {
                         cardBackSection      // DEV-289
                         gameplaySection      // DEV-290
                         animationSection     // DEV-291
+                        reminderSection      // DEV-314
                         accessibilitySection // DEV-292
                         accountSection       // DEV-332
                         signOutSection
@@ -60,6 +65,7 @@ struct SettingsView: View {
                     .padding(16)
                 }
             }
+            .onAppear { seedReminderState() }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -261,6 +267,85 @@ struct SettingsView: View {
         }
         .accessibilityLabel("Win animation: \(label)")
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    // MARK: - Daily reminder (DEV-314)
+
+    private var reminderSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("Daily Reminder", icon: "bell.badge")
+
+            Toggle(isOn: Binding(
+                get: { reminderEnabled },
+                set: { newValue in
+                    reminderEnabled = newValue
+                    Task { await store.setDailyReminder(enabled: newValue, time: Self.hhmm(from: reminderTime)) }
+                }
+            )) {
+                Text("Remind me to play")
+                    .font(.subheadline)
+                    .foregroundStyle(.white)
+            }
+            .tint(.yellow)
+
+            if reminderEnabled {
+                Divider().background(Color.white.opacity(0.08))
+                DatePicker(
+                    "Reminder time",
+                    selection: Binding(
+                        get: { reminderTime },
+                        set: { newDate in
+                            reminderTime = newDate
+                            Task { await store.setDailyReminder(enabled: true, time: Self.hhmm(from: newDate)) }
+                        }
+                    ),
+                    displayedComponents: .hourAndMinute
+                )
+                .font(.subheadline)
+                .foregroundStyle(.white)
+                .tint(.yellow)
+
+                Text("A notification will nudge you at this time each day.")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    /// Seed the toggle + picker from the stored preference when the sheet opens.
+    private func seedReminderState() {
+        if let raw = store.preferences.dailyReminderTime, !raw.isEmpty {
+            reminderEnabled = true
+            reminderTime = Self.date(fromHHmmss: raw) ?? Self.defaultReminderTime()
+        } else {
+            reminderEnabled = false
+        }
+    }
+
+    // MARK: - Reminder time helpers
+
+    private static func defaultReminderTime() -> Date {
+        Calendar.current.date(bySettingHour: 19, minute: 0, second: 0, of: Date()) ?? Date()
+    }
+
+    /// Formats a Date as "HH:mm" for sending to the backend.
+    private static func hhmm(from date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "HH:mm"
+        return f.string(from: date)
+    }
+
+    /// Parses a backend "HH:mm:ss" (or "HH:mm") string into today's Date for the picker.
+    private static func date(fromHHmmss raw: String) -> Date? {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        let parts = raw.split(separator: ":")
+        guard parts.count >= 2, let h = Int(parts[0]), let m = Int(parts[1]) else { return nil }
+        return Calendar.current.date(bySettingHour: h, minute: m, second: 0, of: Date())
     }
 
     // MARK: - Accessibility (DEV-292)

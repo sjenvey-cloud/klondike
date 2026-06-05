@@ -70,6 +70,8 @@ struct Preferences: Codable {
     var winAnimation: String
     var stockSide: String
     var cardStyle: String
+    /// DEV-314: daily reminder local time as "HH:mm:ss" (server LocalTime), nil = disabled.
+    var dailyReminderTime: String?
 
     static let defaults = Preferences(
         drawModeDefault: "draw3",
@@ -81,7 +83,8 @@ struct Preferences: Codable {
         animationSpeed: "normal",
         winAnimation: "confetti",
         stockSide: "left",
-        cardStyle: "classic"
+        cardStyle: "classic",
+        dailyReminderTime: nil
     )
 }
 
@@ -436,6 +439,9 @@ struct PatchPreferencesRequest: Encodable {
     var stockSide:        String?
     var animationSpeed:   String?
     var winAnimation:     String?
+    // DEV-314: "HH:mm" to enable, "" to disable; offset is minutes east of UTC.
+    var dailyReminderTime:     String?
+    var dailyReminderTzOffset: Int?
 }
 
 // MARK: - Account Management (DEV-285)

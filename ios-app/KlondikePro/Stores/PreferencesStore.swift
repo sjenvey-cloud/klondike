@@ -66,6 +66,22 @@ final class PreferencesStore {
         await patch(.init(stockSide: value))
     }
 
+    // MARK: - Daily reminder (DEV-314)
+
+    /// Enable the daily reminder at a local time, or disable it.
+    /// `time` is "HH:mm" local; the device's current UTC offset is sent alongside
+    /// so the backend scheduler can fire at the user's local time.
+    func setDailyReminder(enabled: Bool, time: String) async {
+        let offsetMinutes = TimeZone.current.secondsFromGMT() / 60
+        if enabled {
+            preferences.dailyReminderTime = time
+            await patch(.init(dailyReminderTime: time, dailyReminderTzOffset: offsetMinutes))
+        } else {
+            preferences.dailyReminderTime = nil
+            await patch(.init(dailyReminderTime: "", dailyReminderTzOffset: offsetMinutes))
+        }
+    }
+
     func setAnimationsEnabled(_ value: Bool) async {
         preferences.animationsEnabled = value
         await patch(.init(animationsEnabled: value))

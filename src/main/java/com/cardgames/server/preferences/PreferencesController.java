@@ -58,6 +58,24 @@ public class PreferencesController {
         if (body.animationSpeed()    != null) prefs.setAnimationSpeed(body.animationSpeed());
         if (body.winAnimation()      != null) prefs.setWinAnimation(body.winAnimation());
 
+        // DEV-314: daily reminder. "" (or blank) disables; "HH:mm" enables.
+        if (body.dailyReminderTime() != null) {
+            if (body.dailyReminderTime().isBlank()) {
+                prefs.setDailyReminderTime(null);
+                prefs.setDailyReminderLastSent(null);
+            } else {
+                try {
+                    prefs.setDailyReminderTime(
+                        java.time.LocalTime.parse(body.dailyReminderTime()));
+                } catch (java.time.format.DateTimeParseException e) {
+                    return ResponseEntity.badRequest().build();
+                }
+            }
+        }
+        if (body.dailyReminderTzOffset() != null) {
+            prefs.setDailyReminderTzOffset(body.dailyReminderTzOffset());
+        }
+
         prefsRepo.save(prefs);
         return ResponseEntity.ok(prefs);
     }

@@ -37,19 +37,22 @@ public class FriendController {
     private final UserRepository          userRepository;
     private final SessionRepository       sessionRepository;
     private final com.cardgames.server.identity.UserIdentityRepository userIdentityRepository;
+    private final com.cardgames.server.notifications.NotificationService notificationService;
 
     public FriendController(FriendRepository friendRepository,
                             FriendInviteRepository inviteRepository,
                             FriendRequestRepository requestRepository,
                             UserRepository userRepository,
                             SessionRepository sessionRepository,
-                            com.cardgames.server.identity.UserIdentityRepository userIdentityRepository) {
+                            com.cardgames.server.identity.UserIdentityRepository userIdentityRepository,
+                            com.cardgames.server.notifications.NotificationService notificationService) {
         this.friendRepository  = friendRepository;
         this.inviteRepository  = inviteRepository;
         this.requestRepository = requestRepository;
         this.userRepository    = userRepository;
         this.sessionRepository = sessionRepository;
         this.userIdentityRepository = userIdentityRepository;
+        this.notificationService = notificationService;
     }
 
     // ── DEV-155: POST /api/v1/friends/invite ─────────────────────────────
@@ -322,6 +325,16 @@ public class FriendController {
         // Idempotent: don't create a duplicate
         if (!requestRepository.existsByRequesterIdAndRequesteeId(userId, targetId)) {
             requestRepository.save(new FriendRequest(userId, targetId));
+
+            // DEV-313: notify the recipient of the new friend request.
+            String requesterName = userRepository.findById(userId)
+                .map(User::getDisplayName).orElse("Someone");
+            notificationService.sendToUser(
+                targetId,
+                "Friend Request",
+                requesterName + " sent you a friend request",
+                Map.of("type", "friend_request")
+            );
         }
 
         return ResponseEntity.noContent().build();

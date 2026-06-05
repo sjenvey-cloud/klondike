@@ -118,7 +118,14 @@
 			<version>0.12.6</version>
 			<scope>runtime</scope>
 		</dependency>
-        
+
+		<!-- DEV-311: Pushy — APNs HTTP/2 push client (token-based .p8 auth) -->
+		<dependency>
+			<groupId>com.eatthepath</groupId>
+			<artifactId>pushy</artifactId>
+			<version>0.15.4</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>

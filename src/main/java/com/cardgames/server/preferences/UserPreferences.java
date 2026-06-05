@@ -1,7 +1,9 @@
 package com.cardgames.server.preferences;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "user_preferences")
@@ -41,6 +43,16 @@ public class UserPreferences {
     @Column(name = "win_animation", nullable = false)
     private String winAnimation = "confetti";
 
+    // DEV-314: daily-challenge reminder. reminderTime == null means disabled.
+    @Column(name = "daily_reminder_time")
+    private LocalTime dailyReminderTime;
+
+    @Column(name = "daily_reminder_tz_offset", nullable = false)
+    private int dailyReminderTzOffset = 0;   // minutes east of UTC
+
+    @Column(name = "daily_reminder_last_sent")
+    private LocalDate dailyReminderLastSent;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
@@ -62,6 +74,9 @@ public class UserPreferences {
     public String        getStockSide()        { return stockSide; }
     public String        getAnimationSpeed()   { return animationSpeed; }
     public String        getWinAnimation()     { return winAnimation; }
+    public LocalTime     getDailyReminderTime()      { return dailyReminderTime; }
+    public int           getDailyReminderTzOffset()  { return dailyReminderTzOffset; }
+    public LocalDate     getDailyReminderLastSent()  { return dailyReminderLastSent; }
     public LocalDateTime getUpdatedAt()        { return updatedAt; }
 
     public void setDrawModeDefault(String v)  { this.drawModeDefault = v; this.updatedAt = LocalDateTime.now(); }
@@ -74,4 +89,7 @@ public class UserPreferences {
     public void setStockSide(String v)        { this.stockSide = v;       this.updatedAt = LocalDateTime.now(); }
     public void setAnimationSpeed(String v)   { this.animationSpeed = v;  this.updatedAt = LocalDateTime.now(); }
     public void setWinAnimation(String v)     { this.winAnimation = v;    this.updatedAt = LocalDateTime.now(); }
+    public void setDailyReminderTime(LocalTime v)     { this.dailyReminderTime = v;     this.updatedAt = LocalDateTime.now(); }
+    public void setDailyReminderTzOffset(int v)       { this.dailyReminderTzOffset = v; this.updatedAt = LocalDateTime.now(); }
+    public void setDailyReminderLastSent(LocalDate v) { this.dailyReminderLastSent = v; }
 }

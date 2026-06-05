@@ -34,6 +34,7 @@ public class SocialChallengeController {
     private final FriendRepository                     friendRepo;
     private final CustomLeagueMemberRepository         leagueMemberRepo;
     private final HandRepository                       handRepo;
+    private final com.cardgames.server.notifications.NotificationService notificationService;
 
     public SocialChallengeController(
             SocialChallengeRepository challengeRepo,
@@ -42,7 +43,8 @@ public class SocialChallengeController {
             UserRepository userRepo,
             FriendRepository friendRepo,
             CustomLeagueMemberRepository leagueMemberRepo,
-            HandRepository handRepo) {
+            HandRepository handRepo,
+            com.cardgames.server.notifications.NotificationService notificationService) {
         this.challengeRepo    = challengeRepo;
         this.participantRepo  = participantRepo;
         this.sessionRepo      = sessionRepo;
@@ -50,6 +52,7 @@ public class SocialChallengeController {
         this.friendRepo       = friendRepo;
         this.leagueMemberRepo = leagueMemberRepo;
         this.handRepo         = handRepo;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -113,6 +116,16 @@ public class SocialChallengeController {
         String creatorName = creator != null ? creator.getDisplayName() : "Unknown";
         UUID creatorUuid = creator != null ? creator.getUuid() : null;
         UUID handUuid = handRepo.findById(challenge.getHandId()).map(Hand::getUuid).orElse(null);
+
+        // DEV-312: notify each invited participant that a friend challenged them.
+        for (int inviteeId : inviteeIds) {
+            notificationService.sendToUser(
+                inviteeId,
+                "New Challenge",
+                creatorName + " challenged you to beat their game",
+                Map.of("type", "challenge", "challengeId", String.valueOf(challenge.getId()))
+            );
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new SocialChallengeListEntry(
             challenge.getId(), creatorUuid, creatorName,

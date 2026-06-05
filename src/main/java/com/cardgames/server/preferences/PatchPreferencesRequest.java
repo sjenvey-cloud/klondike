@@ -10,5 +10,9 @@ public record PatchPreferencesRequest(
     Boolean animationsEnabled,
     String  stockSide,
     String  animationSpeed,
-    String  winAnimation
+    String  winAnimation,
+    // DEV-314: "HH:mm" local time to enable the daily reminder, or "" to disable.
+    // dailyReminderTzOffset is minutes east of UTC, sent alongside the time.
+    String  dailyReminderTime,
+    Integer dailyReminderTzOffset
 ) {}
