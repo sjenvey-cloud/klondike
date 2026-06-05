@@ -19,6 +19,8 @@ final class GameStore {
 
     var isWon: Bool { state?.isWon ?? false }
     var canUndo: Bool { !(state?.history.isEmpty ?? true) }
+    var canAutoComplete: Bool { state?.canAutoComplete ?? false }
+    var isAutoCompleting: Bool = false
     var lastDrawMode: String = "draw3"   // remembered across games
 
     /// Set when this store is running a daily challenge session.
@@ -244,6 +246,45 @@ final class GameStore {
 
     func undo() {
         state?.undo()
+    }
+
+    // MARK: - Auto-complete
+
+    /// Sweeps every remaining card to the foundations once the board has no
+    /// face-down cards. Plays one move at a time with a short delay so the user
+    /// sees the cards fly home; the win flow triggers naturally when `isWon`.
+    /// Cycles the stock/waste as needed and stops gracefully if it can't progress.
+    func autoComplete() async {
+        guard state?.canAutoComplete == true, !isAutoCompleting else { return }
+        isAutoCompleting = true
+        defer { isAutoCompleting = false }
+
+        var idleDraws = 0
+        while let current = state, !current.isWon {
+            // 1. Play anything available straight to a foundation.
+            if playAnyToFoundation() {
+                idleDraws = 0
+                try? await Task.sleep(for: .milliseconds(80))
+                continue
+            }
+            // 2. Nothing playable — cycle the draw pile to expose more cards.
+            let remaining = current.stock.count + current.waste.count
+            if remaining > 0 && idleDraws <= remaining {
+                draw()
+                idleDraws += 1
+                try? await Task.sleep(for: .milliseconds(55))
+                continue
+            }
+            // 3. A full cycle yielded no foundation move — stop (rare; user finishes by hand).
+            break
+        }
+    }
+
+    @discardableResult
+    private func playAnyToFoundation() -> Bool {
+        if moveWasteToFoundation() { return true }
+        for col in 0..<7 where moveTableauToFoundation(col: col) { return true }
+        return false
     }
 
     // MARK: - Complete Session

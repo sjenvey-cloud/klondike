@@ -93,15 +93,10 @@ public class DailyController {
         int[] cards = SeededShuffle.shuffle(hand.getShuffleSeed());
         HandResponse handResponse = new HandResponse(hand.getUuid(), hand.getShuffleSeed(), cards, drawMode);
 
-        // Check if authenticated user has used their ranked attempt today
+        // Today's daily challenge now allows unlimited ranked attempts — players can
+        // always replay to improve their leaderboard result. So the "ranked slot used"
+        // flag is always false for today; every attempt is ranked.
         boolean userHasRankedAttempt = false;
-        if (auth != null) {
-            int userId = (Integer) auth.getPrincipal();
-            userHasRankedAttempt = sessionRepo
-                .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
-                    userId, today, drawMode,
-                    new String[]{ Session.STATUS_WON });
-        }
 
         return ResponseEntity.ok(new DailyHandResponse(handResponse, userHasRankedAttempt, today.toString()));
     }

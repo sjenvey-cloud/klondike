@@ -222,10 +222,13 @@ struct GameState {
 
     // MARK: - Auto-complete eligibility
 
-    /// True when all remaining cards are face up (no hidden tableau cards).
+    /// True when every tableau card is face up (no hidden cards). The remaining
+    /// cards — including any still in the stock or waste — can then be swept to the
+    /// foundations automatically. (Previously required stock & waste to be empty,
+    /// which never fired in the common end-game where a few cards remain in the
+    /// draw pile — that was the Daily Challenge auto-complete bug.)
     var canAutoComplete: Bool {
-        !isWon && stock.isEmpty && waste.isEmpty &&
-        tableau.allSatisfy { col in col.allSatisfy { $0.isFaceUp } }
+        !isWon && tableau.allSatisfy { col in col.allSatisfy { $0.isFaceUp } }
     }
 
     // MARK: - Private helpers

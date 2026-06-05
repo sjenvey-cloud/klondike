@@ -149,25 +149,15 @@ struct DailyGameTab: View {
                     .font(.system(size: 56))
                     .foregroundStyle(.yellow.opacity(0.85))
 
-                // Status
+                // Status — today's daily allows unlimited ranked retries.
                 VStack(spacing: 8) {
-                    if store.userHasRankedAttempt {
-                        Label("Completed today", systemImage: "checkmark.seal.fill")
-                            .font(.headline)
-                            .foregroundStyle(.yellow)
-                        Text("You've already submitted a ranked result.\nPlay again for practice.")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.6))
-                            .multilineTextAlignment(.center)
-                    } else {
-                        Text("Ready to play")
-                            .font(.title3.bold())
-                            .foregroundStyle(.white)
-                        Text("Your first completion counts toward the leaderboard.")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.6))
-                            .multilineTextAlignment(.center)
-                    }
+                    Text("Ready to play")
+                        .font(.title3.bold())
+                        .foregroundStyle(.white)
+                    Text("Every attempt is ranked — replay as often as you like and your best result counts toward the leaderboard.")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.6))
+                        .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
 
@@ -178,23 +168,16 @@ struct DailyGameTab: View {
                 Button {
                     Task { await store.startGame() }
                 } label: {
-                    Label(
-                        store.userHasRankedAttempt ? "Play Again (Practice)" : "Play Today's Challenge",
-                        systemImage: "play.fill"
-                    )
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    Label("Play Today's Challenge", systemImage: "play.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.yellow)
                 .foregroundStyle(.black)
                 .padding(.horizontal, 32)
-                .accessibilityLabel(
-                    store.userHasRankedAttempt
-                        ? "Play today's challenge again as practice"
-                        : "Start today's ranked daily challenge"
-                )
+                .accessibilityLabel("Start today's ranked daily challenge")
 
                 Spacer(minLength: 32)
             }

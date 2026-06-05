@@ -65,6 +65,27 @@ struct BoardView: View {
                 .padding(.bottom, 24)
             }
         }
+        // Auto-complete affordance — appears once no face-down cards remain.
+        .overlay(alignment: .bottom) {
+            if store.canAutoComplete {
+                Button {
+                    Task { await store.autoComplete() }
+                } label: {
+                    Label("Auto-Complete", systemImage: "wand.and.stars")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 12)
+                        .background(Color.yellow, in: Capsule())
+                        .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
+                }
+                .disabled(store.isAutoCompleting)
+                .padding(.bottom, 18)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .accessibilityLabel("Auto-complete the game")
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: store.canAutoComplete)
     }
 
     // MARK: - Auto-move: Waste top card

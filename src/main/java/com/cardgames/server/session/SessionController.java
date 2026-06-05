@@ -110,18 +110,15 @@ public class SessionController {
             session.setIsDaily(true);
             session.setDailyDate(date);
 
-            // Same ranked-slot logic for all daily challenges — today's or historical.
-            // One ranked win per (user, date, drawMode); subsequent replays are unranked practice.
-            boolean hasRanked = sessionRepository
-                .existsByUserIdAndDailyDateAndDrawModeAndIsRankedTrueAndStatusIn(
-                    body.userId(), date, hand.getDrawMode(),
-                    new String[]{ Session.STATUS_WON });
-            log.info("createSession: daily branch — date={} drawMode={} hasRanked={}",
-                date, hand.getDrawMode(), hasRanked);
-            if (hasRanked) {
-                isRanked = false;
-                session.setIsRanked(false);
-            }
+            // Unlimited ranked retries on the *current* day's challenge — players can
+            // replay to improve, and the leaderboard keeps each user's best result
+            // (DISTINCT ON per metric). Past dailies are always practice so historical
+            // leaderboards can't be climbed after the fact.
+            boolean isToday = date.equals(LocalDate.now());
+            isRanked = isToday;
+            session.setIsRanked(isToday);
+            log.info("createSession: daily branch — date={} drawMode={} isToday={} isRanked={}",
+                date, hand.getDrawMode(), isToday, isRanked);
         }
 
         sessionRepository.save(session);
