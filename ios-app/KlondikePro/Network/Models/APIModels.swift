@@ -235,30 +235,117 @@ struct PagedResponse<T: Decodable>: Decodable {
     let hasMore: Bool
 }
 
-// MARK: - Friends
+// MARK: - Friends (DEV-294)
+// Matches backend FriendResponse (friends use integer userId, not UUID).
 
 struct Friend: Decodable, Identifiable {
-    let userUuid: UUID?
+    let userId: Int
     let displayName: String
     let lastActive: Date?
     let gamesCompletedToday: Int
+    let avatarUrl: String?
 
-    var id: String { userUuid?.uuidString ?? displayName }
+    var id: Int { userId }
 }
 
+/// Matches backend InviteResponse (POST /friends/invite).
 struct FriendInviteResponse: Decodable {
     let token: String
     let inviteUrl: String
     let expiresAt: Date?
 }
 
-// MARK: - Social Challenges
+/// Matches backend FriendRequestEntry (GET /friends/requests/received).
+struct FriendRequestEntry: Decodable, Identifiable {
+    let id: Int
+    let requesterId: Int
+    let requesterDisplayName: String
+    let createdAt: Date?
+}
+
+/// Matches backend InvitePreviewResponse (GET /friends/invites/preview/{token}).
+struct InvitePreviewResponse: Decodable {
+    let token: String
+    let inviterDisplayName: String
+}
+
+/// DEV-295: body for POST /friends/requests.
+struct FriendRequestBody: Encodable {
+    let targetUserId: Int
+}
+
+// MARK: - Game Center friend import (DEV-334)
+
+struct GameCenterImportRequest: Encodable {
+    let playerIds: [String]
+}
+
+struct GameCenterMatchEntry: Decodable, Identifiable {
+    let userId: Int
+    let displayName: String
+    let avatarUrl: String?
+    let alreadyFriend: Bool
+    let addedAsRequest: Bool
+
+    var id: Int { userId }
+}
+
+// MARK: - Leagues (DEV-296)
+// Matches backend LeagueEntry (friend league table).
+
+struct LeagueEntry: Decodable, Identifiable {
+    let rank: Int
+    let userId: Int
+    let displayName: String
+    let wins: Int
+    let bestMoves: Int?
+
+    var id: Int { userId }
+}
+
+// MARK: - Custom Leagues (DEV-297)
+
+struct CustomLeagueListEntry: Decodable, Identifiable {
+    let id: Int
+    let name: String
+    let creatorUserId: Int
+    let creatorDisplayName: String
+    let memberCount: Int
+    let isCreator: Bool
+    let createdAt: Date?
+}
+
+struct CustomLeagueMemberEntry: Decodable, Identifiable {
+    let userId: Int
+    let displayName: String
+    let isFriend: Bool
+    let hasPendingRequest: Bool
+
+    var id: Int { userId }
+}
+
+struct CustomLeagueDetail: Decodable {
+    let id: Int
+    let name: String
+    let creatorUserId: Int
+    let createdAt: Date?
+    let isCreator: Bool
+    let members: [CustomLeagueMemberEntry]
+}
+
+struct CreateLeagueRequest: Encodable {
+    let name: String
+    let memberIds: [Int]
+}
+
+// MARK: - Social Challenges (DEV-298)
+// Matches backend SocialChallengeListEntry / SocialChallengeDetail (UUID-based).
 
 struct SocialChallenge: Decodable, Identifiable {
     let id: Int
-    let creatorUserId: Int
+    let creatorUserUuid: UUID?
     let creatorDisplayName: String
-    let handId: Int
+    let handUuid: UUID?
     let drawMode: String
     let status: String   // active | ended
     let createdAt: Date?
@@ -269,20 +356,22 @@ struct SocialChallenge: Decodable, Identifiable {
     let isCreator: Bool
 }
 
-struct SocialLeaderboardEntry: Decodable {
+struct SocialLeaderboardEntry: Decodable, Identifiable {
     let rank: Int
     let userId: Int
     let displayName: String
     let isCreator: Bool
     let moves: Int?
     let timeSeconds: Int?
+
+    var id: Int { userId }
 }
 
 struct SocialChallengeDetail: Decodable {
     let id: Int
-    let creatorUserId: Int
+    let creatorUserUuid: UUID?
     let creatorDisplayName: String
-    let handId: Int
+    let handUuid: UUID?
     let drawMode: String
     let status: String
     let createdAt: Date?

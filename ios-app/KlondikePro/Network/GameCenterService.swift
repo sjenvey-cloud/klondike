@@ -84,4 +84,20 @@ actor GameCenterService {
             displayName:  player.displayName
         )
     }
+
+    // MARK: - Friend import (DEV-334)
+
+    /// Loads the local player's Game Center friends (those who have consented to
+    /// friend sharing) and returns their teamPlayerIDs — the same identifier stored
+    /// server-side at login, so the backend can match them to linked accounts.
+    ///
+    /// - Throws: a GameKit error if the player is not authenticated or has not
+    ///   granted friend-list access.
+    func loadFriendTeamPlayerIDs() async throws -> [String] {
+        guard GKLocalPlayer.local.isAuthenticated else {
+            throw GameCenterError.notAuthenticated
+        }
+        let friends = try await GKLocalPlayer.local.loadFriends()
+        return friends.map { $0.teamPlayerID }
+    }
 }

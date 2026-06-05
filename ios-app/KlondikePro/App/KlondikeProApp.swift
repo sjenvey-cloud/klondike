@@ -8,6 +8,9 @@ struct KlondikeProApp: App {
     /// instead of flashing LoginView before the auth check completes.
     @State private var isCheckingAuth = true
 
+    /// DEV-301: pending friend-invite token parsed from a klondikepro:// deep link.
+    @State private var pendingInviteToken: String?
+
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -30,7 +33,33 @@ struct KlondikeProApp: App {
                 await authStore.tryRefreshOnLaunch()
                 isCheckingAuth = false
             }
+            // DEV-301: handle klondikepro://friends/invite/{token}
+            .onOpenURL { url in
+                if let token = Self.inviteToken(from: url) {
+                    pendingInviteToken = token
+                }
+            }
+            .sheet(isPresented: Binding(
+                get: { pendingInviteToken != nil && authStore.isAuthenticated },
+                set: { if !$0 { pendingInviteToken = nil } }
+            )) {
+                if let token = pendingInviteToken {
+                    AcceptInviteView(token: token) { pendingInviteToken = nil }
+                }
+            }
         }
+    }
+
+    /// Parses `klondikepro://friends/invite/{token}` → token.
+    static func inviteToken(from url: URL) -> String? {
+        guard url.scheme == "klondikepro" else { return nil }
+        // Host may be "friends" with path "/invite/{token}", or the whole thing in path components.
+        let parts = (url.host.map { [$0] } ?? []) + url.pathComponents.filter { $0 != "/" }
+        // Expect [..., "invite", token]
+        if let idx = parts.firstIndex(of: "invite"), idx + 1 < parts.count {
+            return parts[idx + 1]
+        }
+        return nil
     }
 
     private var splashView: some View {

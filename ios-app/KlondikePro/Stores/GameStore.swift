@@ -137,6 +137,55 @@ final class GameStore {
         }
     }
 
+    // MARK: - Start Challenge Game (DEV-299)
+
+    /// Starts a normal (non-daily) session on a specific challenge hand.
+    /// Fetches the hand by UUID to recover its shuffle seed, then creates a session.
+    /// On win, `completeSession()` submits it and the backend challenge leaderboard
+    /// updates automatically (it ranks won sessions by hand).
+    func startChallenge(handUuid challengeHandUuid: UUID, drawMode: String) async {
+        guard userId > 0 else {
+            errorMessage = "Not signed in. Please restart the app and sign in again."
+            return
+        }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        lastDrawMode = drawMode
+
+        do {
+            struct HandFetched: Decodable {
+                let uuid: UUID
+                let shuffleSeed: Int64
+                let drawMode: String
+            }
+            let hand: HandFetched = try await APIClient.shared.get(
+                "/api/v1/hands/\(challengeHandUuid.uuidString.lowercased())"
+            )
+
+            let sessionResp: CreateSessionResponse = try await APIClient.shared.post(
+                "/api/v1/sessions",
+                body: CreateSessionRequest(
+                    handUuid: hand.uuid,
+                    userId: userId,
+                    isDaily: false,
+                    dailyDate: nil,
+                    isRanked: false
+                )
+            )
+
+            state = GameState(seed: hand.shuffleSeed, drawMode: hand.drawMode)
+            handUuid = hand.uuid
+            sessionUuid = sessionResp.session.uuid
+            elapsedSeconds = 0
+            stopTimer()
+            startTimer()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Resume Game
 
     /// Resumes an existing session from an ActiveSessionItem.

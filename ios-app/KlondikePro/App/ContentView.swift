@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var profileStore         = ProfileStore()
     @State private var preferencesStore     = PreferencesStore()
     @State private var leaderboardStore     = LeaderboardStore()
+    @State private var friendsStore         = FriendsStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -35,12 +36,13 @@ struct ContentView: View {
                 .tabItem { Label("Profile", systemImage: "person.fill") }
                 .tag(AppTab.profile)
 
-            NavigationStack {
-                LeaderboardView()
-                    .environment(leaderboardStore)
-            }
-            .tabItem { Label("Rankings", systemImage: "trophy.fill") }
-            .tag(AppTab.rankings)
+            FriendsView()
+                .environment(friendsStore)
+                .environment(authStore)
+                .environment(leaderboardStore)
+                .tabItem { Label("Social", systemImage: "person.2.fill") }
+                .tag(AppTab.social)
+                .badge(friendsStore.socialBadgeCount)
         }
         .tint(.yellow)
         // Propagate PreferencesStore and derived environment values to the whole hierarchy
@@ -52,6 +54,7 @@ struct ContentView: View {
                 gameStore.userId         = id
                 dailyStore.userId        = id
                 profileStore.userId      = id
+                friendsStore.userId      = id
                 leaderboardStore.userUuid = authStore.user?.uuid
                 Task { await preferencesStore.fetchPreferences() }
             }
@@ -61,6 +64,7 @@ struct ContentView: View {
                 gameStore.userId         = id
                 dailyStore.userId        = id
                 profileStore.userId      = id
+                friendsStore.userId      = id
                 leaderboardStore.userUuid = authStore.user?.uuid
                 Task { await preferencesStore.fetchPreferences() }
             }
@@ -73,5 +77,5 @@ struct ContentView: View {
 }
 
 enum AppTab: Hashable {
-    case home, game, daily, profile, rankings
+    case home, game, daily, profile, social
 }
