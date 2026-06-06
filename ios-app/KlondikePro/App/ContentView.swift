@@ -66,12 +66,24 @@ struct ContentView: View {
                 profileStore.userId      = id
                 friendsStore.userId      = id
                 leaderboardStore.userUuid = authStore.user?.uuid
-                Task { await preferencesStore.fetchPreferences() }
+                // Only fetch preferences here when the profile is already loaded
+                // (i.e. after login). On a cold launch the access token may be
+                // stale and a background refresh is in flight — fetching now would
+                // race the refresh (token rotation) and silently fail. In that case
+                // the onChange(user) handler below fetches once the profile loads
+                // with a fresh token.
+                if authStore.user != nil {
+                    Task { await preferencesStore.fetchPreferences() }
+                }
             }
         }
-        // Keep leaderboardStore.userUuid in sync if the user profile loads after initial appear
+        // Profile loaded (post-refresh on launch) — now the token is fresh, so it's
+        // safe to load preferences and sync the leaderboard identity.
         .onChange(of: authStore.user?.uuid) { _, uuid in
             leaderboardStore.userUuid = uuid
+            if uuid != nil {
+                Task { await preferencesStore.fetchPreferences() }
+            }
         }
     }
 }
