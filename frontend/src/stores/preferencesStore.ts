@@ -6,7 +6,8 @@ import type { UserPreferences } from '../types/api';
 const DEFAULTS: UserPreferences = {
   cardBackColour:    '#1c2333',
   cardBackPattern:   null,
-  feltColour:        '#2d6a4f',
+  feltColour:        '#0d1117',   // DEV-337: canonical Dark Premium (matches iOS default)
+  themeName:         'dark-premium',
   animationsEnabled: true,
   cardFaceDesign:    'classic',
   cardStyle:         'classic',

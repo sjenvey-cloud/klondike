@@ -70,6 +70,8 @@ struct Preferences: Codable {
     var winAnimation: String
     var stockSide: String
     var cardStyle: String
+    /// DEV-337: canonical felt theme name (dark-premium / classic-felt / modern-minimal), or "custom".
+    var themeName: String?
     /// DEV-314: daily reminder local time as "HH:mm:ss" (server LocalTime), nil = disabled.
     var dailyReminderTime: String?
 
@@ -84,6 +86,7 @@ struct Preferences: Codable {
         winAnimation: "confetti",
         stockSide: "left",
         cardStyle: "classic",
+        themeName: "dark-premium",
         dailyReminderTime: nil
     )
 }
@@ -439,6 +442,7 @@ struct PatchPreferencesRequest: Encodable {
     var stockSide:        String?
     var animationSpeed:   String?
     var winAnimation:     String?
+    var themeName:        String?   // DEV-337
     // DEV-314: "HH:mm" to enable, "" to disable; offset is minutes east of UTC.
     var dailyReminderTime:     String?
     var dailyReminderTzOffset: Int?

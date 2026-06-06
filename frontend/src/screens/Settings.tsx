@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
+import { FELT_THEMES, FELT_CUSTOM, CARD_BACK_COLOURS, themeNameForFelt } from '../constants/palette';
 import './Settings.css';
 
 interface ThemePreview {
@@ -17,22 +18,8 @@ const THEME_PREVIEWS: Record<string, ThemePreview> = {
   modern:  { bg: '#e8eaed', surface: '#ffffff', accent: '#2563eb', text: '#1f2937', label: 'Modern Minimal' },
 };
 
-const CARD_BACK_COLOURS = [
-  { hex: '#1c2333', label: 'Dark Navy' },
-  { hex: '#2d1b4e', label: 'Deep Purple' },
-  { hex: '#1a3a2e', label: 'Forest' },
-  { hex: '#3a1a1a', label: 'Burgundy' },
-  { hex: '#1a2a3a', label: 'Midnight Blue' },
-  { hex: '#2a2a2a', label: 'Charcoal' },
-];
-const FELT_COLOURS = [
-  { hex: '#0d1117', label: 'Black' },
-  { hex: '#1a5c2e', label: 'Classic Green' },
-  { hex: '#e8eaed', label: 'Light Grey' },
-  { hex: '#1a1a2e', label: 'Dark Indigo' },
-  { hex: '#2d1a0e', label: 'Dark Brown' },
-  { hex: '#0e1a2d', label: 'Deep Navy' },
-];
+// DEV-337: felt swatches = the 3 canonical named themes (shared with iOS) + web-only extras.
+const FELT_COLOURS = [...FELT_THEMES, ...FELT_CUSTOM];
 
 const CDN = (import.meta as unknown as { env: Record<string, string> }).env.VITE_THEMES_CDN_URL || '';
 const CARD_BACK_PATTERNS = [
@@ -65,6 +52,12 @@ export function Settings(): React.JSX.Element {
   function selectColour(colour: string): void {
     updatePreference('cardBackPattern', '');   // empty string clears server-side; falsy locally
     updatePreference('cardBackColour', colour);
+  }
+
+  // DEV-337: selecting a felt also records the canonical theme name (or 'custom').
+  function selectFelt(hex: string): void {
+    updatePreference('feltColour', hex);
+    updatePreference('themeName', themeNameForFelt(hex) ?? 'custom');
   }
 
   return (
@@ -197,7 +190,7 @@ export function Settings(): React.JSX.Element {
               className={`swatch${feltColour === c.hex ? ' active' : ''}`}
               style={{ background: c.hex }}
               aria-label={c.label}
-              onClick={() => updatePreference('feltColour', c.hex)}
+              onClick={() => selectFelt(c.hex)}
             />
           ))}
         </div>

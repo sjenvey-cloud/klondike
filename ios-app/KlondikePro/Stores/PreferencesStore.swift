@@ -51,6 +51,14 @@ final class PreferencesStore {
         await patch(.init(feltColour: hex))
     }
 
+    /// DEV-337: select a named felt theme — records both the felt hex and the
+    /// canonical theme name so the choice is recognised on web too.
+    func setTheme(name: String, felt hex: String) async {
+        preferences.feltColour = hex
+        preferences.themeName  = name
+        await patch(.init(feltColour: hex, themeName: name))
+    }
+
     func setAnimationSpeed(_ value: String) async {
         preferences.animationSpeed = value
         await patch(.init(animationSpeed: value))

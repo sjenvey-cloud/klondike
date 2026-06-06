@@ -7,6 +7,7 @@ public record PatchPreferencesRequest(
     String  cardBackColour,
     String  cardBackPattern,
     String  feltColour,
+    String  themeName,        // DEV-337: canonical theme name, or "custom"
     Boolean animationsEnabled,
     String  stockSide,
     String  animationSpeed,

@@ -53,6 +53,8 @@ public class PreferencesController {
         if (body.cardBackPattern()  != null) prefs.setCardBackPattern(
             body.cardBackPattern().isEmpty() ? null : body.cardBackPattern());
         if (body.feltColour()       != null) prefs.setFeltColour(body.feltColour());
+        if (body.themeName()        != null) prefs.setThemeName(
+            body.themeName().isBlank() ? null : body.themeName());
         if (body.animationsEnabled() != null) prefs.setAnimationsEnabled(body.animationsEnabled());
         if (body.stockSide()         != null) prefs.setStockSide(body.stockSide());
         if (body.animationSpeed()    != null) prefs.setAnimationSpeed(body.animationSpeed());

@@ -27,6 +27,7 @@ export interface UserPreferences {
   cardBackColour: string;
   cardBackPattern: string | null;
   feltColour: string;
+  themeName?: string | null;   // DEV-337: canonical felt theme name, or null/'custom'
   animationsEnabled: boolean;
   cardFaceDesign: string;
   cardStyle: string;

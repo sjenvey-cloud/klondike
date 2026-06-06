@@ -31,6 +31,11 @@ public class UserPreferences {
     @Column(name = "felt_colour", nullable = false)
     private String feltColour = "#0d1117";
 
+    // DEV-337: canonical theme name (dark-premium / classic-felt / modern-minimal),
+    // or null for a custom felt colour. Lets named themes survive hex changes.
+    @Column(name = "theme_name")
+    private String themeName = "dark-premium";
+
     @Column(name = "animations_enabled", nullable = false)
     private boolean animationsEnabled = true;
 
@@ -70,6 +75,7 @@ public class UserPreferences {
     public String        getCardBackColour()   { return cardBackColour; }
     public String        getCardBackPattern()  { return cardBackPattern; }
     public String        getFeltColour()       { return feltColour; }
+    public String        getThemeName()        { return themeName; }
     public boolean       isAnimationsEnabled() { return animationsEnabled; }
     public String        getStockSide()        { return stockSide; }
     public String        getAnimationSpeed()   { return animationSpeed; }
@@ -85,6 +91,7 @@ public class UserPreferences {
     public void setCardBackColour(String v)   { this.cardBackColour = v;  this.updatedAt = LocalDateTime.now(); }
     public void setCardBackPattern(String v)  { this.cardBackPattern = v; this.updatedAt = LocalDateTime.now(); }
     public void setFeltColour(String v)       { this.feltColour = v;      this.updatedAt = LocalDateTime.now(); }
+    public void setThemeName(String v)        { this.themeName = v;       this.updatedAt = LocalDateTime.now(); }
     public void setAnimationsEnabled(boolean v){ this.animationsEnabled = v; this.updatedAt = LocalDateTime.now(); }
     public void setStockSide(String v)        { this.stockSide = v;       this.updatedAt = LocalDateTime.now(); }
     public void setAnimationSpeed(String v)   { this.animationSpeed = v;  this.updatedAt = LocalDateTime.now(); }

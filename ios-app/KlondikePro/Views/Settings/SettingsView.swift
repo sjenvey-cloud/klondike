@@ -2,17 +2,19 @@ import SwiftUI
 
 // MARK: - Theme definition
 
+// DEV-337: canonical palette — these hex values match the web (constants/palette.ts).
 private struct AppTheme: Identifiable {
-    let id: String          // feltColour hex
+    let id: String          // canonical themeName
     let name: String
+    let feltHex: String
     let felt: Color
     let accent: Color
 }
 
 private let themes: [AppTheme] = [
-    AppTheme(id: "#0d1117", name: "Dark Premium",   felt: Color(hex: "#0d1117"), accent: .yellow),
-    AppTheme(id: "#1a4a2e", name: "Classic Felt",   felt: Color(hex: "#1a4a2e"), accent: .green),
-    AppTheme(id: "#2d2d2d", name: "Modern Minimal", felt: Color(hex: "#2d2d2d"), accent: .white),
+    AppTheme(id: "dark-premium",   name: "Dark Premium",   feltHex: "#0d1117", felt: Color(hex: "#0d1117"), accent: .yellow),
+    AppTheme(id: "classic-felt",   name: "Classic Felt",   feltHex: "#1a5c2e", felt: Color(hex: "#1a5c2e"), accent: .green),
+    AppTheme(id: "modern-minimal", name: "Modern Minimal", feltHex: "#2d2d2d", felt: Color(hex: "#2d2d2d"), accent: .white),
 ]
 
 private struct CardBackOption: Identifiable {
@@ -22,10 +24,10 @@ private struct CardBackOption: Identifiable {
 
 private let cardBackOptions: [CardBackOption] = [
     CardBackOption(id: "#1c2333", color: Color(hex: "#1c2333")),
-    CardBackOption(id: "#1a3a2a", color: Color(hex: "#1a3a2a")),
-    CardBackOption(id: "#0f1b2e", color: Color(hex: "#0f1b2e")),
+    CardBackOption(id: "#2d1b4e", color: Color(hex: "#2d1b4e")),
+    CardBackOption(id: "#1a3a2e", color: Color(hex: "#1a3a2e")),
     CardBackOption(id: "#3a1a1a", color: Color(hex: "#3a1a1a")),
-    CardBackOption(id: "#2a1a3a", color: Color(hex: "#2a1a3a")),
+    CardBackOption(id: "#1a2a3a", color: Color(hex: "#1a2a3a")),
     CardBackOption(id: "#2a2a2a", color: Color(hex: "#2a2a2a")),
 ]
 
@@ -89,9 +91,12 @@ struct SettingsView: View {
 
             HStack(spacing: 12) {
                 ForEach(themes) { theme in
-                    let selected = store.preferences.feltColour == theme.id
+                    // Highlight by canonical theme name (falls back to felt-hex match for
+                    // older rows where themeName isn't set yet).
+                    let selected = store.preferences.themeName == theme.id
+                        || (store.preferences.themeName == nil && store.preferences.feltColour == theme.feltHex)
                     Button {
-                        Task { await store.setFeltColour(theme.id) }
+                        Task { await store.setTheme(name: theme.id, felt: theme.feltHex) }
                     } label: {
                         VStack(spacing: 8) {
                             // Mini board preview
