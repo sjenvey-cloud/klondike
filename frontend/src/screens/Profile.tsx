@@ -19,6 +19,19 @@ function formatTime(s: number | null | undefined): string {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
+// DEV-335 / DEV-336: short date like "12 May 2026". Handles both full ISO-8601
+// timestamps (records.completedAt) and date-only "yyyy-MM-dd" strings (history),
+// parsing the latter as local time to avoid an off-by-one timezone shift.
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const d = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 const CARD_STYLES = [
   { key: 'classic', label: 'Classic', desc: 'Traditional pip cards',  previewImg: '/cards/A_H.png',           comingSoon: false },
   { key: 'modern',  label: 'Modern',  desc: 'Illustrated style',      previewImg: '/cards/modern/A_H.png',    comingSoon: false },
@@ -338,6 +351,9 @@ export function Profile(): React.JSX.Element {
                       {records.fewestMoves.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'} ·{' '}
                       {formatTime(records.fewestMoves.timeSeconds)}
                     </span>
+                    {formatDate(records.fewestMoves.completedAt) && (
+                      <span className="record-card-date">{formatDate(records.fewestMoves.completedAt)}</span>
+                    )}
                   </div>
                 )}
                 {records.fastestTime && (
@@ -348,6 +364,9 @@ export function Profile(): React.JSX.Element {
                       {records.fastestTime.drawMode === 'draw1' ? 'Draw 1' : 'Draw 3'} ·{' '}
                       {records.fastestTime.moves} moves
                     </span>
+                    {formatDate(records.fastestTime.completedAt) && (
+                      <span className="record-card-date">{formatDate(records.fastestTime.completedAt)}</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -362,16 +381,46 @@ export function Profile(): React.JSX.Element {
 
       {/* ── Calendar tab ─────────────────────────────────────────────── */}
       {tab === 'calendar' && (
-        <div id="profile-panel-calendar" role="tabpanel" aria-labelledby="profile-tab-calendar" className="profile-section">
-          <Calendar
-            history={history}
-            onDayClick={setSelectedDay}
-            onMonthChange={(y, m) => {
-              setCalYear(y);
-              setCalMonth(m);
-              fetchHistory(y, m);
-            }}
-          />
+        <div id="profile-panel-calendar" role="tabpanel" aria-labelledby="profile-tab-calendar">
+          <div className="profile-section">
+            <Calendar
+              history={history}
+              onDayClick={setSelectedDay}
+              onMonthChange={(y, m) => {
+                setCalYear(y);
+                setCalMonth(m);
+                fetchHistory(y, m);
+              }}
+            />
+          </div>
+
+          {/* DEV-336: chronological game-history list (parity with iOS History tab) */}
+          {(() => {
+            const played = history
+              .filter(h => h.played > 0)
+              .sort((a, b) => b.date.localeCompare(a.date));
+            if (played.length === 0) return null;
+            return (
+              <div className="profile-section" style={{ marginTop: 16 }}>
+                <h3 className="profile-section-title">Recent Activity</h3>
+                <div className="history-list">
+                  {played.map(h => (
+                    <button
+                      key={h.date}
+                      type="button"
+                      className="history-row"
+                      onClick={() => setSelectedDay(h.date)}
+                      aria-label={`${formatDate(h.date)}: ${h.played} game${h.played === 1 ? '' : 's'}, ${h.won} won`}
+                    >
+                      <span className="history-row-date">{formatDate(h.date)}</span>
+                      <span className="history-row-meta">{h.played} game{h.played === 1 ? '' : 's'}</span>
+                      {h.won > 0 && <span className="history-row-wins">{h.won} won</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

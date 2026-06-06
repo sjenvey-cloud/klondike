@@ -86,6 +86,7 @@ export interface RecordEntry {
   moves: number;
   timeSeconds: number;
   drawMode: string;
+  completedAt?: string | null;   // DEV-335: ISO-8601 UTC timestamp
 }
 
 export interface ProfileRecordsResponse {
