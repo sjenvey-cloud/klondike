@@ -25,6 +25,7 @@
 		3F977C01278905F811FAD3CA /* DailyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E70966DB3F67149055BD6E76 /* DailyView.swift */; };
 		41E9F93F85EA8DC164A98E38 /* CardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C9246235BCE70EC74AAC3C9 /* CardView.swift */; };
 		4434CD3345FFC16751ECEC05 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358E3AD0BA8339106BC7AE5A /* PreferencesStore.swift */; };
+		44AEDD28598CCB70E0E0A206 /* ConfettiLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39E9F9B8CEB4634D37E8D993 /* ConfettiLayer.swift */; };
 		44FCFE39E0A5632C10A57A21 /* WinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0860FB7279BDC4BC02B0FEEE /* WinView.swift */; };
 		4D26C50E9E2E6FE0380A38AE /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A6C3E2CBE1DEBDFA65B69D /* AccountView.swift */; };
 		50FEF06FA2A6C8CA99616433 /* ProfileStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F055786853EEE1805565D2EE /* ProfileStatsView.swift */; };
@@ -91,6 +92,7 @@
 		35A6C3E2CBE1DEBDFA65B69D /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		37A05CF0FE2083FEA0A5BB61 /* FoundationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationView.swift; sourceTree = "<group>"; };
 		38AD70B4FEBB4C3087626A4B /* ChallengesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengesTab.swift; sourceTree = "<group>"; };
+		39E9F9B8CEB4634D37E8D993 /* ConfettiLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiLayer.swift; sourceTree = "<group>"; };
 		3AE03AFB1F2A3D0440CFF179 /* KlondikeProTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KlondikeProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4AC46FBFAF9BED9B812DB70A /* LeaderboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardStore.swift; sourceTree = "<group>"; };
 		4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterService.swift; sourceTree = "<group>"; };
@@ -201,6 +203,14 @@
 			path = Network;
 			sourceTree = "<group>";
 		};
+		5B814C85BB023ACC43733BD4 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				39E9F9B8CEB4634D37E8D993 /* ConfettiLayer.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 		69428AD699FDF54BB709448B /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -214,6 +224,7 @@
 			isa = PBXGroup;
 			children = (
 				AB129A26A83780794D310561 /* Auth */,
+				5B814C85BB023ACC43733BD4 /* Components */,
 				993CFAB786201142C5268760 /* Daily */,
 				E5669118DC49391F25FF257B /* Extensions */,
 				1382EDD596FE4141DC8B6E20 /* Friends */,
@@ -459,6 +470,7 @@
 				0AC5955F21710F4281B857D9 /* Card.swift in Sources */,
 				41E9F93F85EA8DC164A98E38 /* CardView.swift in Sources */,
 				3594D4FB5E4F72E8310766A9 /* ChallengesTab.swift in Sources */,
+				44AEDD28598CCB70E0E0A206 /* ConfettiLayer.swift in Sources */,
 				815103FF922B4FB175CBF65F /* ContentView.swift in Sources */,
 				CE94FBF611C29081570A04A0 /* DailyCalendarView.swift in Sources */,
 				B3CA39B583DCE12999B7D419 /* DailyGameTab.swift in Sources */,

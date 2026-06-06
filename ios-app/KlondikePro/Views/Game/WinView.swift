@@ -8,8 +8,12 @@ struct WinView: View {
     let drawMode: String
     var onNewGame: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(PreferencesStore.self) private var prefs
 
     @State private var showReplay = false
+
+    /// DEV-291: only show confetti when the win-animation preference is "confetti".
+    private var showConfetti: Bool { prefs.preferences.winAnimation == "confetti" }
 
     var body: some View {
         VStack(spacing: 32) {
@@ -86,6 +90,13 @@ struct WinView: View {
             }
 
             Spacer()
+        }
+        .overlay {
+            if showConfetti {
+                ConfettiLayer()
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
         }
         .task {
             await store.completeSession()

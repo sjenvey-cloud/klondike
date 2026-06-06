@@ -7,6 +7,7 @@ struct GameView: View {
     @State private var showMenu = false
 
     @Environment(\.feltColor) private var feltColor
+    @Environment(PreferencesStore.self) private var prefs
 
     var body: some View {
         ZStack {
@@ -39,6 +40,7 @@ struct GameView: View {
                         drawMode: store.state?.drawMode ?? store.lastDrawMode,
                         onNewGame: {}
                     )
+                    .environment(prefs)
                 }
                 .sheet(isPresented: $showMenu) {
                     GameMenuView(store: store)
