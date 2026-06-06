@@ -48,6 +48,13 @@ struct DailyView: View {
 
     // MARK: - Header
 
+    /// The date shown in the header reflects the hand currently in play —
+    /// a past daily being replayed, otherwise today's challenge.
+    private var headerDate: String {
+        if let prior = store.priorDate, !prior.isEmpty { return prior }
+        return store.dailyDate.isEmpty ? "Loading…" : store.dailyDate
+    }
+
     private var header: some View {
         VStack(spacing: 2) {
             Text("Daily Challenge")
@@ -55,10 +62,10 @@ struct DailyView: View {
                 .foregroundStyle(.white)
                 .accessibilityAddTraits(.isHeader)
 
-            Text(store.dailyDate.isEmpty ? "Loading…" : store.dailyDate)
+            Text(headerDate)
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.55))
-                .accessibilityLabel("Challenge date: \(store.dailyDate)")
+                .accessibilityLabel("Challenge date: \(headerDate)")
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 16)

@@ -112,18 +112,6 @@ struct DailyGameTab: View {
 
     private func dailyStatsBar(gameStore: GameStore) -> some View {
         HStack {
-            // Ranked badge — every daily attempt counts toward the leaderboard.
-            Text("Ranked")
-                .font(.caption.bold())
-                .foregroundStyle(.black)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(Color.yellow)
-                .clipShape(Capsule())
-                .accessibilityLabel("Ranked attempt")
-
-            Spacer()
-
             Text(timerText(gameStore.elapsedSeconds))
                 .font(.system(.body, design: .monospaced).bold())
                 .foregroundStyle(.white)
