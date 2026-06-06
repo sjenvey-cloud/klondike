@@ -69,6 +69,19 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
 
   const [shaking, setShaking] = useState<number | string | null>(null);
 
+  // Auto-complete modal (canonical web/iOS behaviour): pops once the board is
+  // cleared and the deck is down to its face-up cards.
+  const [showAutoComplete, setShowAutoComplete] = useState(false);
+  const [autoOffered, setAutoOffered] = useState(false);
+  useEffect(() => {
+    if (canAutoComplete && !autoOffered) {
+      setAutoOffered(true);
+      setShowAutoComplete(true);
+    } else if (!canAutoComplete) {
+      setAutoOffered(false);   // left the end-state; allow a fresh prompt later
+    }
+  }, [canAutoComplete, autoOffered]);
+
   // Pause modal: auto-focus the Resume button when game pauses
   const resumeBtnRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -472,11 +485,6 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
           </button>
         )}
         <div className="board-stat-actions">
-          {canAutoComplete && (
-            <button className="autocomplete-btn" onClick={autoComplete} aria-label="Auto-complete game">
-              Auto
-            </button>
-          )}
           {canUndo && (
             <button className="board-action-btn" onClick={undo} aria-label="Undo">
               <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -661,6 +669,40 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
             <button ref={resumeBtnRef} className="pause-modal-resume" onClick={() => timer.resume()}>
               <span aria-hidden="true">▶</span>&ensp;Resume
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-complete prompt — shared canonical behaviour with iOS */}
+      {showAutoComplete && (
+        <div
+          className="pause-overlay"
+          onClick={() => setShowAutoComplete(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setShowAutoComplete(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="autocomplete-dialog-title"
+            className="pause-modal"
+            onClick={e => e.stopPropagation()}
+          >
+            <div id="autocomplete-dialog-title" className="pause-modal-title">Board Cleared!</div>
+            <div className="pause-modal-stats">All piles are clear — auto-complete the remaining cards?</div>
+            <div className="autocomplete-modal-actions">
+              <button
+                className="pause-modal-resume"
+                onClick={() => { setShowAutoComplete(false); autoComplete(); }}
+              >
+                <span aria-hidden="true">✨</span>&ensp;Auto-Complete
+              </button>
+              <button
+                className="autocomplete-modal-cancel"
+                onClick={() => setShowAutoComplete(false)}
+              >
+                Keep Playing
+              </button>
+            </div>
           </div>
         </div>
       )}

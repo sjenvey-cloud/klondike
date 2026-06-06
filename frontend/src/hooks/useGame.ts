@@ -271,7 +271,24 @@ function reducer(state: GameState, action: GameAction): GameState {
       const tableau    = state.tableau.map(p => [...p]);
       const foundations = state.foundations.map(p => [...p]);
 
-      // Phase 1: direct foundation moves
+      // Phase 0: waste top → foundation (the common end-state once piles are clear).
+      if (state.waste.length) {
+        const wTop = state.waste[state.waste.length - 1];
+        const wfi  = foundationIndex(wTop.card);
+        if (canPlaceOnFoundation(wTop.card, foundations[wfi])) {
+          foundations[wfi].push(wTop.card);
+          return {
+            ...state,
+            waste: state.waste.slice(0, -1),
+            foundations,
+            isWon: isGameWon(foundations),
+            moves: state.moves + 1,
+            turns: [...state.turns, 'wf'],
+          };
+        }
+      }
+
+      // Phase 1: direct foundation moves from tableau tops
       let best: { col: number; fi: number; rank: number } | null = null;
       for (let col = 0; col < tableau.length; col++) {
         const pile = tableau[col];
@@ -408,8 +425,10 @@ function historyReducer(state: GameState, action: GameAction): GameState {
 
 function checkCanAutoComplete(state: GameState): boolean {
   if (!state.tableau?.length) return false;
-  if (state.stock.length > 0 || state.waste.length > 0) return false;
-  return state.tableau.every(pile => pile.every(c => c.faceUp));
+  // Canonical trigger (shared with iOS): all 7 piles cleared and the stock
+  // exhausted — the only cards left are face up in the waste, ready to sweep to
+  // the foundations. (Waste is non-empty here; if it were empty the game is won.)
+  return state.stock.length === 0 && state.tableau.every(pile => pile.length === 0);
 }
 
 // ── StartGame options ─────────────────────────────────────────────────────
@@ -534,15 +553,27 @@ export function useGame(userId: number | null, sessionKey = SESSION_KEY): UseGam
   const autoComplete = useCallback((): void => {
     const speed = document.documentElement.dataset['animSpeed'] ?? 'normal';
     const delay = speed === 'slow' ? 250 : speed === 'fast' ? 30 : 80;
-    let maxSteps = 300;
+    let drawsSinceProgress = 0;
     const step = (): void => {
       const s = stateRef.current;
-      if (s.isWon || maxSteps-- <= 0) return;
+      if (s.isWon) return;
       const movesBefore = s.moves;
       dispatch({ type: 'AUTO_COMPLETE_STEP' });
       setTimeout(() => {
-        if (stateRef.current.moves === movesBefore) return;
-        step();
+        const after = stateRef.current;
+        if (after.moves !== movesBefore) {
+          drawsSinceProgress = 0;
+          step();
+          return;
+        }
+        // No foundation move available — cycle the deck to expose more cards.
+        const remaining = after.stock.length + after.waste.length;
+        if (remaining > 0 && drawsSinceProgress <= remaining) {
+          drawsSinceProgress++;
+          dispatch({ type: 'DRAW' });
+          setTimeout(step, delay);
+        }
+        // else: a full cycle yielded nothing — stop (rare; user finishes by hand).
       }, delay);
     };
     step();
