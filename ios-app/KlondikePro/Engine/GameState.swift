@@ -222,13 +222,14 @@ struct GameState {
 
     // MARK: - Auto-complete eligibility
 
-    /// True when all 7 tableau piles are cleared and the stock is exhausted —
-    /// i.e. the only cards left are face up in the waste, ready to be swept to the
-    /// foundations. This is the canonical auto-complete trigger shared with the web:
-    /// "all piles cleared + deck down to its face-up cards." (waste is non-empty
-    /// here; if it were empty the game would already be won.)
+    /// True when there are no face-down cards left anywhere — every tableau card is
+    /// face up and the stock is exhausted (the remaining draw cards are face up in
+    /// the waste). At that point the game is deterministically winnable and the
+    /// auto-complete modal is offered. Canonical trigger shared with the web.
     var canAutoComplete: Bool {
-        !isWon && stock.isEmpty && tableau.allSatisfy { $0.isEmpty }
+        !isWon
+            && stock.isEmpty
+            && tableau.allSatisfy { col in col.allSatisfy { $0.isFaceUp } }
     }
 
     // MARK: - Private helpers
