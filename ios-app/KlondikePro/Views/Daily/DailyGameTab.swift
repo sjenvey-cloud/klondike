@@ -8,6 +8,8 @@ import SwiftUI
 struct DailyGameTab: View {
 
     @Environment(DailyStore.self) private var store
+    @Environment(\.feltColor) private var feltColor
+    @State private var showMenu = false
     var onSwitchToLeaderboard: () -> Void
 
     var body: some View {
@@ -62,11 +64,14 @@ struct DailyGameTab: View {
                 BoardView(store: gameStore, cardWidth: max(36, cardWidth))
             }
         }
-        .background(Color(red: 0.05, green: 0.07, blue: 0.10))
+        .background(feltColor)
         .onChange(of: gameStore.isWon) { _, won in
             if won {
                 Task { await store.handleWin() }
             }
+        }
+        .sheet(isPresented: $showMenu) {
+            DailyGameMenuView(store: store, gameStore: gameStore)
         }
     }
 
@@ -134,6 +139,13 @@ struct DailyGameTab: View {
             .padding(.leading, 8)
             .foregroundStyle(gameStore.canUndo ? .white : .white.opacity(0.3))
             .accessibilityLabel("Undo last move")
+
+            Button { showMenu = true } label: {
+                Image(systemName: "ellipsis.circle").font(.title3)
+            }
+            .padding(.leading, 4)
+            .foregroundStyle(.white)
+            .accessibilityLabel("Daily game menu")
         }
     }
 
@@ -269,5 +281,53 @@ struct DailyGameTab: View {
 
     private func timerText(_ seconds: Int) -> String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+// MARK: - Daily game menu
+
+/// The "…" menu for the Daily Challenge board. Mirrors the random-game menu but
+/// without "New Game" — the daily hand is fixed. Restart re-deals the *same*
+/// daily hand as a fresh session (today's stays ranked; a past daily stays practice).
+private struct DailyGameMenuView: View {
+    let store: DailyStore
+    let gameStore: GameStore
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Button {
+                    gameStore.undo()
+                    dismiss()
+                } label: {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                }
+                .disabled(!gameStore.canUndo)
+
+                Button {
+                    Task { await store.restartCurrentHand() }
+                    dismiss()
+                } label: {
+                    Label("Restart Hand", systemImage: "arrow.clockwise")
+                }
+
+                Button(role: .destructive) {
+                    Task {
+                        await gameStore.abandonSession()
+                        store.clearGame()
+                    }
+                    dismiss()
+                } label: {
+                    Label("Abandon Game", systemImage: "xmark.circle")
+                }
+
+                Button { dismiss() } label: {
+                    Label("Close", systemImage: "xmark")
+                }
+            }
+            .navigationTitle("Daily Menu")
+            .navigationBarTitleDisplayMode(.inline)
+        }
     }
 }

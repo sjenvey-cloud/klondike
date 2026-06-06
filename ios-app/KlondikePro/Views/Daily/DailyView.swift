@@ -7,6 +7,7 @@ import SwiftUI
 struct DailyView: View {
 
     @Environment(DailyStore.self) private var store
+    @Environment(\.feltColor) private var feltColor
     @State private var selectedTab: DailyTab = .game
 
     enum DailyTab { case game, leaderboard, calendar }
@@ -37,7 +38,7 @@ struct DailyView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Color(red: 0.05, green: 0.07, blue: 0.10).ignoresSafeArea())
+        .background(feltColor.ignoresSafeArea())
         .onAppear {
             if store.dailyHand == nil && !store.isLoadingHand {
                 Task { await store.fetchToday() }

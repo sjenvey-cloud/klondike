@@ -141,6 +141,38 @@ final class DailyStore {
         priorDate = nil
     }
 
+    // MARK: - Restart the current daily hand (Daily "…" menu)
+
+    /// Re-deals the hand currently in play as a brand-new session on the same
+    /// hand + date. Today's daily stays ranked; a past daily stays practice
+    /// (the server decides by date). Reuses the in-progress GameStore's hand so
+    /// it works for both today's challenge and a prior-day replay.
+    func restartCurrentHand() async {
+        guard let gs = gameStore,
+              let handUuid = gs.handUuid,
+              let st = gs.state else { return }
+
+        let drawMode  = st.drawMode
+        let seed      = st.seed
+        let date      = gs.dailyDate ?? dailyDate
+        let wasPrior  = priorDate != nil
+
+        await gs.abandonSession()
+
+        winResult = nil
+        let newStore = GameStore(userId: userId)
+        gameStore = newStore
+        priorDate = wasPrior ? date : nil
+
+        await newStore.startDaily(
+            handUuid:    handUuid,
+            shuffleSeed: seed,
+            drawMode:    drawMode,
+            date:        date,
+            isRanked:    !wasPrior   // server is authoritative; today = ranked
+        )
+    }
+
     // MARK: - Start prior daily game (DEV-277)
 
     func startPriorGame(handUuid: UUID, shuffleSeed: Int64, drawMode: String, date: String) async {
