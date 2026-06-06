@@ -3,10 +3,10 @@ import SwiftUI
 /// DEV-276 — Presented as a sheet when the user wins a daily challenge.
 ///
 /// Shows:
-///   • Ranked vs Practice badge
 ///   • Moves + time achieved
 ///   • Rank reveal (nil = could not retrieve, shown as "—")
 ///   • Action buttons: View Leaderboard, View Calendar, Play Again
+/// Every daily attempt is ranked; confetti respects the win-animation preference.
 struct DailyWinView: View {
 
     let result: DailyWinResult
@@ -15,6 +15,10 @@ struct DailyWinView: View {
     var onPlayAgain: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(PreferencesStore.self) private var prefs
+
+    /// DEV-291: only show confetti when the user's win-animation preference is "confetti".
+    private var showConfetti: Bool { prefs.preferences.winAnimation == "confetti" }
 
     @State private var animatedRank: Int  = 0
     @State private var showDetails: Bool  = false
@@ -26,9 +30,11 @@ struct DailyWinView: View {
             Color(red: 0.05, green: 0.07, blue: 0.10)
                 .ignoresSafeArea()
 
-            ConfettiLayer()
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+            if showConfetti {
+                ConfettiLayer()
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
 
             // ── Content ─────────────────────────────────────────────────
             ScrollView {
@@ -36,24 +42,14 @@ struct DailyWinView: View {
                     Spacer(minLength: 48)
 
                     // Trophy icon
-                    Image(systemName: result.isRanked ? "trophy.fill" : "figure.play")
+                    Image(systemName: "trophy.fill")
                         .font(.system(size: 64))
-                        .foregroundStyle(result.isRanked ? .yellow : .white.opacity(0.6))
+                        .foregroundStyle(.yellow)
                         .symbolEffect(.bounce, value: showDetails)
-                        .padding(.bottom, 16)
-
-                    // Ranked / Practice badge
-                    Text(result.isRanked ? "Ranked" : "Practice")
-                        .font(.caption.bold())
-                        .foregroundStyle(result.isRanked ? .black : .white.opacity(0.8))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 5)
-                        .background(result.isRanked ? Color.yellow : Color.white.opacity(0.18))
-                        .clipShape(Capsule())
                         .padding(.bottom, 24)
 
                     // Headline
-                    Text(result.isRanked ? "Challenge Complete!" : "Nice Practice Run!")
+                    Text("Challenge Complete!")
                         .font(.title2.bold())
                         .foregroundStyle(.white)
                         .padding(.bottom, 4)
@@ -74,10 +70,8 @@ struct DailyWinView: View {
                             value: formattedTime(result.timeSeconds),
                             label: "Time"
                         )
-                        if result.isRanked {
-                            statDivider
-                            rankBlock
-                        }
+                        statDivider
+                        rankBlock
                     }
                     .padding(.horizontal, 32)
                     .padding(.vertical, 28)
@@ -89,17 +83,15 @@ struct DailyWinView: View {
 
                     // Action buttons
                     VStack(spacing: 12) {
-                        if result.isRanked {
-                            Button(action: { onLeaderboard() }) {
-                                Label("View Leaderboard", systemImage: "list.number")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 52)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(.yellow)
-                            .foregroundStyle(.black)
+                        Button(action: { onLeaderboard() }) {
+                            Label("View Leaderboard", systemImage: "list.number")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
                         }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.yellow)
+                        .foregroundStyle(.black)
 
                         if let onCalendar {
                             Button(action: { onCalendar() }) {
@@ -115,7 +107,7 @@ struct DailyWinView: View {
 
                         if let onPlayAgain {
                             Button(action: { onPlayAgain() }) {
-                                Label("Play Again (Practice)", systemImage: "arrow.clockwise")
+                                Label("Play Again", systemImage: "arrow.clockwise")
                                     .font(.headline)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 52)

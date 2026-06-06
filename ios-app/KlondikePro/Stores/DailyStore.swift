@@ -90,6 +90,17 @@ final class DailyStore {
     /// Non-nil when the user has tapped a past calendar day and is playing it.
     private(set) var priorDate: String? = nil
 
+    /// The date whose leaderboard should be shown — the hand currently in context:
+    /// a past daily being played, otherwise today's challenge.
+    var activeDate: String {
+        if let prior = priorDate, !prior.isEmpty { return prior }
+        return dailyDate.isEmpty ? Self.todayString() : dailyDate
+    }
+
+    private static func todayString() -> String {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f.string(from: Date())
+    }
+
     // MARK: - Fetch today's hand
 
     func fetchToday() async {
@@ -144,9 +155,9 @@ final class DailyStore {
     // MARK: - Restart the current daily hand (Daily "…" menu)
 
     /// Re-deals the hand currently in play as a brand-new session on the same
-    /// hand + date. Today's daily stays ranked; a past daily stays practice
-    /// (the server decides by date). Reuses the in-progress GameStore's hand so
-    /// it works for both today's challenge and a prior-day replay.
+    /// hand + date. Every daily attempt — today's or any past day — is ranked and
+    /// can be replayed to improve. Reuses the in-progress GameStore's hand so it
+    /// works for both today's challenge and a prior-day replay.
     func restartCurrentHand() async {
         guard let gs = gameStore,
               let handUuid = gs.handUuid,
@@ -169,7 +180,7 @@ final class DailyStore {
             shuffleSeed: seed,
             drawMode:    drawMode,
             date:        date,
-            isRanked:    !wasPrior   // server is authoritative; today = ranked
+            isRanked:    true   // all daily attempts are ranked (server authoritative)
         )
     }
 
@@ -186,13 +197,13 @@ final class DailyStore {
         let store = GameStore(userId: userId)
         gameStore = store
 
-        // Past dailies are always unranked — the user has had their ranked shot
+        // Past dailies are ranked too — replay any day to improve your result.
         await store.startDaily(
             handUuid:    handUuid,
             shuffleSeed: shuffleSeed,
             drawMode:    drawMode,
             date:        date,
-            isRanked:    false
+            isRanked:    true
         )
     }
 

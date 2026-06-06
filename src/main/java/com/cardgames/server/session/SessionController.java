@@ -110,15 +110,13 @@ public class SessionController {
             session.setIsDaily(true);
             session.setDailyDate(date);
 
-            // Unlimited ranked retries on the *current* day's challenge — players can
-            // replay to improve, and the leaderboard keeps each user's best result
-            // (DISTINCT ON per metric). Past dailies are always practice so historical
-            // leaderboards can't be climbed after the fact.
-            boolean isToday = date.equals(LocalDate.now());
-            isRanked = isToday;
-            session.setIsRanked(isToday);
-            log.info("createSession: daily branch — date={} drawMode={} isToday={} isRanked={}",
-                date, hand.getDrawMode(), isToday, isRanked);
+            // No practice paradigm: every daily attempt — today's OR any past day —
+            // is ranked and can be replayed unlimited times to improve. The session is
+            // tagged with its own daily_date, so each result lands on that day's
+            // leaderboard, and DISTINCT ON keeps each user's best per metric.
+            session.setIsRanked(true);
+            log.info("createSession: daily branch — date={} drawMode={} (ranked)",
+                date, hand.getDrawMode());
         }
 
         sessionRepository.save(session);

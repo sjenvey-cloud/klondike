@@ -8,6 +8,7 @@ import SwiftUI
 struct DailyGameTab: View {
 
     @Environment(DailyStore.self) private var store
+    @Environment(PreferencesStore.self) private var prefs
     @Environment(\.feltColor) private var feltColor
     @State private var showMenu = false
     var onSwitchToLeaderboard: () -> Void
@@ -40,6 +41,7 @@ struct DailyGameTab: View {
                     onSwitchToLeaderboard()
                 }
             )
+            .environment(prefs)
         }
     }
 
@@ -110,15 +112,15 @@ struct DailyGameTab: View {
 
     private func dailyStatsBar(gameStore: GameStore) -> some View {
         HStack {
-            // Ranked / Practice badge
-            Text(gameStore.isRankedSession ? "Ranked" : "Practice")
+            // Ranked badge — every daily attempt counts toward the leaderboard.
+            Text("Ranked")
                 .font(.caption.bold())
-                .foregroundStyle(gameStore.isRankedSession ? .black : .white.opacity(0.7))
+                .foregroundStyle(.black)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 3)
-                .background(gameStore.isRankedSession ? Color.yellow : Color.white.opacity(0.15))
+                .background(Color.yellow)
                 .clipShape(Capsule())
-                .accessibilityLabel(gameStore.isRankedSession ? "Ranked attempt" : "Practice attempt")
+                .accessibilityLabel("Ranked attempt")
 
             Spacer()
 

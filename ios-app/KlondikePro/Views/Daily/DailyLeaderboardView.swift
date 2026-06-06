@@ -60,6 +60,10 @@ struct DailyLeaderboardView: View {
             guard !newDate.isEmpty else { return }
             Task { await loadLeaderboard() }
         }
+        // Re-fetch when the played hand's context changes (e.g. switched to a past daily).
+        .onChange(of: store.priorDate) { _, _ in
+            Task { await loadLeaderboard() }
+        }
         // DEV-307: replay sheet
         .sheet(item: Binding(
             get: { replayUuid.map { ReplayID(uuid: $0) } },
@@ -215,8 +219,9 @@ struct DailyLeaderboardView: View {
     }
 
     private func loadLeaderboard() async {
-        let date = store.dailyDate.isEmpty ? todayString() : store.dailyDate
-        await store.fetchLeaderboard(for: date)
+        // Show the leaderboard for the hand currently in context — a past daily
+        // being played, otherwise today's challenge.
+        await store.fetchLeaderboard(for: store.activeDate)
     }
 
     private func formattedTime(_ seconds: Int) -> String {
@@ -230,11 +235,5 @@ struct DailyLeaderboardView: View {
         case 3: return Color(red: 0.80, green: 0.50, blue: 0.20) // bronze
         default: return Color.white.opacity(0.5)
         }
-    }
-
-    private func todayString() -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: Date())
     }
 }
