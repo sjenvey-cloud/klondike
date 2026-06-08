@@ -49,6 +49,7 @@ struct ContentView: View {
         .environment(preferencesStore)
         .environment(\.feltColor,     preferencesStore.feltColor)
         .environment(\.cardBackColor, preferencesStore.cardBackColor)
+        .environment(\.cardStyle,     preferencesStore.preferences.cardStyle)
         .onChange(of: authStore.userId) { _, newId in
             if let id = newId {
                 gameStore.userId         = id

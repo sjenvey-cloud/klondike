@@ -46,6 +46,12 @@ final class PreferencesStore {
         await patch(.init(cardBackColour: hex))
     }
 
+    /// Card face artwork style — "classic" | "modern" | "fantasy" (shared with web).
+    func setCardStyle(_ value: String) async {
+        preferences.cardStyle = value
+        await patch(.init(cardStyle: value))
+    }
+
     func setFeltColour(_ hex: String) async {
         preferences.feltColour = hex
         await patch(.init(feltColour: hex))

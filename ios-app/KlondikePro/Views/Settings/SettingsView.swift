@@ -54,6 +54,7 @@ struct SettingsView: View {
                     VStack(spacing: 24) {
                         themeSection         // DEV-288
                         cardBackSection      // DEV-289
+                        cardStyleSection     // cross-platform card art
                         gameplaySection      // DEV-290
                         animationSection     // DEV-291
                         reminderSection      // DEV-314
@@ -159,6 +160,64 @@ struct SettingsView: View {
                         )
                     }
                     .accessibilityLabel("Card back colour \(option.id)")
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Card Style (cross-platform card art)
+
+    private let cardStyles: [(id: String, name: String)] = [
+        ("classic", "Classic"),
+        ("modern",  "Modern"),
+        ("fantasy", "Fantasy"),
+    ]
+
+    /// Sample card shown in each style preview (Ace of Spades = id 40).
+    private var sampleCard: Card { Card(id: 40, isFaceUp: true)! }
+
+    private var cardStyleSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Card Style")
+                .font(.subheadline.bold())
+                .foregroundStyle(.white)
+
+            HStack(spacing: 12) {
+                ForEach(cardStyles, id: \.id) { style in
+                    let selected = store.preferences.cardStyle == style.id
+                    Button {
+                        Task { await store.setCardStyle(style.id) }
+                    } label: {
+                        VStack(spacing: 8) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.white.opacity(0.06))
+                                AsyncImage(url: CardArt.faceURL(for: sampleCard, style: style.id)) { phase in
+                                    if case .success(let image) = phase {
+                                        image.resizable().scaledToFit().padding(4)
+                                    } else {
+                                        ProgressView().tint(.white.opacity(0.4))
+                                    }
+                                }
+                            }
+                            .frame(height: 72)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(selected ? Color.yellow : Color.white.opacity(0.12),
+                                                  lineWidth: selected ? 2 : 1)
+                            )
+
+                            Text(style.name)
+                                .font(.caption2)
+                                .foregroundStyle(selected ? .yellow : .white.opacity(0.55))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel("Card style: \(style.name)")
                     .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }

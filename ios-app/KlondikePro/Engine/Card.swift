@@ -29,6 +29,16 @@ enum Suit: Int, CaseIterable, CustomStringConvertible {
     var isRed: Bool { self == .diamonds || self == .hearts }
 
     var accessibilityName: String { name }
+
+    /// Single-letter suit code used in card-art filenames (matches the web).
+    var code: String {
+        switch self {
+        case .clubs:    return "C"
+        case .diamonds: return "D"
+        case .hearts:   return "H"
+        case .spades:   return "S"
+        }
+    }
 }
 
 // MARK: - Rank
@@ -102,6 +112,10 @@ struct Card: Equatable, Hashable, Identifiable, CustomStringConvertible {
     // MARK: Helpers
 
     var isRed: Bool { suit.isRed }
+
+    /// Card-art filename stem, e.g. "A_H", "10_C", "K_S" — matches the web's
+    /// `/cards/.../{rank}_{suit}.png` assets so both platforms share the artwork.
+    var imageCode: String { "\(rank.description)_\(suit.code)" }
 
     /// Returns true if this card can be placed on top of `other` in a tableau column.
     /// Rule: opposite colour, rank exactly one lower.

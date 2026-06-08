@@ -40,3 +40,47 @@ extension EnvironmentValues {
         set { self[CardBackColorKey.self] = newValue }
     }
 }
+
+// MARK: - Card face style (DEV — cross-platform card art)
+
+private struct CardStyleKey: EnvironmentKey {
+    static let defaultValue: String = "classic"
+}
+
+extension EnvironmentValues {
+    /// "classic" | "modern" | "fantasy" — selects the card-face artwork set.
+    var cardStyle: String {
+        get { self[CardStyleKey.self] }
+        set { self[CardStyleKey.self] = newValue }
+    }
+}
+
+// MARK: - Card art URLs (shared with the web's /cards assets)
+
+/// Builds CDN URLs for card-face artwork. The PNGs are the same assets the web
+/// app uses, served from the API/CloudFront origin, so the styles match exactly.
+enum CardArt {
+
+    /// Same origin as the REST API (Info.plist `API_BASE_URL`, CloudFront fallback).
+    static let baseURL: String =
+        (Bundle.main.infoDictionary?["API_BASE_URL"] as? String)
+        ?? "https://d2fbehwb6bp7kq.cloudfront.net"
+
+    /// Asset subfolder for a style: classic = root, modern/fantasy = named folder.
+    static func folder(for style: String) -> String {
+        switch style {
+        case "modern":  return "modern"
+        case "fantasy": return "fantasy"
+        default:        return ""   // classic
+        }
+    }
+
+    /// Face-up artwork URL for a card in the given style, e.g.
+    /// `…/cards/A_H.png` (classic) or `…/cards/modern/A_H.png`.
+    static func faceURL(for card: Card, style: String) -> URL? {
+        let dir  = folder(for: style)
+        let path = dir.isEmpty ? "/cards/\(card.imageCode).png"
+                               : "/cards/\(dir)/\(card.imageCode).png"
+        return URL(string: baseURL + path)
+    }
+}

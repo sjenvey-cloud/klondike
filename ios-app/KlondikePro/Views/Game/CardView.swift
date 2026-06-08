@@ -26,7 +26,39 @@ struct CardView: View {
 
     // MARK: - Face Up
 
+    @Environment(\.cardStyle) private var cardStyle
+
+    /// Face artwork loaded from the CDN by style (matches the web). While loading
+    /// or if the image is unavailable, the programmatic face is shown so the board
+    /// is always legible.
     private var faceUpView: some View {
+        ZStack {
+            if let url = CardArt.faceURL(for: card, style: cardStyle) {
+                AsyncImage(url: url, transaction: Transaction(animation: .none)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+                    default:
+                        programmaticFace
+                    }
+                }
+            } else {
+                programmaticFace
+            }
+        }
+        .frame(width: width, height: height)
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .strokeBorder(Color.yellow, lineWidth: isSelected ? 2 : 0)
+        )
+    }
+
+    // MARK: - Programmatic face (fallback / placeholder)
+
+    private var programmaticFace: some View {
         ZStack {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(Color(uiColor: .systemBackground))
@@ -71,10 +103,6 @@ struct CardView: View {
                 .font(.title2)
                 .foregroundStyle(cardColor)
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .strokeBorder(Color.yellow, lineWidth: isSelected ? 2 : 0)
-        )
     }
 
     // MARK: - Face Down
