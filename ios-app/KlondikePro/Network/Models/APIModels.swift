@@ -171,14 +171,15 @@ struct ActiveSessionsResponse: Decodable {
 /// A single in-progress session with enough data for the iOS client to
 /// reconstruct game state locally: seed → SeededShuffle → replay turns.
 struct ActiveSessionItem: Decodable {
-    let uuid:      UUID
-    let handUuid:  UUID
-    let drawMode:  String
-    let seed:      Int64
-    let turns:     String
-    let moves:     Int
-    let startedAt: Date
-    let isDaily:   Bool
+    let uuid:        UUID
+    let handUuid:    UUID
+    let drawMode:    String
+    let seed:        Int64
+    let turns:       String
+    let moves:       Int
+    let timeSeconds: Int    // DEV-338: saved elapsed, so the clock resumes correctly
+    let startedAt:   Date
+    let isDaily:     Bool
 }
 
 // MARK: - Daily

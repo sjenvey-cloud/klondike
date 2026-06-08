@@ -204,13 +204,34 @@ final class GameStore {
         handUuid = item.handUuid
         sessionUuid = item.uuid
 
-        // Compute elapsed seconds from how long ago the session started
+        // DEV-338: resume the clock from the SAVED elapsed time, not from startedAt —
+        // otherwise time spent paused / on another device would be counted.
         lastDrawMode = item.drawMode
-        let elapsed = Int(Date().timeIntervalSince(item.startedAt))
-        elapsedSeconds = max(0, elapsed)
+        elapsedSeconds = max(0, item.timeSeconds)
 
         stopTimer()
         startTimer()
+    }
+
+    // MARK: - Save progress (DEV-338, cross-device resume)
+
+    /// Snapshots the in-progress game (moves + elapsed + move history) to the server
+    /// so it can be resumed on another device. Called when the app is backgrounded.
+    /// No-op for a finished game or an untouched fresh deal.
+    func saveProgress() async {
+        guard let uuid = sessionUuid, let s = state, !s.isWon, s.moveCount > 0 else { return }
+        do {
+            try await APIClient.shared.postBodyVoid(
+                "/api/v1/sessions/\(uuid)/progress",
+                body: CompleteSessionRequest(
+                    moves: s.moveCount,
+                    timeSeconds: elapsedSeconds,
+                    turns: s.turns
+                )
+            )
+        } catch {
+            // Best-effort — losing one snapshot just means resuming from the prior one.
+        }
     }
 
     // MARK: - Move methods (delegate to state)

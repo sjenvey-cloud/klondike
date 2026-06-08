@@ -28,17 +28,27 @@ struct HomeView: View {
                     }
                     .padding(.top, 24)
 
-                    // ── Resume banner ─────────────────────────────────────
+                    // ── Resume banner (DEV-338: cross-device) ─────────────
                     if let active = activeSession {
-                        Button {
-                            Task {
-                                await gameStore.resumeGame(item: active)
-                                selectedTab = .game
+                        ResumeBanner(
+                            session: active,
+                            onResume: {
+                                Task {
+                                    await gameStore.resumeGame(item: active)
+                                    selectedTab = .game
+                                }
+                            },
+                            onNewHand: {
+                                Task {
+                                    // Abandon the in-progress hand, then deal a fresh one.
+                                    await gameStore.resumeGame(item: active)
+                                    await gameStore.abandonSession()
+                                    await gameStore.newGame(drawMode: drawMode.rawValue)
+                                    activeSession = nil
+                                    selectedTab = .game
+                                }
                             }
-                        } label: {
-                            ResumeBanner(session: active)
-                        }
-                        .buttonStyle(.plain)
+                        )
                     }
 
                     // ── Draw mode selector ────────────────────────────────
@@ -121,26 +131,55 @@ struct HomeView: View {
 
 private struct ResumeBanner: View {
     let session: ActiveSessionItem
+    var onResume: () -> Void
+    var onNewHand: () -> Void
+
+    private var timeLabel: String {
+        String(format: "%d:%02d", session.timeSeconds / 60, session.timeSeconds % 60)
+    }
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Game in Progress")
-                    .font(.subheadline.bold())
-                Text("\(session.moves) moves · \(session.drawMode.uppercased())")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Game in Progress")
+                        .font(.subheadline.bold())
+                    Text("\(session.moves) moves · \(timeLabel) · \(session.drawMode.uppercased())")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(.yellow)
             }
-            Spacer()
-            Text("Resume →")
-                .font(.subheadline.bold())
-                .foregroundStyle(.yellow)
+
+            HStack(spacing: 10) {
+                Button(action: onResume) {
+                    Label("Resume", systemImage: "play.fill")
+                        .font(.subheadline.bold())
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.yellow)
+                .foregroundStyle(.black)
+
+                Button(action: onNewHand) {
+                    Text("New Hand")
+                        .font(.subheadline.bold())
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+                .buttonStyle(.bordered)
+                .tint(.secondary)
+            }
         }
         .padding(16)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.yellow.opacity(0.4)))
         .padding(.horizontal)
-        // Sprint iOS-4: tapping navigates to GameView with existing session
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Game in progress: \(session.moves) moves. Resume or deal a new hand.")
     }
 }
 

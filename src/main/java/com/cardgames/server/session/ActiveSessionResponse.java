@@ -21,6 +21,7 @@ public record ActiveSessionResponse(
     long          seed,
     String        turns,
     int           moves,
+    int           timeSeconds,   // DEV-338: saved elapsed seconds, so the clock resumes correctly
     LocalDateTime startedAt,
     boolean       isDaily
 ) {}

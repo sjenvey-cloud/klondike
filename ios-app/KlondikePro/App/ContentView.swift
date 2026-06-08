@@ -6,6 +6,7 @@ import SwiftUI
 struct ContentView: View {
 
     @Environment(AuthStore.self) private var authStore
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: AppTab  = .home
     @State private var gameStore            = GameStore(userId: 0)
     @State private var dailyStore           = DailyStore()
@@ -84,6 +85,17 @@ struct ContentView: View {
             leaderboardStore.userUuid = uuid
             if uuid != nil {
                 Task { await preferencesStore.fetchPreferences() }
+            }
+        }
+        // DEV-338: snapshot in-progress games to the server when the app is paused
+        // (backgrounded / inactive) so they can be resumed on another device.
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .background || phase == .inactive else { return }
+            Task {
+                await gameStore.saveProgress()
+                if let dailyGame = dailyStore.gameStore {
+                    await dailyGame.saveProgress()
+                }
             }
         }
     }

@@ -68,7 +68,7 @@ public class SessionController {
             .flatMap(s -> handRepository.findById(s.getHandId())
                 .map(h -> new ActiveSessionResponse(
                     s.getUuid(), s.getHandUuid(), s.getDrawMode(),
-                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getStartedAt(), true)))
+                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getTimeSeconds(), s.getStartedAt(), true)))
             .orElse(null);
 
         ActiveSessionResponse random = sessionRepository
@@ -76,7 +76,7 @@ public class SessionController {
             .flatMap(s -> handRepository.findById(s.getHandId())
                 .map(h -> new ActiveSessionResponse(
                     s.getUuid(), s.getHandUuid(), s.getDrawMode(),
-                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getStartedAt(), false)))
+                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getTimeSeconds(), s.getStartedAt(), false)))
             .orElse(null);
 
         return ResponseEntity.ok(new ActiveSessionsResponse(daily, random));
@@ -261,6 +261,41 @@ public class SessionController {
         settleChallengeIfPresent(session);
 
         return new ResponseEntity<>(session, HttpStatus.OK);
+    }
+
+    // ── DEV-338: Save in-progress state for cross-device resume ───────────
+
+    /**
+     * POST /api/v1/sessions/{uuid}/progress
+     * Body: { "moves": 12, "timeSeconds": 95, "turns": "draw,wt:2,..." }
+     *
+     * Persists the partial move history + elapsed time of an ACTIVE session so it
+     * can be resumed on another device (web ↔ iOS). Lightweight snapshot saved when
+     * the game is paused/backgrounded — no win validation. No-op once the session is
+     * completed or abandoned.
+     */
+    @Operation(summary = "Save in-progress session state",
+               description = "Snapshot of an active session's moves + elapsed time for cross-device resume.")
+    @Transactional
+    @PostMapping("/sessions/{uuid}/progress")
+    public ResponseEntity<Void> saveProgress(
+            @PathVariable UUID uuid,
+            @RequestBody EndSessionRequest body,
+            Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        Session session = sessionRepository.findByUuid(uuid).orElse(null);
+        if (session == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        if (session.getUserId() != userId) return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+
+        // Only snapshot sessions still in progress; ignore once terminal.
+        if (Session.STATUS_ACTIVE.equals(session.getStatus())) {
+            session.setMoves(body.moves());
+            session.setTimeSeconds(body.timeSeconds());
+            if (body.turns() != null) session.setTurns(body.turns());
+            sessionRepository.save(session);
+        }
+        return ResponseEntity.noContent().build();
     }
 
     // ── DEV-166: cache eviction ───────────────────────────────────────────

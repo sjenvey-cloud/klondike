@@ -130,6 +130,14 @@ export interface ActiveSession {
   drawMode: string;
   isDaily: boolean;
   dailyDate: string | null;
+  // DEV-338: in-progress snapshot for cross-device resume. `turns` replays the
+  // move history; `timeSeconds` resumes the clock. Optional — older sessions and
+  // backends may omit them.
+  seed?: number;
+  moves?: number;
+  timeSeconds?: number;
+  turns?: string;
+  startedAt?: string;
 }
 
 export interface ActiveSessionsResponse {

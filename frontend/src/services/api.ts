@@ -194,6 +194,17 @@ export const abandonSession = (
 ): Promise<null> =>
   post(`/sessions/${uuid}/abandon`, { moves, timeSeconds, turns }) as Promise<null>;
 
+// POST /api/v1/sessions/{uuid}/progress (DEV-338)
+// Snapshot the in-progress move history + elapsed time so the hand can be resumed
+// on another device. Sent when the tab is hidden/closed.
+export const saveSessionProgress = (
+  uuid: string,
+  moves: number,
+  timeSeconds: number,
+  turns: string,
+): Promise<null> =>
+  post(`/sessions/${uuid}/progress`, { moves, timeSeconds, turns }) as Promise<null>;
+
 // GET /api/v1/sessions/active → { daily: ActiveSession|null, random: ActiveSession|null }
 // Always 200 — check each field for null individually.
 export const getActiveSession = (): Promise<ActiveSessionsResponse> =>

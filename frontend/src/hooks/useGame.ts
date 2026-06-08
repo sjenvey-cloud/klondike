@@ -4,7 +4,7 @@ import {
   isGameWon, foundationIndex, getRank,
 } from '../services/gameLogic';
 import type { CardInPile, BoardState } from '../services/gameLogic';
-import { createHand, createSession, completeSession, abandonSession } from '../services/api';
+import { createHand, createSession, completeSession, abandonSession, saveSessionProgress } from '../services/api';
 import type { CompleteSessionResponse } from '../types/api';
 
 // ── DEV-66: Session persistence ────────────────────────────────────────────
@@ -481,6 +481,24 @@ export function useGame(userId: number | null, sessionKey = SESSION_KEY): UseGam
     if (!state.tableau?.length || !sessionId) return;
     saveSession(sessionId, handId!, state, state.moves, state.turns, startTimeRef.current!, sessionKey);
   }, [state, sessionId, handId, sessionKey]);
+
+  // DEV-338: snapshot in-progress state to the SERVER when the tab is hidden or
+  // closed, so the hand can be resumed on another device (e.g. web → iOS).
+  useEffect(() => {
+    const snapshot = (): void => {
+      const s = stateRef.current;
+      if (!sessionId || !s.tableau?.length || s.isWon || s.moves === 0) return;
+      const timeSeconds = Math.floor((Date.now() - (startTimeRef.current ?? Date.now())) / 1000);
+      void saveSessionProgress(sessionId, s.moves, timeSeconds, s.turns.join(',')).catch(() => {});
+    };
+    const onVisibility = (): void => { if (document.visibilityState === 'hidden') snapshot(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', snapshot);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', snapshot);
+    };
+  }, [sessionId]);
 
   const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
   const canUndo = (state.history?.length ?? 0) > 0 && !state.isWon;
