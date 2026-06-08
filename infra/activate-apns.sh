@@ -95,7 +95,6 @@ if aws cloudformation update-stack --region "$REGION" --stack-name "$ECS_STACK" 
         ParameterKey=ECRImageURI,UsePreviousValue=true \
         ParameterKey=DBUsername,UsePreviousValue=true \
         ParameterKey=DBPassword,UsePreviousValue=true \
-        ParameterKey=DBReadReplicaEndpoint,UsePreviousValue=true \
         ParameterKey=ApnsKeyId,ParameterValue="$APNS_KEY_ID" \
         ParameterKey=ApnsTeamId,ParameterValue="$APNS_TEAM_ID" \
         ParameterKey=ApnsProduction,ParameterValue="$APNS_PROD" \
