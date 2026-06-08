@@ -60,10 +60,12 @@ final class AuthStore {
         isAuthenticated = true
 
         // Background refresh: renew the access token without blocking the UI.
+        // Goes through APIClient.refreshTokens() so it shares one in-flight refresh
+        // with any request that 401s during launch (no refresh-token double-spend).
         Task { [weak self] in
             guard let self else { return }
             do {
-                try await authService.refresh()
+                try await APIClient.shared.refreshTokens()
                 await fetchProfile()
             } catch {
                 // Refresh failed — stored token is no longer valid; show login.

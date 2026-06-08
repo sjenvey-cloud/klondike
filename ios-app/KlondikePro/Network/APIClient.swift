@@ -52,6 +52,11 @@ actor APIClient {
     // Closure called when a silent refresh is needed (set by AuthStore)
     var refreshHandler: (() async throws -> Void)?
 
+    // A single shared in-flight refresh. Concurrent callers — multiple 401 retries
+    // and the launch-time background refresh — await this same task so the rotating
+    // refresh-token cookie is spent exactly once (prevents the launch refresh race).
+    private var inFlightRefresh: Task<Void, Error>?
+
     // MARK: Init
 
     private init() {
@@ -217,15 +222,12 @@ actor APIClient {
             throw APIError.noData
         }
 
-        // 401 — try a silent refresh once
-        if http.statusCode == 401 && !retryingAfterRefresh {
-            guard let refresh = refreshHandler else { throw APIError.unauthorized }
-            do {
-                try await refresh()
-            } catch {
-                throw APIError.refreshFailed
-            }
-            // Rebuild request with new token and retry
+        // 401 — try a single silent refresh, then retry once.
+        // Skip for the refresh endpoint itself to avoid infinite recursion when the
+        // refresh token is invalid.
+        if http.statusCode == 401 && !retryingAfterRefresh && !isRefreshRequest(request) {
+            try await refreshTokens()   // deduped; throws .unauthorized / .refreshFailed
+            // Rebuild request with the new token and retry
             var retried = request
             if let token = accessToken {
                 retried.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -256,6 +258,35 @@ actor APIClient {
         } catch {
             throw APIError.decodingError(error)
         }
+    }
+
+    // MARK: - Deduplicated token refresh
+
+    /// Refreshes the access token, sharing a single in-flight refresh across all
+    /// concurrent callers. Without this, several requests 401-ing at once (or a
+    /// request racing the launch-time background refresh) would each call the
+    /// refresh endpoint; because the backend rotates the refresh-token cookie,
+    /// all but one would fail. Callers here all await the same task instead.
+    func refreshTokens() async throws {
+        if let existing = inFlightRefresh {
+            do { try await existing.value } catch { throw APIError.refreshFailed }
+            return
+        }
+        guard let handler = refreshHandler else { throw APIError.unauthorized }
+
+        let task = Task { try await handler() }
+        inFlightRefresh = task
+        defer { inFlightRefresh = nil }
+
+        do {
+            try await task.value
+        } catch {
+            throw APIError.refreshFailed
+        }
+    }
+
+    private func isRefreshRequest(_ request: URLRequest) -> Bool {
+        request.url?.path.hasSuffix("/api/v1/auth/refresh") ?? false
     }
 }
 
