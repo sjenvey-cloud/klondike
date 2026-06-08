@@ -67,7 +67,12 @@ Resources:
     Properties:
       ServiceName: !Sub '${EnvironmentName}-api-service'
       Cluster: !ImportValue klondike-ClusterArn
-      TaskDefinition: !ImportValue klondike-TaskDefinitionArn
+      # Reference the task-def FAMILY (latest active revision) rather than a pinned
+      # ARN imported from the ecs stack. Pinning the ARN deadlocked task-def edits:
+      # updating ecs.yml changed the exported ARN while this stack imported it, which
+      # CloudFormation blocks. With the family, new revisions roll out via
+      # `aws ecs update-service --force-new-deployment` (same as image deploys).
+      TaskDefinition: !Sub '${EnvironmentName}-api'
       LaunchType: FARGATE
       DesiredCount: !Ref DesiredCount
       NetworkConfiguration:
