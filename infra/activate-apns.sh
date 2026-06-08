@@ -35,7 +35,7 @@ echo
 # ── Prompts ───────────────────────────────────────────────────────
 read -r -p "APNs Key ID (10 chars, from the AuthKey_XXXXXXXXXX.p8 filename): " APNS_KEY_ID
 read -r -p "Apple Team ID (10 chars): " APNS_TEAM_ID
-read -r -p "Secret ARN (…:secret:/klondike/apns/key-XXXXXX, no :keyP8 suffix): " APNS_SECRET_ARN
+read -r -p "Secret ARN (...:secret:/klondike/apns/key-XXXXXX, no :keyP8 suffix): " APNS_SECRET_ARN
 read -r -p "Production APNs host? false = Xcode dev build / sandbox [false/true] (default false): " APNS_PROD
 APNS_PROD="${APNS_PROD:-false}"
 
@@ -66,7 +66,7 @@ read -r -p "Proceed with these PRODUCTION changes? (yes/no): " GO
 
 # ── Step 1 — IAM: grant the execution role read on the APNs secret ─
 echo
-echo "▶ Step 1/4 — execution-role secret access…"
+echo "▶ Step 1/4 — execution-role secret access..."
 APNS_RES="arn:aws:secretsmanager:${REGION}:${ACCOUNT}:secret:/klondike/apns/*"
 DOC=$(aws iam get-role-policy --role-name "$EXEC_ROLE" --policy-name "$POLICY_NAME" --query PolicyDocument --output json)
 if echo "$DOC" | grep -q "secret:/klondike/apns/"; then
@@ -85,7 +85,7 @@ fi
 
 # ── Step 2 — register a new task-def revision (clone + APNs) ───────
 echo
-echo "▶ Step 2/4 — registering new task definition…"
+echo "▶ Step 2/4 — registering new task definition..."
 TD=$(aws ecs describe-task-definition --task-definition "$TASK_FAMILY" --region "$REGION" --query taskDefinition --output json)
 PREV_TD_ARN=$(echo "$TD" | jq -r .taskDefinitionArn)
 echo "  cloning: $PREV_TD_ARN"
@@ -112,12 +112,12 @@ echo "  ✓ registered: $NEW_TD_ARN"
 
 # ── Step 3 — deploy the new revision ──────────────────────────────
 echo
-echo "▶ Step 3/4 — deploying onto $SERVICE…"
+echo "▶ Step 3/4 — deploying onto $SERVICE..."
 aws ecs update-service --region "$REGION" \
   --cluster "$CLUSTER" --service "$SERVICE" \
   --task-definition "$NEW_TD_ARN" --force-new-deployment \
   --query 'service.{status:status,taskDef:taskDefinition}' --output table
-echo "  waiting for the service to stabilise (a few minutes)…"
+echo "  waiting for the service to stabilise (a few minutes)..."
 aws ecs wait services-stable --region "$REGION" --cluster "$CLUSTER" --services "$SERVICE"
 echo "  ✓ service stable on the new revision"
 
