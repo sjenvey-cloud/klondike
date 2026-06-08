@@ -197,8 +197,8 @@ final class GameStore {
         defer { isLoading = false }
 
         var newState = GameState(seed: item.seed, drawMode: item.drawMode)
-        if !item.turns.isEmpty {
-            newState.replay(turns: item.turns)
+        if let turns = item.turns, !turns.isEmpty {
+            newState.replay(turns: turns)
         }
         state = newState
         handUuid = item.handUuid

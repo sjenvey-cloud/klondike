@@ -175,11 +175,13 @@ struct ActiveSessionItem: Decodable {
     let handUuid:    UUID
     let drawMode:    String
     let seed:        Int64
-    let turns:       String
+    let turns:       String?   // may be empty/absent for a freshly-created session
     let moves:       Int
-    let timeSeconds: Int    // DEV-338: saved elapsed, so the clock resumes correctly
-    let startedAt:   Date
+    let timeSeconds: Int       // DEV-338: saved elapsed, so the clock resumes correctly
     let isDaily:     Bool
+    // NB: startedAt (a LocalDateTime) is intentionally NOT decoded — the clock now
+    // resumes from timeSeconds, and decoding it as Date risked failing the whole
+    // response on nanosecond-precision strings. (DEV-338)
 }
 
 // MARK: - Daily

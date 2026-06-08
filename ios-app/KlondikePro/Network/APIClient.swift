@@ -84,14 +84,22 @@ actor APIClient {
             if let date = withTZ.date(from: raw) { return date }
             withTZ.formatOptions = [.withInternetDateTime]
             if let date = withTZ.date(from: raw) { return date }
-            // Fallback: LocalDateTime without timezone — treat as UTC
+            // Fallback: LocalDateTime without timezone — treat as UTC.
+            // Spring serialises LocalDateTime via ISO_LOCAL_DATE_TIME, which emits a
+            // VARIABLE-LENGTH fractional second (none / millis / micros / nanos) and
+            // NO zone, e.g. "2026-06-08T09:00:00.123456789". A fixed ".SSS" pattern
+            // cannot match that, so drop the fraction (sub-second precision is not
+            // needed) and parse to whole seconds. Without this the WHOLE response
+            // fails to decode — which silently broke the /sessions/active resume
+            // banner, since startedAt is a LocalDateTime. (DEV-338)
             let noTZ = DateFormatter()
             noTZ.locale   = Locale(identifier: "en_US_POSIX")
             noTZ.timeZone = TimeZone(secondsFromGMT: 0)
-            noTZ.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
-            if let date = noTZ.date(from: raw) { return date }
+            let secondsOnly = raw.split(separator: ".").first.map(String.init) ?? raw
             noTZ.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-            if let date = noTZ.date(from: raw) { return date }
+            if let date = noTZ.date(from: secondsOnly) { return date }
+            noTZ.dateFormat = "yyyy-MM-dd"
+            if let date = noTZ.date(from: secondsOnly) { return date }
             throw DecodingError.dataCorrupted(
                 .init(codingPath: decoder.codingPath,
                       debugDescription: "Date string not recognised: \(raw)"))
