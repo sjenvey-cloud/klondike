@@ -222,13 +222,13 @@ struct GameState {
 
     // MARK: - Auto-complete eligibility
 
-    /// True when there are no face-down cards left anywhere — every tableau card is
-    /// face up and the stock is exhausted (the remaining draw cards are face up in
-    /// the waste). At that point the game is deterministically winnable and the
-    /// auto-complete modal is offered. Canonical trigger shared with the web.
+    /// True when every tableau card is face up AND the draw pile is down to its
+    /// last card (stock + waste ≤ 1) — i.e. all piles are exposed and only one
+    /// card is left in the deck. At that point the auto-complete modal is offered.
+    /// Canonical trigger shared with the web.
     var canAutoComplete: Bool {
         !isWon
-            && stock.isEmpty
+            && (stock.count + waste.count) <= 1
             && tableau.allSatisfy { col in col.allSatisfy { $0.isFaceUp } }
     }
 

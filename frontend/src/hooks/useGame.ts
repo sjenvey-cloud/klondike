@@ -425,10 +425,11 @@ function historyReducer(state: GameState, action: GameAction): GameState {
 
 function checkCanAutoComplete(state: GameState): boolean {
   if (!state.tableau?.length) return false;
-  // Canonical trigger (shared with iOS): no face-down cards remain anywhere —
-  // every tableau card is face up and the stock is exhausted (remaining draw cards
-  // are face up in the waste). The game is then deterministically winnable.
-  return state.stock.length === 0 && state.tableau.every(pile => pile.every(c => c.faceUp));
+  // Canonical trigger (shared with iOS): every tableau card is face up AND the
+  // draw pile is down to its last card (stock + waste <= 1) — all piles exposed
+  // with only one card left in the deck.
+  return (state.stock.length + state.waste.length) <= 1
+    && state.tableau.every(pile => pile.every(c => c.faceUp));
 }
 
 // ── StartGame options ─────────────────────────────────────────────────────
