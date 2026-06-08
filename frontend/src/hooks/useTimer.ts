@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { MutableRefObject } from 'react';
 
 export interface UseTimerReturn {
   elapsed: number;
@@ -11,7 +12,14 @@ export interface UseTimerReturn {
 
 // sessionId: changes whenever a new session/game is created. Used as a dependency
 //   so the timer restarts correctly even when `running` stays true across a redeal.
-export function useTimer(running: boolean, sessionId: string | null): UseTimerReturn {
+// resumeElapsedRef (DEV-338): when set, the timer starts from this many seconds
+//   already elapsed (cross-device resume). Consumed once, so a later redeal of the
+//   same session starts fresh at 0.
+export function useTimer(
+  running: boolean,
+  sessionId: string | null,
+  resumeElapsedRef?: MutableRefObject<number | null>,
+): UseTimerReturn {
   const [elapsed, setElapsed]   = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const startRef    = useRef<number | null>(null);  // epoch-ms anchor
@@ -41,7 +49,10 @@ export function useTimer(running: boolean, sessionId: string | null): UseTimerRe
   // Effect 1: Start/stop based on running + sessionId.
   useEffect(() => {
     if (running) {
-      startRef.current = Date.now();
+      const base = resumeElapsedRef?.current ?? 0;     // DEV-338: resume offset
+      startRef.current = Date.now() - Math.max(0, base) * 1000;
+      if (base > 0) setElapsed(Math.floor(base));
+      if (resumeElapsedRef) resumeElapsedRef.current = null; // consume once
       startTick();
     } else {
       stopTick();

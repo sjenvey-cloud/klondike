@@ -4,7 +4,7 @@ import {
   isGameWon, foundationIndex, getRank,
 } from '../services/gameLogic';
 import type { CardInPile, BoardState } from '../services/gameLogic';
-import { createHand, createSession, completeSession, abandonSession, saveSessionProgress } from '../services/api';
+import { createHand, createSession, completeSession, abandonSession, saveSessionProgress, getHand } from '../services/api';
 import type { CompleteSessionResponse } from '../types/api';
 
 // ── DEV-66: Session persistence ────────────────────────────────────────────
@@ -421,6 +421,40 @@ function historyReducer(state: GameState, action: GameAction): GameState {
   return next;
 }
 
+// ── DEV-338: turns replay (cross-device resume) ───────────────────────────
+//
+// Reconstructs an in-progress board from the seed-dealt cards + the saved
+// `turns` string, by feeding each move token back through the SAME reducer that
+// produced it. This is the web counterpart to iOS `GameState.replay(turns:)`,
+// and the inverse of the token emission in `reducer` above — so the grammar
+// stays in lock-step:
+//   draw · wf · wt:<col> · tf:<col> · tt:<from>:<idx>:<to> · ft:<fi>:<to>
+// Replaying through `historyReducer` also rebuilds the undo stack, so the
+// resumed game behaves exactly like one played locally.
+function tokenToAction(token: string): GameAction | null {
+  if (token === 'draw') return { type: 'DRAW' };
+  if (token === 'wf')   return { type: 'WASTE_TO_FOUNDATION' };
+  const [op, a, b, c] = token.split(':');
+  switch (op) {
+    case 'wt': return { type: 'WASTE_TO_TABLEAU', col: Number(a) };
+    case 'tf': return { type: 'TABLEAU_TO_FOUNDATION', fromCol: Number(a) };
+    case 'tt': return { type: 'TABLEAU_TO_TABLEAU', fromCol: Number(a), fromIdx: Number(b), toCol: Number(c) };
+    case 'ft': return { type: 'FOUNDATION_TO_TABLEAU', fi: Number(a), toCol: Number(b) };
+    default:   return null; // ignore 'abandon' / unknown tokens
+  }
+}
+
+export function replayTurns(cards: number[], turnsStr: string, drawMode: string): GameState {
+  const dealt = dealKlondike(cards);
+  let st: GameState = { ...initial, ...dealt, drawMode, history: [] };
+  const tokens = (turnsStr || '').split(',').map(t => t.trim()).filter(Boolean);
+  for (const tok of tokens) {
+    const action = tokenToAction(tok);
+    if (action) st = historyReducer(st, action);
+  }
+  return st;
+}
+
 // ── canAutoComplete helper ─────────────────────────────────────────────────
 
 function checkCanAutoComplete(state: GameState): boolean {
@@ -452,6 +486,7 @@ export interface UseGameReturn extends GameState {
   startTimeRef: React.MutableRefObject<number | null>;
   startGame: (handOverride?: { uuid: string; cards: number[] } | null, drawMode?: string, opts?: StartGameOptions) => Promise<void>;
   resumeGame: () => boolean;
+  resumeServerGame: (args: { sessionUuid: string; handUuid: string; turns: string; timeSeconds: number; drawMode: string }) => Promise<void>;
   hasSavedSession: (forHandId?: string | null) => boolean;
   draw: () => void;
   wasteToTableau: (col: number) => void;
@@ -558,6 +593,32 @@ export function useGame(userId: number | null, sessionKey = SESSION_KEY): UseGam
     return true;
   }, [sessionKey]);
 
+  // DEV-338: resume a hand that was paused on ANOTHER device (e.g. iOS → web).
+  // Fetches the hand's cards, replays the server-saved turns to rebuild the
+  // in-progress board, and reuses the existing session UUID so no new session is
+  // created. The caller seeds the timer with `timeSeconds` so the clock resumes.
+  const resumeServerGame = useCallback(async (args: {
+    sessionUuid: string;
+    handUuid: string;
+    turns: string;
+    timeSeconds: number;
+    drawMode: string;
+  }): Promise<void> => {
+    setLoading(true);
+    try {
+      const hand = await getHand(args.handUuid);
+      const replayed = replayTurns(hand.cards, args.turns, hand.drawMode || args.drawMode);
+      setSessionId(args.sessionUuid);
+      setHandId(args.handUuid);
+      // Anchor the submission clock so finishGame() includes time already played.
+      startTimeRef.current = Date.now() - Math.max(0, args.timeSeconds) * 1000;
+      clearSession(sessionKey);
+      dispatch({ type: 'RESTORE', payload: replayed });
+    } finally {
+      setLoading(false);
+    }
+  }, [sessionKey]);
+
   const draw               = useCallback(() => dispatch({ type: 'DRAW' }), []);
   const wasteToTableau     = useCallback((col: number) => dispatch({ type: 'WASTE_TO_TABLEAU', col }), []);
   const wasteToFoundation  = useCallback(() => dispatch({ type: 'WASTE_TO_FOUNDATION' }), []);
@@ -642,6 +703,7 @@ export function useGame(userId: number | null, sessionKey = SESSION_KEY): UseGam
     startTimeRef,
     startGame,
     resumeGame,
+    resumeServerGame,
     hasSavedSession,
     draw,
     wasteToTableau,

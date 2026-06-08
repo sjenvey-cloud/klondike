@@ -86,6 +86,18 @@
   border-radius: 10px;
 }
 
+/* DEV-338: cross-device resume button */
+.home-resume-btn {
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.2;
+}
+.home-resume-meta {
+  font-size: 0.78rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
 .draw-mode-toggle {
   display: flex;
   gap: 0;

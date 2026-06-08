@@ -55,7 +55,9 @@ export function Game({
   // the random-hand session. Without this, navigating from an active daily to
   // /game would show the daily session as a random-hand resume candidate.
   const game  = useGame(user?.id ?? null, dailyHand ? 'klondike_daily_session' : 'klondike_session');
-  const timer = useTimer(!!game.tableau && !game.isWon, game.sessionId);
+  // DEV-338: seeds the timer with already-elapsed seconds for a cross-device resume.
+  const resumeElapsedRef = useRef<number | null>(null);
+  const timer = useTimer(!!game.tableau && !game.isWon, game.sessionId, resumeElapsedRef);
 
   const [winResult,     setWinResult]     = useState<CompleteSessionResponse | null>(null);
   const [finishing,     setFinishing]     = useState(false);
@@ -98,6 +100,32 @@ export function Game({
     }
 
     const locState        = location.state as Record<string, unknown> | null;
+
+    // DEV-338: Home chose to resume the LOCAL game (same session, fresher than
+    // the server snapshot) — restore from localStorage, no replay needed.
+    if (locState?.resumeLocal && game.hasSavedSession()) {
+      game.resumeGame();
+      return;
+    }
+
+    // DEV-338: cross-device resume — Home detected an in-progress server session
+    // (e.g. paused on iOS) and navigated here to continue it. Replay the saved
+    // turns to rebuild the board and resume the clock from the saved elapsed.
+    const resumeServer = locState?.resumeServer as {
+      sessionUuid: string; handUuid: string; turns?: string; timeSeconds?: number; drawMode: string;
+    } | undefined;
+    if (resumeServer) {
+      resumeElapsedRef.current = resumeServer.timeSeconds ?? 0;
+      game.resumeServerGame({
+        sessionUuid: resumeServer.sessionUuid,
+        handUuid:    resumeServer.handUuid,
+        turns:       resumeServer.turns ?? '',
+        timeSeconds: resumeServer.timeSeconds ?? 0,
+        drawMode:    resumeServer.drawMode,
+      }).catch(() => game.startGame(null, resumeServer.drawMode || 'draw3'));
+      return;
+    }
+
     const replayHandId    = locState?.replayHandId    as string | undefined;
     const replayDrawMode  = locState?.replayDrawMode  as string | undefined;
     const replayIsDaily   = (locState?.replayIsDaily  as boolean | undefined)   ?? false;
