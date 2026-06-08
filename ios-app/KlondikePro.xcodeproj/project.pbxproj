@@ -48,6 +48,7 @@
 		B147C731D18BF780686F1CEA /* ProfileRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5363B86050F2A607F9998C1 /* ProfileRecordsView.swift */; };
 		B3CA39B583DCE12999B7D419 /* DailyGameTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = E00BCB2B6EC3339DE55C4934 /* DailyGameTab.swift */; };
 		BBAFF4C5DC976F0EB69AAC87 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7995B36BFD248C14BA9A66DE /* APIModels.swift */; };
+		BDDC111F396C7412E6CFC023 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4D5EC96F8DF70BB108F708 /* Haptics.swift */; };
 		BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E666186D530D52E62B08E28 /* GameState.swift */; };
 		C78AE489D607225776C2B84D /* DailyWinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E187E3C12127F39A68A308F7 /* DailyWinView.swift */; };
 		CE94FBF611C29081570A04A0 /* DailyCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2953A3E7308E64EAA05071F2 /* DailyCalendarView.swift */; };
@@ -73,7 +74,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		010240EF3F62535CE4E5D304 /* KlondikePro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KlondikePro.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		010240EF3F62535CE4E5D304 /* KlondikePro.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KlondikePro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		050FBCCA8BF16FE4B8308A2C /* GameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStore.swift; sourceTree = "<group>"; };
 		07BBBCFE9CC9760EEC990E7C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		0860FB7279BDC4BC02B0FEEE /* WinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinView.swift; sourceTree = "<group>"; };
@@ -110,6 +111,7 @@
 		8F9CC531152B8D3688C454FB /* FriendsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsStore.swift; sourceTree = "<group>"; };
 		961A5F1798DF826DF989EFE2 /* DailyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStore.swift; sourceTree = "<group>"; };
 		9B678B6C4BEC0B57C9B1488F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		9E4D5EC96F8DF70BB108F708 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		A5363B86050F2A607F9998C1 /* ProfileRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileRecordsView.swift; sourceTree = "<group>"; };
 		A83FD1B58530756EBABAE921 /* KlondikeProApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KlondikeProApp.swift; sourceTree = "<group>"; };
 		ACA5F8625566E18782D12FB1 /* Card.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Card.swift; sourceTree = "<group>"; };
@@ -346,6 +348,7 @@
 			isa = PBXGroup;
 			children = (
 				DE009162938676F1EB370CED /* AppEnvironment.swift */,
+				9E4D5EC96F8DF70BB108F708 /* Haptics.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -417,6 +420,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					14EB51E71295F83FAFB67E3A = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -486,6 +490,7 @@
 				BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */,
 				1CBE34606C20571FA47A8355 /* GameStore.swift in Sources */,
 				19F7B984B7563959AB7936E9 /* GameView.swift in Sources */,
+				BDDC111F396C7412E6CFC023 /* Haptics.swift in Sources */,
 				891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */,
 				29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */,
 				E97D476A6AC6DCBD2E03CB4B /* KlondikeProApp.swift in Sources */,
@@ -608,7 +613,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = KlondikePro/Resources/KlondikePro.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = TYV42MNUN3;
 				INFOPLIST_FILE = KlondikePro/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -661,7 +665,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = KlondikePro/Resources/KlondikePro.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = TYV42MNUN3;
 				INFOPLIST_FILE = KlondikePro/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

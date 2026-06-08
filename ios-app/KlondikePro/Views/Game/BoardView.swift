@@ -40,7 +40,7 @@ struct BoardView: View {
                         cardWidth: cardWidth,
                         stockOnRight: true,
                         onWasteTap: { autoMoveWaste() },
-                        onStockTap: { store.draw() }
+                        onStockTap: { store.draw(); Haptics.draw() }
                     )
                 } else {
                     StockWasteView(
@@ -48,7 +48,7 @@ struct BoardView: View {
                         cardWidth: cardWidth,
                         stockOnRight: false,
                         onWasteTap: { autoMoveWaste() },
-                        onStockTap: { store.draw() }
+                        onStockTap: { store.draw(); Haptics.draw() }
                     )
                     Spacer()
                     FoundationView(
@@ -94,10 +94,11 @@ struct BoardView: View {
     /// Foundation first, then tableau left → right.
     private func autoMoveWaste() {
         guard store.state?.wasteTop != nil else { return }
-        if store.moveWasteToFoundation() { return }
+        if store.moveWasteToFoundation() { Haptics.move(); return }
         for col in 0..<7 {
-            if store.moveWasteToTableau(col: col) { return }
+            if store.moveWasteToTableau(col: col) { Haptics.move(); return }
         }
+        Haptics.invalid()   // DEV-340: tapped a card with no legal destination
     }
 
     // MARK: - Auto-move: Tableau card or stack
@@ -113,12 +114,13 @@ struct BoardView: View {
         let isBottomCard = (idx == state.tableau[col].count - 1)
 
         // Foundation has priority for the bottom (top-of-column) card
-        if isBottomCard, store.moveTableauToFoundation(col: col) { return }
+        if isBottomCard, store.moveTableauToFoundation(col: col) { Haptics.move(); return }
 
         // Scan tableau columns left → right, skip source
         for toCol in 0..<7 where toCol != col {
-            if store.moveTableau(fromCol: col, fromIdx: idx, toCol: toCol) { return }
+            if store.moveTableau(fromCol: col, fromIdx: idx, toCol: toCol) { Haptics.move(); return }
         }
+        Haptics.invalid()   // DEV-340: no legal destination for this card/stack
     }
 
     // MARK: - Auto-move: Foundation → Tableau
@@ -127,7 +129,8 @@ struct BoardView: View {
     private func autoMoveFoundation(slot: Int) {
         guard store.state?.foundation[slot] != nil else { return }
         for col in 0..<7 {
-            if store.moveFoundationToTableau(foundationIdx: slot, toCol: col) { return }
+            if store.moveFoundationToTableau(foundationIdx: slot, toCol: col) { Haptics.move(); return }
         }
+        Haptics.invalid()   // DEV-340: foundation card can't return to any column
     }
 }

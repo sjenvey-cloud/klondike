@@ -40,6 +40,7 @@ struct SettingsView: View {
     @Environment(PreferencesStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion  // DEV-292
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(Haptics.prefKey) private var hapticsEnabled = true       // DEV-340
 
     // DEV-314: daily reminder local state, seeded from preferences on appear.
     @State private var reminderEnabled = false
@@ -266,6 +267,26 @@ struct SettingsView: View {
                     Task { await store.setAnimationSpeed(value) }
                 }
             }
+
+            Divider().background(Color.white.opacity(0.08))
+
+            // Haptics (DEV-340) — local preference, no backend round-trip
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Haptics")
+                        .foregroundStyle(.white)
+                    Text("Vibrate on moves, wins, and invalid taps")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+                Spacer()
+                Toggle("", isOn: $hapticsEnabled)
+                    .labelsHidden()
+                    .tint(.yellow)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Haptics")
+            .accessibilityValue(hapticsEnabled ? "On" : "Off")
         }
         .padding(16)
         .background(Color.white.opacity(0.04))

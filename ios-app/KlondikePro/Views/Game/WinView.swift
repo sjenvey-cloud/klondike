@@ -99,6 +99,7 @@ struct WinView: View {
             }
         }
         .task {
+            Haptics.win()   // DEV-340: celebratory success haptic
             await store.completeSession()
         }
     }

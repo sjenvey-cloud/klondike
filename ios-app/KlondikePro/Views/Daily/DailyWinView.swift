@@ -152,6 +152,7 @@ struct DailyWinView: View {
             }
         }
         .onAppear {
+            Haptics.win()   // DEV-340: celebratory success haptic
             withAnimation(.easeOut(duration: 0.5)) { showDetails = true }
             if let rank = result.rank {
                 animateRank(to: rank)
