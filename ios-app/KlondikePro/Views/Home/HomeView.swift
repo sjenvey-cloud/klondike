@@ -8,6 +8,7 @@ struct HomeView: View {
     @Binding var selectedTab: AppTab
 
     @Environment(AuthStore.self) private var authStore
+    @Environment(\.scenePhase) private var scenePhase
     @State private var drawMode: DrawMode = DrawMode(rawValue: UserDefaults.standard.string(forKey: "klondike_draw_mode") ?? "draw3") ?? .draw3
     @State private var activeSession: ActiveSessionItem?
     @State private var isCheckingSession = false
@@ -119,6 +120,16 @@ struct HomeView: View {
             // another device surfaces its resume banner without an app relaunch.
             .onChange(of: authStore.user?.uuid) { _, uuid in
                 if uuid != nil { Task { await checkActiveSession() } }
+            }
+            // Re-check whenever the app returns to the foreground. This is the
+            // key path for cross-device resume: the user pauses on another device
+            // (e.g. web) and switches back to the ALREADY-RUNNING iOS app — a warm
+            // foreground where neither .task nor onChange(user) fires, so without
+            // this the resume banner would never refresh. (DEV-338 follow-up)
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active, authStore.user != nil {
+                    Task { await checkActiveSession() }
+                }
             }
         }
     }
