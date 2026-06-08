@@ -474,7 +474,7 @@ export function Board({ game, timer, onLeaderboard, onRedeal, onNewGame, drawMod
         {!isWon && timer && (
           <button
             className="board-pause-btn"
-            onClick={() => timer.pause()}
+            onClick={() => { timer.pause(); game.saveProgress(timer.elapsed); }}
             aria-label="Pause game"
             title="Pause"
           >

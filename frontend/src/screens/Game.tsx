@@ -187,6 +187,20 @@ export function Game({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.isWon, finishing]);
 
+  // DEV-338: snapshot in-progress state to the server when the tab is hidden or
+  // closed, so an unfinished hand can be resumed on another device. The Pause
+  // button saves directly (see Board). `timer.elapsed` is pause-aware.
+  useEffect(() => {
+    const snapshot = (): void => game.saveProgress(timer.elapsed);
+    const onVisibility = (): void => { if (document.visibilityState === 'hidden') snapshot(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', snapshot);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', snapshot);
+    };
+  }, [game, timer]);
+
   const handleResume = useCallback(() => {
     setResumePrompt(false);
     game.resumeGame();

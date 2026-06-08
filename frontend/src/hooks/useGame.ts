@@ -463,6 +463,7 @@ export interface UseGameReturn extends GameState {
   undo: () => void;
   finishGame: () => Promise<CompleteSessionResponse>;
   abandon: () => Promise<void>;
+  saveProgress: (timeSeconds: number) => void;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────
@@ -482,22 +483,19 @@ export function useGame(userId: number | null, sessionKey = SESSION_KEY): UseGam
     saveSession(sessionId, handId!, state, state.moves, state.turns, startTimeRef.current!, sessionKey);
   }, [state, sessionId, handId, sessionKey]);
 
-  // DEV-338: snapshot in-progress state to the SERVER when the tab is hidden or
-  // closed, so the hand can be resumed on another device (e.g. web → iOS).
-  useEffect(() => {
-    const snapshot = (): void => {
-      const s = stateRef.current;
-      if (!sessionId || !s.tableau?.length || s.isWon || s.moves === 0) return;
-      const timeSeconds = Math.floor((Date.now() - (startTimeRef.current ?? Date.now())) / 1000);
-      void saveSessionProgress(sessionId, s.moves, timeSeconds, s.turns.join(',')).catch(() => {});
-    };
-    const onVisibility = (): void => { if (document.visibilityState === 'hidden') snapshot(); };
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pagehide', snapshot);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('pagehide', snapshot);
-    };
+  // DEV-338: snapshot in-progress state to the SERVER so the hand can be resumed
+  // on another device (e.g. web → iOS). Callers pass the pause-aware elapsed time
+  // from the timer (not startTimeRef, which would count paused time). Fired when
+  // the game is paused and when the tab is hidden/closed — see Game.tsx.
+  const saveProgress = useCallback((timeSeconds: number): void => {
+    const s = stateRef.current;
+    if (!sessionId || !s.tableau?.length || s.isWon || s.moves === 0) return;
+    void saveSessionProgress(
+      sessionId,
+      s.moves,
+      Math.max(0, Math.floor(timeSeconds)),
+      s.turns.join(','),
+    ).catch(() => {});
   }, [sessionId]);
 
   const canAutoComplete = checkCanAutoComplete(state) && !state.isWon;
@@ -655,5 +653,6 @@ export function useGame(userId: number | null, sessionKey = SESSION_KEY): UseGam
     undo,
     finishGame,
     abandon,
+    saveProgress,
   };
 }

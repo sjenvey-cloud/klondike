@@ -110,7 +110,15 @@ struct HomeView: View {
             .navigationTitle("Klondike Pro")
             .navigationBarTitleDisplayMode(.large)
             .task {
-                await checkActiveSession()
+                // Only check when the profile is already loaded (warm launch /
+                // returning to Home). On a cold launch the token may still be
+                // refreshing — the onChange below re-checks once login completes.
+                if authStore.user != nil { await checkActiveSession() }
+            }
+            // Re-check after login finishes (cold launch) so a hand paused on
+            // another device surfaces its resume banner without an app relaunch.
+            .onChange(of: authStore.user?.uuid) { _, uuid in
+                if uuid != nil { Task { await checkActiveSession() } }
             }
         }
     }
