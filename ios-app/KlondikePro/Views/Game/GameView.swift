@@ -34,6 +34,7 @@ struct GameView: View {
                     }
                 }
                 .background(feltColor)
+                .background(keyboardShortcuts)   // DEV-318: iPad hardware-keyboard shortcuts
                 .sheet(isPresented: winBinding) {
                     WinView(
                         store: store,
@@ -176,6 +177,26 @@ struct GameView: View {
         }
     }
 
+    // MARK: - Keyboard shortcuts (DEV-318)
+
+    /// Hidden, shortcut-only buttons for hardware keyboards on iPad:
+    /// U = undo · D = draw · N = new game. Present only while a game is live, so
+    /// the keys don't fire on other screens. ⌘W (close modal) lives on the menu's
+    /// Close button. All actions are safe no-ops when not applicable.
+    private var keyboardShortcuts: some View {
+        Group {
+            Button { store.undo() } label: { Color.clear }
+                .keyboardShortcut("u", modifiers: [])
+            Button { store.draw(); Haptics.draw() } label: { Color.clear }
+                .keyboardShortcut("d", modifiers: [])
+            Button { Task { await store.newGame(drawMode: store.lastDrawMode) } } label: { Color.clear }
+                .keyboardShortcut("n", modifiers: [])
+        }
+        .frame(width: 0, height: 0)
+        .opacity(0)
+        .accessibilityHidden(true)
+    }
+
     // MARK: - Helpers
 
     private var timerText: String {
@@ -225,9 +246,23 @@ private struct GameMenuView: View {
                     Label("Abandon Game", systemImage: "xmark.circle")
                 }
 
+                // DEV-320: drag the hand seed out to Notes / Messages (iPad drag-and-drop)
+                if let seed = store.state?.seed {
+                    LabeledContent {
+                        Text("\(seed)")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    } label: {
+                        Label("Hand Seed", systemImage: "number")
+                    }
+                    .draggable("\(seed)")
+                    .accessibilityHint("Drag to another app to share this hand's seed")
+                }
+
                 Button { dismiss() } label: {
                     Label("Close", systemImage: "xmark")
                 }
+                .keyboardShortcut("w", modifiers: .command)   // DEV-318: ⌘W closes the modal
             }
             .navigationTitle("Menu")
             .navigationBarTitleDisplayMode(.inline)

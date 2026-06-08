@@ -67,12 +67,15 @@ struct ProfileCalendarView: View {
             }
         }
         .task { await store.fetchCalendar() }
-        .sheet(item: Binding<SelectedDay?>(
+        // DEV-319: popover on iPad (regular width), sheet on iPhone (compact).
+        .popover(item: Binding<SelectedDay?>(
             get: { selectedDate.map { SelectedDay(date: $0) } },
             set: { if $0 == nil { selectedDate = nil; store.clearDaySessions() } }
         )) { day in
             DayDetailSheet(date: day.date)
                 .environment(store)
+                .frame(minWidth: 320, minHeight: 380)
+                .presentationCompactAdaptation(.sheet)
         }
     }
 
