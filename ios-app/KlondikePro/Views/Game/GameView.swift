@@ -29,8 +29,10 @@ struct GameView: View {
 
                     GeometryReader { proxy in
                         let totalSpacing: CGFloat = 16 * 2 + 6 * 2
-                        let cardWidth = (proxy.size.width - totalSpacing) / 7
-                        BoardView(store: store, cardWidth: max(36, cardWidth))
+                        let raw = (proxy.size.width - totalSpacing) / 7
+                        // DEV-316: cap so cards don't become oversized on iPad/landscape.
+                        let cardWidth = min(max(36, raw), 104)
+                        BoardView(store: store, cardWidth: cardWidth)
                     }
                 }
                 .background(feltColor)

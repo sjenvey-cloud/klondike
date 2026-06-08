@@ -24,6 +24,14 @@ struct BoardView: View {
 
     private var stockOnRight: Bool { prefs.preferences.stockSide == "right" }
 
+    // DEV-316: the board's natural width (7 columns + inter-column gaps + the
+    // .horizontal,16 padding on each row). Used to centre the board on wide
+    // screens (iPad / landscape) instead of stretching the top row to the edges.
+    private var boardWidth: CGFloat {
+        let columnSpacing = max(2, cardWidth * 0.1)
+        return cardWidth * 7 + columnSpacing * 6 + 32
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             // Top row: stock/waste and foundations — order driven by stockSide preference
@@ -71,6 +79,10 @@ struct BoardView: View {
                 .padding(.bottom, 24)
             }
         }
+        // DEV-316: cap the board to its natural width and centre it, so on iPad /
+        // landscape the top row doesn't stretch to the screen edges.
+        .frame(maxWidth: boardWidth)
+        .frame(maxWidth: .infinity)
         // Auto-complete modal — pops once the board is cleared and the deck is
         // down to its face-up cards. Shared canonical behaviour with the web.
         .onChange(of: store.canAutoComplete) { _, can in
