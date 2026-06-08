@@ -5,6 +5,9 @@ struct StockWasteView: View {
 
     let store: GameStore
     let cardWidth: CGFloat
+    /// When the stock pile sits on the right of the board, render the face-down
+    /// draw pile on the FAR right (waste to its left) — easier to reach in play.
+    var stockOnRight: Bool = false
     var onWasteTap: () -> Void
     var onStockTap: () -> Void
 
@@ -13,8 +16,13 @@ struct StockWasteView: View {
 
     var body: some View {
         HStack(spacing: spacing) {
-            stockPile
-            wastePile
+            if stockOnRight {
+                wastePile
+                stockPile
+            } else {
+                stockPile
+                wastePile
+            }
         }
     }
 

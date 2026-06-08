@@ -21,6 +21,9 @@ struct AccountView: View {
     @State private var showDeleteConfirm  = false
     @State private var deletePassword     = ""
 
+    // Sign out confirmation
+    @State private var showSignOutAlert   = false
+
     // Local validation
     private var passwordMismatch: Bool { !newPassword.isEmpty && newPassword != confirmPassword }
     private var canSubmitPassword: Bool {
@@ -38,6 +41,8 @@ struct AccountView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         changePasswordSection
+                        gameCenterSection   // DEV-332 (moved from appearance settings)
+                        signOutSection
                         dangerZoneSection
                     }
                     .padding(16)
@@ -186,6 +191,97 @@ struct AccountView: View {
             RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(Color.red.opacity(0.2), lineWidth: 1)
         )
+    }
+
+    // MARK: - Game Center link (DEV-332)
+
+    private var gameCenterSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            sectionHeader("Game Center", icon: "person.circle.fill")
+
+            HStack(spacing: 12) {
+                Image(systemName: "gamecontroller.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(authStore.isGameCenterLinked ? .green : .white.opacity(0.35))
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Game Center")
+                        .font(.subheadline)
+                        .foregroundStyle(.white)
+                    Text(authStore.isGameCenterLinked
+                         ? "Linked — friends can find you in-game"
+                         : "Not linked — connect to enable social features")
+                        .font(.caption)
+                        .foregroundStyle(authStore.isGameCenterLinked
+                                         ? Color.green.opacity(0.8)
+                                         : Color.white.opacity(0.4))
+                }
+
+                Spacer()
+
+                if authStore.isGameCenterLinked {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.title3)
+                } else if authStore.isLinkingGameCenter {
+                    ProgressView().tint(.yellow)
+                } else {
+                    Button("Link") {
+                        Task { await authStore.linkGameCenter() }
+                    }
+                    .font(.caption.bold())
+                    .foregroundStyle(.yellow)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(Color.yellow.opacity(0.12))
+                    .clipShape(Capsule())
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(
+                authStore.isGameCenterLinked
+                    ? "Game Center: linked"
+                    : "Game Center: not linked. Activate to link."
+            )
+
+            if let err = authStore.gameCenterLinkError {
+                Label(err, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.red.opacity(0.8))
+            }
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Sign Out
+
+    private var signOutSection: some View {
+        Button {
+            showSignOutAlert = true
+        } label: {
+            HStack {
+                Spacer()
+                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.red)
+                Spacer()
+            }
+            .padding(.vertical, 16)
+            .background(Color.white.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .accessibilityLabel("Sign out of Klondike Pro")
+        .alert("Sign Out?", isPresented: $showSignOutAlert) {
+            Button("Sign Out", role: .destructive) {
+                Task { await authStore.logout() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You'll need to sign in again to continue playing.")
+        }
     }
 
     // MARK: - Helpers

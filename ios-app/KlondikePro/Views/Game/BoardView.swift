@@ -38,6 +38,7 @@ struct BoardView: View {
                     StockWasteView(
                         store: store,
                         cardWidth: cardWidth,
+                        stockOnRight: true,
                         onWasteTap: { autoMoveWaste() },
                         onStockTap: { store.draw() }
                     )
@@ -45,6 +46,7 @@ struct BoardView: View {
                     StockWasteView(
                         store: store,
                         cardWidth: cardWidth,
+                        stockOnRight: false,
                         onWasteTap: { autoMoveWaste() },
                         onStockTap: { store.draw() }
                     )
