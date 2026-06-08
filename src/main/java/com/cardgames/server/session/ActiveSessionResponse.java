@@ -13,6 +13,10 @@ import java.util.UUID;
  * without a separate round-trip to GET /api/v1/hands/{uuid}.
  * - seed: the hand's shuffle_seed — passed to SeededShuffle on the client
  * - turns: comma-separated move tokens — replayed to restore in-progress board state
+ *
+ * DEV-339: Added dailyDate (YYYY-MM-DD, null for random sessions) so the iOS daily
+ * lobby can resume the correct challenge and submit the win to the right day's
+ * leaderboard. DailyStore.handleWin is keyed on this date.
  */
 public record ActiveSessionResponse(
     UUID          uuid,
@@ -23,5 +27,6 @@ public record ActiveSessionResponse(
     int           moves,
     int           timeSeconds,   // DEV-338: saved elapsed seconds, so the clock resumes correctly
     LocalDateTime startedAt,
-    boolean       isDaily
+    boolean       isDaily,
+    String        dailyDate      // DEV-339: YYYY-MM-DD for daily sessions, null otherwise
 ) {}

@@ -90,6 +90,12 @@ final class DailyStore {
     /// Non-nil when the user has tapped a past calendar day and is playing it.
     private(set) var priorDate: String? = nil
 
+    // MARK: - Cross-device daily resume (DEV-339)
+
+    /// An in-progress daily session found on the server (possibly paused on
+    /// another device). Surfaced as a Resume/Restart banner in the lobby.
+    private(set) var activeDailySession: ActiveSessionItem? = nil
+
     /// The date whose leaderboard should be shown — the hand currently in context:
     /// a past daily being played, otherwise today's challenge.
     var activeDate: String {
@@ -150,6 +156,50 @@ final class DailyStore {
     func clearGame() {
         gameStore = nil
         priorDate = nil
+    }
+
+    // MARK: - Cross-device daily resume (DEV-339)
+
+    /// Looks for an in-progress daily session on the server (possibly paused on
+    /// another device) so the lobby can offer to resume it. No-op if a daily game
+    /// is already loaded locally.
+    func checkActiveDailySession() async {
+        guard userId > 0, gameStore == nil else { return }
+        guard let response: ActiveSessionsResponse =
+                try? await APIClient.shared.get("/api/v1/sessions/active") else { return }
+        // Only surface a meaningful in-progress hand (>0 moves).
+        if let daily = response.daily, daily.moves > 0 {
+            activeDailySession = daily
+        } else {
+            activeDailySession = nil
+        }
+    }
+
+    /// Resumes the in-progress daily session: replays its turns, restores the
+    /// clock, and tags the GameStore with the session's date so a win lands on the
+    /// correct day's leaderboard. Every daily attempt is ranked.
+    func resumeActiveDaily() async {
+        guard let item = activeDailySession else { return }
+        winResult = nil
+
+        let store = GameStore(userId: userId)
+        store.dailyDate       = item.dailyDate          // for handleWin's leaderboard date
+        store.isRankedSession = true                    // all daily attempts are ranked
+        await store.resumeGame(item: item)              // sets state, session, clock, drawMode
+        gameStore = store
+
+        // Reflect a past-day resume in the header/banner; today's clears priorDate.
+        if let d = item.dailyDate, !d.isEmpty, d != dailyDate {
+            priorDate = d
+        } else {
+            priorDate = nil
+        }
+        activeDailySession = nil
+    }
+
+    /// Dismisses the resume banner without resuming (user chose to start fresh).
+    func dismissActiveDailySession() {
+        activeDailySession = nil
     }
 
     // MARK: - Restart the current daily hand (Daily "…" menu)

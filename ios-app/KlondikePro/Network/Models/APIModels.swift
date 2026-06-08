@@ -179,6 +179,7 @@ struct ActiveSessionItem: Decodable {
     let moves:       Int
     let timeSeconds: Int       // DEV-338: saved elapsed, so the clock resumes correctly
     let isDaily:     Bool
+    let dailyDate:   String?   // DEV-339: YYYY-MM-DD for daily sessions, nil otherwise
     // NB: startedAt (a LocalDateTime) is intentionally NOT decoded — the clock now
     // resumes from timeSeconds, and decoding it as Date risked failing the whole
     // response on nanosecond-precision strings. (DEV-338)

@@ -8,6 +8,7 @@ struct DailyView: View {
 
     @Environment(DailyStore.self) private var store
     @Environment(\.feltColor) private var feltColor
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: DailyTab = .game
 
     enum DailyTab { case game, leaderboard, calendar }
@@ -42,6 +43,15 @@ struct DailyView: View {
         .onAppear {
             if store.dailyHand == nil && !store.isLoadingHand {
                 Task { await store.fetchToday() }
+            }
+            // DEV-339: look for a daily paused on another device.
+            Task { await store.checkActiveDailySession() }
+        }
+        // Re-check on foreground so a daily paused on another device surfaces
+        // when returning to the already-running app (mirrors Home, DEV-338/339).
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await store.checkActiveDailySession() }
             }
         }
     }

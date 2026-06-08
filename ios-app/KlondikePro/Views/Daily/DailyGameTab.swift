@@ -146,6 +146,16 @@ struct DailyGameTab: View {
             VStack(spacing: 32) {
                 Spacer(minLength: 24)
 
+                // ── Cross-device resume banner (DEV-339) ─────────────────
+                if let active = store.activeDailySession {
+                    DailyResumeBanner(
+                        session: active,
+                        onResume: { Task { await store.resumeActiveDaily() } },
+                        onDismiss: { store.dismissActiveDailySession() }
+                    )
+                    .padding(.horizontal, 24)
+                }
+
                 // Icon
                 Image(systemName: "calendar.badge.clock")
                     .font(.system(size: 56))
@@ -271,6 +281,64 @@ struct DailyGameTab: View {
 
     private func timerText(_ seconds: Int) -> String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+// MARK: - Daily resume banner (DEV-339)
+
+/// Shown in the lobby when an in-progress daily session exists on the server
+/// (possibly paused on another device). Resume replays it with the clock intact;
+/// dismiss hides it so the user can start today's challenge fresh below.
+private struct DailyResumeBanner: View {
+    let session: ActiveSessionItem
+    var onResume: () -> Void
+    var onDismiss: () -> Void
+
+    private var timeLabel: String {
+        String(format: "%d:%02d", session.timeSeconds / 60, session.timeSeconds % 60)
+    }
+
+    private var metaLabel: String {
+        let base = "\(session.moves) moves · \(timeLabel) · \(session.drawMode.uppercased())"
+        if let d = session.dailyDate, !d.isEmpty { return base + " · \(d)" }
+        return base
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Daily in progress")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                    Text(metaLabel)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                Spacer()
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                .accessibilityLabel("Dismiss; start a fresh attempt instead")
+            }
+
+            Button(action: onResume) {
+                Label("Resume", systemImage: "play.fill")
+                    .font(.subheadline.bold())
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.yellow)
+            .foregroundStyle(.black)
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.yellow.opacity(0.4)))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Daily challenge in progress: \(session.moves) moves. Resume, or dismiss to play fresh.")
     }
 }
 

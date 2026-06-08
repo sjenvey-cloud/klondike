@@ -68,7 +68,8 @@ public class SessionController {
             .flatMap(s -> handRepository.findById(s.getHandId())
                 .map(h -> new ActiveSessionResponse(
                     s.getUuid(), s.getHandUuid(), s.getDrawMode(),
-                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getTimeSeconds(), s.getStartedAt(), true)))
+                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getTimeSeconds(), s.getStartedAt(), true,
+                    s.getDailyDate() != null ? s.getDailyDate().toString() : null)))
             .orElse(null);
 
         ActiveSessionResponse random = sessionRepository
@@ -76,7 +77,8 @@ public class SessionController {
             .flatMap(s -> handRepository.findById(s.getHandId())
                 .map(h -> new ActiveSessionResponse(
                     s.getUuid(), s.getHandUuid(), s.getDrawMode(),
-                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getTimeSeconds(), s.getStartedAt(), false)))
+                    h.getShuffleSeed(), s.getTurns(), s.getMoves(), s.getTimeSeconds(), s.getStartedAt(), false,
+                    null)))
             .orElse(null);
 
         return ResponseEntity.ok(new ActiveSessionsResponse(daily, random));
