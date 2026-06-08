@@ -25,8 +25,34 @@ Parameters:
     Default: ''
     Description: RDS read replica endpoint (empty = no replica, all traffic to primary)
 
+  # ---------- APNs (DEV-311 activation) ----------
+  ApnsKeyId:
+    Type: String
+    Default: ''
+    Description: 10-char APNs auth key ID (from the AuthKey_XXXXXXXXXX.p8 filename)
+
+  ApnsTeamId:
+    Type: String
+    Default: ''
+    Description: 10-char Apple Developer Team ID
+
+  ApnsProduction:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: 'true = production APNs host (TestFlight/App Store builds); false = sandbox (Xcode dev builds)'
+
+  ApnsKeyP8SecretArn:
+    Type: String
+    Default: ''
+    Description: >
+      Full Secrets Manager ARN of the secret holding the .p8 PEM under JSON key `keyP8`
+      (e.g. arn:aws:secretsmanager:eu-north-1:ACCT:secret:/klondike/apns/key-AbCdEf).
+      Empty = APNs stays disabled (NotificationService no-ops).
+
 Conditions:
   HasReplica: !Not [!Equals [!Ref DBReadReplicaEndpoint, '']]
+  HasApns:    !Not [!Equals [!Ref ApnsKeyP8SecretArn, '']]
 
 Resources:
 
@@ -71,6 +97,7 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/db/credentials*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/apns/*'
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -155,11 +182,26 @@ Resources:
                 - HasReplica
                 - !Sub 'jdbc:postgresql://${DBReadReplicaEndpoint}:5432/solitaire_db'
                 - ''
+            # APNs (DEV-311) — non-secret config. The .p8 itself is injected via Secrets below.
+            - Name: APNS_KEY_ID
+              Value: !Ref ApnsKeyId
+            - Name: APNS_TEAM_ID
+              Value: !Ref ApnsTeamId
+            - Name: APNS_PRODUCTION
+              Value: !Ref ApnsProduction
+            - Name: APNS_BUNDLE_ID
+              Value: com.klondikepro.app
           Secrets:
             - Name: KLONDIKE_JWT_PRIVATE_KEY
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:privateKey::'
             - Name: KLONDIKE_JWT_PUBLIC_KEY
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:publicKey::'
+            # APNs .p8 PEM (DEV-311) — only wired when ApnsKeyP8SecretArn is provided.
+            - !If
+              - HasApns
+              - Name: APNS_KEY_P8
+                ValueFrom: !Sub '${ApnsKeyP8SecretArn}:keyP8::'
+              - !Ref 'AWS::NoValue'
           LogConfiguration:
             LogDriver: awslogs
             Options:

@@ -63,7 +63,10 @@ targets:
       path: KlondikePro/Resources/KlondikePro.entitlements
       properties:
         com.apple.developer.game-center: true
-        # aps-environment added in Sprint iOS-11 (DEV-308) — requires paid Apple Developer Program
+        # DEV-311 activation: APNs entitlement. "development" routes device tokens to
+        # the APNs SANDBOX host (pair with backend APNS_PRODUCTION=false). Flip to
+        # "production" for TestFlight / App Store distribution (with APNS_PRODUCTION=true).
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.klondikepro.app
