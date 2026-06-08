@@ -98,6 +98,42 @@
   opacity: 0.85;
 }
 
+/* DEV-338: cross-device conflict card (game in progress on another device) */
+.home-resume-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+.home-resume-card-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.home-resume-card-meta {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+.home-resume-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.home-resume-card-actions .btn-primary,
+.home-resume-card-actions .btn-secondary {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+.home-resume-card-hint {
+  font-size: 0.72rem;
+  opacity: 0.55;
+}
+
 .draw-mode-toggle {
   display: flex;
   gap: 0;

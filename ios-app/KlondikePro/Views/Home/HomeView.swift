@@ -30,14 +30,30 @@ struct HomeView: View {
                     .padding(.top, 24)
 
                     // ── Resume banner (DEV-338: cross-device) ─────────────
-                    if let active = activeSession {
+                    // Suppress when the active server hand is ALREADY the one loaded
+                    // locally (same session) — the user is mid-game with it, and
+                    // replaying the server snapshot could drop live local moves.
+                    if let active = activeSession,
+                       !(gameStore.state != nil && gameStore.sessionUuid == active.uuid) {
+                        // A local hand is loaded but it's a DIFFERENT session → the
+                        // active one was started/paused on another device.
+                        let isCrossDevice = gameStore.state != nil
                         ResumeBanner(
                             session: active,
+                            isCrossDevice: isCrossDevice,
                             onResume: {
                                 Task {
+                                    // Replaces the local hand: abandon it first so it
+                                    // doesn't linger as a second active session.
+                                    if isCrossDevice { await gameStore.abandonSession() }
                                     await gameStore.resumeGame(item: active)
                                     selectedTab = .game
                                 }
+                            },
+                            onKeepLocal: {
+                                // Keep playing the hand already loaded on this device.
+                                activeSession = nil
+                                selectedTab = .game
                             },
                             onNewHand: {
                                 Task {
@@ -150,31 +166,39 @@ struct HomeView: View {
 
 private struct ResumeBanner: View {
     let session: ActiveSessionItem
+    /// The active server hand differs from the one loaded locally — i.e. it was
+    /// started/paused on another device, so we offer Resume-it vs Keep-local.
+    var isCrossDevice: Bool = false
     var onResume: () -> Void
+    var onKeepLocal: () -> Void = {}
     var onNewHand: () -> Void
 
     private var timeLabel: String {
         String(format: "%d:%02d", session.timeSeconds / 60, session.timeSeconds % 60)
     }
 
+    private var title: String {
+        isCrossDevice ? "Game in progress on another device" : "Game in Progress"
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Game in Progress")
+                    Text(title)
                         .font(.subheadline.bold())
                     Text("\(session.moves) moves · \(timeLabel) · \(session.drawMode.uppercased())")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Image(systemName: "arrow.triangle.2.circlepath")
+                Image(systemName: isCrossDevice ? "iphone.and.arrow.forward" : "arrow.triangle.2.circlepath")
                     .foregroundStyle(.yellow)
             }
 
             HStack(spacing: 10) {
                 Button(action: onResume) {
-                    Label("Resume", systemImage: "play.fill")
+                    Label(isCrossDevice ? "Resume it" : "Resume", systemImage: "play.fill")
                         .font(.subheadline.bold())
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
@@ -183,8 +207,8 @@ private struct ResumeBanner: View {
                 .tint(.yellow)
                 .foregroundStyle(.black)
 
-                Button(action: onNewHand) {
-                    Text("New Hand")
+                Button(action: isCrossDevice ? onKeepLocal : onNewHand) {
+                    Text(isCrossDevice ? "Keep local game" : "New Hand")
                         .font(.subheadline.bold())
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
@@ -192,13 +216,22 @@ private struct ResumeBanner: View {
                 .buttonStyle(.bordered)
                 .tint(.secondary)
             }
+
+            if isCrossDevice {
+                Text("Resuming replaces the game in progress on this device.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .padding(16)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.yellow.opacity(0.4)))
         .padding(.horizontal)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Game in progress: \(session.moves) moves. Resume or deal a new hand.")
+        .accessibilityLabel(isCrossDevice
+            ? "Game in progress on another device: \(session.moves) moves. Resume it, or keep your local game."
+            : "Game in progress: \(session.moves) moves. Resume or deal a new hand.")
     }
 }
 

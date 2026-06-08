@@ -16,11 +16,21 @@ interface HomeStats {
 
 const fmtTime = (s: number): string => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
+interface LocalGame { sessionId?: string; moves?: number }
+
+const readLocalGame = (): LocalGame | null => {
+  try {
+    const g = JSON.parse(localStorage.getItem('klondike_session') || 'null') as LocalGame | null;
+    return g && (g.moves ?? 0) > 0 ? g : null;
+  } catch { return null; }
+};
+
 export function Home(): React.JSX.Element {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<HomeStats | null>(null);
   const [activeGame, setActiveGame] = useState<ActiveSession | null>(null);
+  const [localGame, setLocalGame] = useState<LocalGame | null>(null);
   const [drawMode, setDrawModeState] = useState<string>(
     () => localStorage.getItem(DRAW_MODE_KEY) || 'draw3'
   );
@@ -34,6 +44,7 @@ export function Home(): React.JSX.Element {
   // device) so it can be resumed here with its move history + clock intact.
   useEffect(() => {
     if (!user) return;
+    setLocalGame(readLocalGame());
     getActiveSession()
       .then(res => {
         const r = res.random;
@@ -47,21 +58,34 @@ export function Home(): React.JSX.Element {
     setDrawModeState(mode);
   };
 
+  // The server session is a DIFFERENT hand than the one saved locally — i.e. it
+  // was almost certainly started/paused on another device.
+  const isCrossDevice =
+    !!activeGame && !!localGame && localGame.sessionId !== activeGame.sessionUuid;
+
+  // Same session locally, and local is at least as advanced — server snapshots
+  // only happen on pause/hide, so a live local game can be ahead. Resume local.
+  const localIsFresher =
+    !!activeGame && !!localGame &&
+    localGame.sessionId === activeGame.sessionUuid &&
+    (localGame.moves ?? 0) >= (activeGame.moves ?? 0);
+
+  const resumeRemote = (): void => {
+    if (!activeGame) return;
+    // Replaces the local in-progress hand with the one from the other device.
+    try { localStorage.removeItem('klondike_session'); } catch { /* ignore */ }
+    navigate('/game', { state: { resumeServer: activeGame } });
+  };
+
+  const keepLocalGame = (): void => {
+    navigate('/game', { state: { resumeLocal: true } });
+  };
+
+  // Simple, non-conflicting resume (no different local game in the way).
   const resumeActiveGame = (): void => {
     if (!activeGame) return;
-    // Prefer the local game when it's the SAME session and at least as advanced —
-    // server snapshots only happen on pause/hide, so a live local game can be
-    // ahead of the server. Replaying the server turns then would lose moves.
-    let local: { sessionId?: string; moves?: number } | null = null;
-    try { local = JSON.parse(localStorage.getItem('klondike_session') || 'null'); } catch { local = null; }
-    const localIsFresher =
-      !!local && local.sessionId === activeGame.sessionUuid &&
-      (local.moves ?? 0) >= (activeGame.moves ?? 0);
-    if (localIsFresher) {
-      navigate('/game', { state: { resumeLocal: true } });
-    } else {
-      navigate('/game', { state: { resumeServer: activeGame } });
-    }
+    if (localIsFresher) keepLocalGame();
+    else resumeRemote();
   };
 
   return (
@@ -102,7 +126,23 @@ export function Home(): React.JSX.Element {
       )}
 
       <div className="home-actions">
-        {activeGame && (
+        {activeGame && isCrossDevice && (
+          <div className="home-resume-card" role="group" aria-label="Game in progress on another device">
+            <div className="home-resume-card-title">
+              <span aria-hidden="true">📱</span> Game in progress on another device
+            </div>
+            <div className="home-resume-card-meta">
+              {activeGame.moves} moves · {fmtTime(activeGame.timeSeconds ?? 0)} · {(activeGame.drawMode || 'draw3').toUpperCase()}
+            </div>
+            <div className="home-resume-card-actions">
+              <button className="btn-primary" onClick={resumeRemote}>Resume it</button>
+              <button className="btn-secondary" onClick={keepLocalGame}>Keep local game</button>
+            </div>
+            <div className="home-resume-card-hint">Resuming replaces the game in progress on this device.</div>
+          </div>
+        )}
+
+        {activeGame && !isCrossDevice && (
           <button
             className="btn-primary btn-large home-resume-btn"
             onClick={resumeActiveGame}
