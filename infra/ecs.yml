@@ -1,6 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Klondike ECS Fargate cluster and task definition
 
+# ─────────────────────────────────────────────────────────────────────────────
+# RECONCILED 2026-06-09 to match the actually-running task definition (rev 7).
+# Prior to this, the repo template had drifted badly from reality (invalid
+# 512/768 CPU/mem, an X-Ray sidecar, Redis-cache + read-replica config, and a
+# task role that omitted the avatar-S3 + secrets-read policies that prod
+# actually uses). The running task def has been managed by hand; this brings the
+# IaC back in line so it is trustworthy again.
+#
+# Source of truth captured from:
+#   aws ecs describe-task-definition --task-definition klondike-api
+#   aws iam get-role-policy / list-attached-role-policies (both roles)
+# ─────────────────────────────────────────────────────────────────────────────
+
 Parameters:
   EnvironmentName:
     Type: String
@@ -20,39 +33,32 @@ Parameters:
     Type: String
     NoEcho: true
 
-  DBReadReplicaEndpoint:
+  AppBaseUrl:
     Type: String
-    Default: ''
-    Description: RDS read replica endpoint (empty = no replica, all traffic to primary)
+    Default: 'https://klondikepro.app'
+    Description: Public base URL used for invite links (APP_BASE_URL)
 
-  # ---------- APNs (DEV-311 activation) ----------
+  # ---------- APNs (DEV-311) — defaults are the live values ----------
   ApnsKeyId:
     Type: String
-    Default: ''
-    Description: 10-char APNs auth key ID (from the AuthKey_XXXXXXXXXX.p8 filename)
+    Default: 'DMKW74X34D'
+    Description: 10-char APNs auth key ID
 
   ApnsTeamId:
     Type: String
-    Default: ''
+    Default: 'KAH7N724C5'
     Description: 10-char Apple Developer Team ID
 
   ApnsProduction:
     Type: String
     Default: 'false'
     AllowedValues: ['true', 'false']
-    Description: 'true = production APNs host (TestFlight/App Store builds); false = sandbox (Xcode dev builds)'
+    Description: 'true = production APNs host; false = sandbox (Xcode dev builds)'
 
   ApnsKeyP8SecretArn:
     Type: String
-    Default: ''
-    Description: >
-      Full Secrets Manager ARN of the secret holding the .p8 PEM under JSON key `keyP8`
-      (e.g. arn:aws:secretsmanager:eu-north-1:ACCT:secret:/klondike/apns/key-AbCdEf).
-      Empty = APNs stays disabled (NotificationService no-ops).
-
-Conditions:
-  HasReplica: !Not [!Equals [!Ref DBReadReplicaEndpoint, '']]
-  HasApns:    !Not [!Equals [!Ref ApnsKeyP8SecretArn, '']]
+    Default: 'arn:aws:secretsmanager:eu-north-1:586917956128:secret:/klondike/apns/key-9mPfV9'
+    Description: Secrets Manager ARN of the .p8 secret (JSON key `keyP8`), no suffix
 
 Resources:
 
@@ -63,7 +69,7 @@ Resources:
       LogGroupName: !Sub '/ecs/${EnvironmentName}-api'
       RetentionInDays: 14
 
-  # ---------- IAM Roles ----------
+  # ---------- IAM: Task Execution Role (pulls image + secrets) ----------
   TaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -78,7 +84,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
       Policies:
-        - PolicyName: ECRAndSecretsAccess
+        - PolicyName: ECRAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -91,6 +97,10 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: '*'
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecretValue
@@ -99,6 +109,7 @@ Resources:
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/db/credentials*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/apns/*'
 
+  # ---------- IAM: Task Role (app runtime permissions) ----------
   TaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -110,18 +121,19 @@ Resources:
             Principal:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/klondike-secrets-read-policy'
       Policies:
-        - PolicyName: XRayWrite
+        - PolicyName: klondike-avatar-s3-policy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Effect: Allow
+              - Sid: AvatarUpload
+                Effect: Allow
                 Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                  - xray:GetSamplingRules
-                  - xray:GetSamplingTargets
-                Resource: '*'
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: 'arn:aws:s3:::klondike-avatars/*'
 
   # ---------- ECS Cluster ----------
   ECSCluster:
@@ -140,17 +152,21 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      Cpu: '512'
-      Memory: '768'
+      Cpu: '256'
+      Memory: '512'
       ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
       TaskRoleArn: !GetAtt TaskRole.Arn
       ContainerDefinitions:
         - Name: api
           Image: !Ref ECRImageURI
+          Essential: true
           PortMappings:
             - ContainerPort: 8080
+              HostPort: 8080
               Protocol: tcp
           Environment:
+            - Name: SERVER_PORT
+              Value: '8080'
             - Name: SPRING_DATASOURCE_URL
               Value: !Sub
                 - 'jdbc:postgresql://${Endpoint}:5432/solitaire_db'
@@ -165,24 +181,8 @@ Resources:
               Value: !ImportValue klondike-RedisEndpoint
             - Name: SPRING_REDIS_PORT
               Value: '6379'
-            - Name: SPRING_DATA_REDIS_HOST
-              Value: !ImportValue klondike-RedisEndpoint
-            - Name: SPRING_DATA_REDIS_PORT
-              Value: '6379'
-            - Name: SPRING_CACHE_TYPE
-              Value: redis
-            - Name: SPRING_CACHE_REDIS_TIME_TO_LIVE
-              Value: '60000'
-            - Name: SERVER_PORT
-              Value: '8080'
-            - Name: XRAY_ENABLED
-              Value: 'true'
-            - Name: SPRING_DATASOURCE_REPLICA_URL
-              Value: !If
-                - HasReplica
-                - !Sub 'jdbc:postgresql://${DBReadReplicaEndpoint}:5432/solitaire_db'
-                - ''
-            # APNs (DEV-311) — non-secret config. The .p8 itself is injected via Secrets below.
+            - Name: APP_BASE_URL
+              Value: !Ref AppBaseUrl
             - Name: APNS_KEY_ID
               Value: !Ref ApnsKeyId
             - Name: APNS_TEAM_ID
@@ -196,12 +196,8 @@ Resources:
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:privateKey::'
             - Name: KLONDIKE_JWT_PUBLIC_KEY
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:publicKey::'
-            # APNs .p8 PEM (DEV-311) — only wired when ApnsKeyP8SecretArn is provided.
-            - !If
-              - HasApns
-              - Name: APNS_KEY_P8
-                ValueFrom: !Sub '${ApnsKeyP8SecretArn}:keyP8::'
-              - !Ref 'AWS::NoValue'
+            - Name: APNS_KEY_P8
+              ValueFrom: !Sub '${ApnsKeyP8SecretArn}:keyP8::'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -216,32 +212,6 @@ Resources:
             Timeout: 10
             Retries: 5
             StartPeriod: 120
-          Essential: true
-        - Name: xray-daemon
-          Image: amazon/aws-xray-daemon
-          PortMappings:
-            - ContainerPort: 2000
-              Protocol: udp
-          Environment:
-            - Name: AWS_REGION
-              Value: !Ref AWS::Region
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: xray
-          Essential: false
-          Cpu: 32
-          Memory: 256
-          HealthCheck:
-            Command:
-              - CMD-SHELL
-              - 'curl -s http://localhost:2000/getSamplingRules || exit 1'
-            Interval: 30
-            Timeout: 5
-            Retries: 3
-            StartPeriod: 10
 
 Outputs:
   ClusterName:
