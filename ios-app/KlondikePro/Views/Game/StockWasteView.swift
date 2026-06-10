@@ -61,30 +61,54 @@ struct StockWasteView: View {
 
     // MARK: - Waste Pile
 
-    private var wastePile: some View {
-        let wasteTop = store.state?.wasteTop
+    /// Horizontal offset between fanned waste cards — matches the web (FAN = 0.46·cardW)
+    /// so Draw 3 shows the same 3-card peek on both platforms (fairness: neither
+    /// platform sees more of the drawn cards than the other).
+    private var fan: CGFloat { cardWidth * 0.46 }
 
-        return ZStack {
+    /// Draw 3 reserves room for the 3-card fan; Draw 1 is a single card.
+    private var wasteSlotWidth: CGFloat {
+        let isDraw3 = (store.state?.drawMode ?? "draw3") == "draw3"
+        return cardWidth + (isDraw3 ? fan * 2 : 0)
+    }
+
+    private var wastePile: some View {
+        let waste   = store.state?.waste ?? []
+        let isDraw3 = (store.state?.drawMode ?? "draw3") == "draw3"
+        let n       = waste.count
+
+        return ZStack(alignment: .leading) {
             placeholderRect
 
-            if let card = wasteTop {
-                CardView(card: card, width: cardWidth)
-            } else {
+            if n == 0 {
                 // Empty placeholder with dotted border
                 RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(
-                        style: StrokeStyle(lineWidth: 1, dash: [4])
-                    )
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
                     .foregroundStyle(Color.secondary.opacity(0.5))
                     .frame(width: cardWidth, height: height)
+            } else {
+                // Draw 3: fan the last up-to-3 cards, oldest at the left, the
+                // newest (top) on the right — the only playable one. Mirrors the
+                // web's offsets exactly. Draw 1: just the single top card.
+                if isDraw3, n > 2 {
+                    CardView(card: waste[n - 3], width: cardWidth)
+                }
+                if isDraw3, n > 1 {
+                    CardView(card: waste[n - 2], width: cardWidth)
+                        .offset(x: min(CGFloat(n - 2), 1) * fan)
+                }
+                CardView(card: waste[n - 1], width: cardWidth)
+                    .offset(x: isDraw3 ? min(CGFloat(n - 1), 2) * fan : 0)
             }
         }
-        .frame(width: cardWidth, height: height)
+        .frame(width: wasteSlotWidth, height: height, alignment: .leading)
+        .contentShape(Rectangle())
         .onTapGesture {
-            if wasteTop != nil { onWasteTap() }
+            if n > 0 { onWasteTap() }
         }
-        .accessibilityLabel(wasteTop.map { "Waste, top card \($0.accessibilityLabel)" } ?? "Waste, empty")
-        .accessibilityAddTraits(wasteTop != nil ? .isButton : [])
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(waste.last.map { "Waste, top card \($0.accessibilityLabel), \(n) cards" } ?? "Waste, empty")
+        .accessibilityAddTraits(n > 0 ? .isButton : [])
     }
 
     // MARK: - Shared placeholder
