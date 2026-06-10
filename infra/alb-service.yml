@@ -90,6 +90,12 @@ Resources:
       DeploymentConfiguration:
         MinimumHealthyPercent: 50
         MaximumPercent: 200
+        # INFRA-5: auto-roll-back a deployment whose tasks never reach steady state
+        # (e.g. a bad task-def revision). Without this, a failed deploy sticks
+        # indefinitely on the old tasks (as happened during APNs activation).
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
       HealthCheckGracePeriodSeconds: 90
 
   # ---------- Auto Scaling ----------
