@@ -96,7 +96,13 @@ Resources:
         DeploymentCircuitBreaker:
           Enable: true
           Rollback: true
-      HealthCheckGracePeriodSeconds: 90
+      # INFRA-1 root cause: the app's cold start (image pull + secret fetch + ~65s
+      # Spring Boot start + lazy DispatcherServlet init) takes ~100-110s to first
+      # serve /actuator/health. The old 90s grace let the ELB start health-checking
+      # before the app was responsive, killing healthy tasks — and adding the DB
+      # password as a 3rd secret pushed a borderline startup over the edge. 240s
+      # gives ample headroom and hardens every deploy.
+      HealthCheckGracePeriodSeconds: 240
 
   # ---------- Auto Scaling ----------
   ScalableTarget:
