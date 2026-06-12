@@ -146,4 +146,43 @@ actor GameCenterService {
         let friends = try await GKLocalPlayer.local.loadFriends()
         return friends.map { $0.teamPlayerID }
     }
+
+    // MARK: - Achievements (DEV-341)
+
+    /// App Store Connect achievement identifiers. Must match the IDs configured
+    /// under the app's Game Center → Achievements exactly.
+    enum Achievement {
+        static let firstWin    = "com.klondikepro.achievement.firstwin"
+        static let fewestMoves = "com.klondikepro.achievement.fewestmoves"
+        static let fastTime    = "com.klondikepro.achievement.fasttime"
+    }
+
+    /// Unlock thresholds (tunable). A win always unlocks First Win; the other two
+    /// unlock when the win also meets the skill/speed bar.
+    private static let fewestMovesThreshold = 120   // win in ≤ 120 moves
+    private static let fastTimeThreshold     = 180   // win in ≤ 3 minutes
+
+    /// Reports Game Center achievements earned by a won game. Idempotent — Game
+    /// Center records each achievement only once, so reporting First Win on every
+    /// win is safe. No-ops silently when Game Center isn't authenticated, so it's
+    /// safe to call unconditionally from the win flow.
+    func reportWinAchievements(moves: Int, timeSeconds: Int) async {
+        guard GKLocalPlayer.local.isAuthenticated else { return }
+
+        var earned: [GKAchievement] = [completed(Achievement.firstWin)]
+        if moves > 0, moves <= Self.fewestMovesThreshold {
+            earned.append(completed(Achievement.fewestMoves))
+        }
+        if timeSeconds > 0, timeSeconds <= Self.fastTimeThreshold {
+            earned.append(completed(Achievement.fastTime))
+        }
+        try? await GKAchievement.report(earned)
+    }
+
+    private func completed(_ id: String) -> GKAchievement {
+        let a = GKAchievement(identifier: id)
+        a.percentComplete = 100
+        a.showsCompletionBanner = true
+        return a
+    }
 }

@@ -326,6 +326,12 @@ final class GameStore {
         } catch {
             // Silently swallow — win already shown to user
         }
+        // DEV-341: report Game Center achievements on a genuine win. Idempotent and
+        // a no-op when Game Center isn't authenticated, so it's safe here.
+        if s.isWon {
+            await GameCenterService.shared.reportWinAchievements(
+                moves: s.moveCount, timeSeconds: elapsedSeconds)
+        }
     }
 
     // MARK: - Redeal
