@@ -29,9 +29,10 @@ Parameters:
     Default: klondike
     NoEcho: true
 
-  DBPassword:
-    Type: String
-    NoEcho: true
+  # INFRA-1: the DBPassword parameter was removed — the DB password is no longer
+  # passed in as a plaintext CFN parameter / env var. It is now injected straight
+  # into the container from the /klondike/db/credentials secret (TaskDefinition
+  # Secrets block below).
 
   AppBaseUrl:
     Type: String
@@ -173,14 +174,11 @@ Resources:
                 - Endpoint: !ImportValue klondike-DBEndpoint
             - Name: SPRING_DATASOURCE_USERNAME
               Value: !Ref DBUsername
-            # INFRA-1 (DEFERRED): moving the password to a Secrets entry made the task
-            # fail the ELB /actuator/health check for ~6 min despite the app starting
-            # and connecting to Postgres + Redis fine (rev 9/10). Root cause undetermined
-            # remotely (health detail is hidden externally) — under diagnosis. Reverted
-            # to the working plaintext env. The circuit breaker auto-rolled-back both
-            # attempts with zero outage.
-            - Name: SPRING_DATASOURCE_PASSWORD
-              Value: !Ref DBPassword
+            # INFRA-1: DB password injected from Secrets Manager (see Secrets block).
+            # The earlier deploy failures were NOT this change — root cause was a too-tight
+            # 90s ELB health-check grace vs the app's ~106s cold start (fixed: grace now
+            # 240s in alb-service.yml). The extra secret-fetch merely tipped a borderline
+            # startup over the edge; the app was healthy throughout (HEALTH-DIAG: UP).
             - Name: SPRING_JPA_HIBERNATE_DDL_AUTO
               Value: validate
             # NB: the Redis connection is built by the custom RedisConfig.java (DEV-165),
@@ -203,6 +201,10 @@ Resources:
             - Name: APNS_BUNDLE_ID
               Value: com.klondikepro.app
           Secrets:
+            # INFRA-1: DB password sourced from the /klondike/db/credentials secret
+            # (plain-string secret → bare ARN, no JSON-key suffix).
+            - Name: SPRING_DATASOURCE_PASSWORD
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/db/credentials-rG6Qw3'
             - Name: KLONDIKE_JWT_PRIVATE_KEY
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:privateKey::'
             - Name: KLONDIKE_JWT_PUBLIC_KEY
