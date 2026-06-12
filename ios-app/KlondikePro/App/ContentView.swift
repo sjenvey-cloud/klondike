@@ -34,6 +34,7 @@ struct ContentView: View {
                 .environment(profileStore)
                 .environment(authStore)
                 .environment(preferencesStore)
+                .environment(friendsStore)   // DEV-344: challenge compose needs friends + leagues
                 .tabItem { Label("Profile", systemImage: "person.fill") }
                 .tag(AppTab.profile)
 

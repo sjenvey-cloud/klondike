@@ -11,10 +11,13 @@ struct DayDetailSheet: View {
     let date: String
 
     @Environment(ProfileStore.self) private var store
+    @Environment(FriendsStore.self) private var friendsStore
     @Environment(\.dismiss)         private var dismiss
 
     /// The won session the user has selected to challenge friends on (DEV-344).
     @State private var selectedSessionUuid: UUID?
+    @State private var showCompose       = false
+    @State private var didSendChallenge  = false
 
     var body: some View {
         NavigationStack {
@@ -38,8 +41,7 @@ struct DayDetailSheet: View {
                                     // Tap to select; tap again to deselect.
                                     selectedSessionUuid =
                                         (selectedSessionUuid == session.uuid) ? nil : session.uuid
-                                    store.challengeCreateSuccess = false
-                                    store.challengeCreateError   = nil
+                                    didSendChallenge = false
                                 } label: {
                                     sessionRow(session, isSelected: selectedSessionUuid == session.uuid)
                                 }
@@ -66,13 +68,17 @@ struct DayDetailSheet: View {
             }
         }
         .task {
-            store.challengeCreateSuccess = false
-            store.challengeCreateError   = nil
             await store.fetchDaySessions(date: date)
             // Convenience: if there's exactly one won hand, pre-select it so the
             // challenge button is immediately usable (DEV-344).
             let won = store.daySessions.filter { $0.isWon }
             if won.count == 1 { selectedSessionUuid = won.first?.uuid }
+        }
+        .sheet(isPresented: $showCompose) {
+            if let uuid = selectedSessionUuid {
+                ChallengeComposeSheet(sessionUuid: uuid) { didSendChallenge = true }
+                    .environment(friendsStore)
+            }
         }
     }
 
@@ -149,48 +155,34 @@ struct DayDetailSheet: View {
             Divider().background(Color.white.opacity(0.1))
                 .padding(.bottom, 4)
 
-            if store.challengeCreateSuccess {
-                Label("Challenge sent to your friends!", systemImage: "checkmark.circle.fill")
+            if didSendChallenge {
+                Label("Challenge sent!", systemImage: "checkmark.circle.fill")
                     .font(.subheadline.bold())
                     .foregroundStyle(.green)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
             } else {
                 Button {
-                    guard let uuid = selectedSessionUuid else { return }
-                    Task { await store.createChallenge(fromSessionUuid: uuid) }
+                    if selectedSessionUuid != nil { showCompose = true }
                 } label: {
-                    Group {
-                        if store.isCreatingChallenge {
-                            ProgressView().tint(.black)
-                        } else {
-                            Label("Challenge Friends on This Hand", systemImage: "person.2.fill")
-                                .font(.headline)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    Label("Challenge Friends on This Hand", systemImage: "person.2.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.yellow)
                 .foregroundStyle(.black)
-                .disabled(selectedSessionUuid == nil || store.isCreatingChallenge)
+                .disabled(selectedSessionUuid == nil)
 
-                if let err = store.challengeCreateError {
-                    Label(err, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.red.opacity(0.85))
-                        .multilineTextAlignment(.center)
-                } else {
-                    Text(hasWonHand
-                         ? (selectedSessionUuid == nil
-                            ? "Select a won hand above to challenge your friends to beat it."
-                            : "Your friends will be challenged to beat this hand.")
-                         : "Win a hand on this day to challenge your friends.")
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.35))
-                        .multilineTextAlignment(.center)
-                }
+                Text(hasWonHand
+                     ? (selectedSessionUuid == nil
+                        ? "Select a won hand above, then choose who to challenge."
+                        : "Pick friends and/or leagues to challenge on the next screen.")
+                     : "Win a hand on this day to challenge your friends.")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.35))
+                    .multilineTextAlignment(.center)
             }
         }
     }
@@ -225,5 +217,139 @@ struct DayDetailSheet: View {
     private func formattedTime(of date: Date) -> String {
         let f = DateFormatter(); f.timeStyle = .short
         return f.string(from: date)
+    }
+}
+
+// MARK: - Challenge compose (DEV-344)
+
+/// Pick friends and/or leagues to challenge on a won hand, then send — mirroring
+/// the web flow (select a hand → choose friends/leagues → send). Both selections
+/// are sent (possibly empty) so the backend uses the explicit-invite path.
+private struct ChallengeComposeSheet: View {
+
+    let sessionUuid: UUID
+    var onSent: () -> Void
+
+    @Environment(FriendsStore.self) private var store
+    @Environment(\.dismiss)         private var dismiss
+
+    @State private var selectedFriendIds: Set<Int> = []
+    @State private var selectedLeagueIds: Set<Int> = []
+    @State private var isSending = false
+    @State private var loaded    = false
+
+    private var canSend: Bool {
+        !isSending && (!selectedFriendIds.isEmpty || !selectedLeagueIds.isEmpty)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color(red: 0.05, green: 0.07, blue: 0.10).ignoresSafeArea()
+
+                if !loaded {
+                    ProgressView().tint(.yellow).scaleEffect(1.2)
+                } else if store.friends.isEmpty && store.customLeagues.isEmpty {
+                    emptyState
+                } else {
+                    List {
+                        if !store.friends.isEmpty {
+                            Section("Friends") {
+                                ForEach(store.friends) { friend in
+                                    row(title: friend.displayName,
+                                        subtitle: nil,
+                                        isOn: selectedFriendIds.contains(friend.userId)) {
+                                        if selectedFriendIds.contains(friend.userId) {
+                                            selectedFriendIds.remove(friend.userId)
+                                        } else {
+                                            selectedFriendIds.insert(friend.userId)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if !store.customLeagues.isEmpty {
+                            Section("Leagues") {
+                                ForEach(store.customLeagues) { league in
+                                    row(title: league.name,
+                                        subtitle: "\(league.memberCount) member\(league.memberCount == 1 ? "" : "s")",
+                                        isOn: selectedLeagueIds.contains(league.id)) {
+                                        if selectedLeagueIds.contains(league.id) {
+                                            selectedLeagueIds.remove(league.id)
+                                        } else {
+                                            selectedLeagueIds.insert(league.id)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .navigationTitle("Challenge")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }.foregroundStyle(.yellow)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        Task {
+                            isSending = true
+                            let ok = await store.createChallenge(
+                                fromSessionUuid: sessionUuid,
+                                invitedUserIds: Array(selectedFriendIds),
+                                invitedLeagueIds: Array(selectedLeagueIds)
+                            )
+                            isSending = false
+                            if ok { onSent(); dismiss() }
+                        }
+                    } label: {
+                        if isSending {
+                            ProgressView().tint(.yellow)
+                        } else {
+                            Text("Send").bold()
+                        }
+                    }
+                    .foregroundStyle(canSend ? .yellow : .gray)
+                    .disabled(!canSend)
+                }
+            }
+            .task {
+                await store.fetchFriends()
+                await store.fetchCustomLeagues()
+                loaded = true
+            }
+        }
+    }
+
+    private func row(title: String, subtitle: String?, isOn: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).foregroundStyle(.white)
+                    if let subtitle {
+                        Text(subtitle).font(.caption).foregroundStyle(.white.opacity(0.5))
+                    }
+                }
+                Spacer()
+                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isOn ? .yellow : .white.opacity(0.3))
+            }
+        }
+        .listRowBackground(Color.white.opacity(0.04))
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "person.2.slash")
+                .font(.system(size: 40)).foregroundStyle(.white.opacity(0.2))
+            Text("No friends or leagues yet")
+                .font(.subheadline).foregroundStyle(.white.opacity(0.5))
+            Text("Add friends or create a league in the Social tab first.")
+                .font(.caption).foregroundStyle(.white.opacity(0.35))
+                .multilineTextAlignment(.center).padding(.horizontal, 32)
+        }
     }
 }

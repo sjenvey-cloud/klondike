@@ -28,11 +28,6 @@ final class ProfileStore {
     private(set) var daySessions: [ProfileDaySession] = []
     var isLoadingDaySessions = false
 
-    // Challenge creation from a day's won hand (DEV-344)
-    var isCreatingChallenge    = false
-    var challengeCreateSuccess = false
-    var challengeCreateError: String?
-
     // MARK: - Loading states
 
     var isLoadingProfile  = false
@@ -132,34 +127,6 @@ final class ProfileStore {
 
     func clearDaySessions() {
         daySessions = []
-    }
-
-    // MARK: - Create challenge from a won hand (DEV-344)
-
-    /// Creates a social challenge from a won session in the profile-calendar day
-    /// list, inviting all current friends (matching the win-screen default).
-    /// Sets `challengeCreateSuccess` on success so the sheet can confirm, or
-    /// `challengeCreateError` with a friendly message on failure.
-    func createChallenge(fromSessionUuid sessionUuid: UUID) async {
-        struct Body: Encodable { let sessionUuid: UUID }
-        isCreatingChallenge    = true
-        challengeCreateError   = nil
-        challengeCreateSuccess = false
-        defer { isCreatingChallenge = false }
-        do {
-            try await APIClient.shared.postBodyVoid(
-                "/api/v1/social/challenges",
-                body: Body(sessionUuid: sessionUuid)
-            )
-            challengeCreateSuccess = true
-        } catch let api as APIError {
-            switch api {
-            case .httpError(422, _): challengeCreateError = "You can only challenge friends on a won hand."
-            default:                 challengeCreateError = "Could not create the challenge. Please try again."
-            }
-        } catch {
-            challengeCreateError = "Could not create the challenge. Please try again."
-        }
     }
 
     // MARK: - Update display name

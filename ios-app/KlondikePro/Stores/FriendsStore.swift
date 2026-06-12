@@ -270,6 +270,36 @@ final class FriendsStore {
         }
     }
 
+    // MARK: - Create challenge from a won hand (DEV-344, web UX parity)
+
+    /// Creates a social challenge from a won session, inviting the explicitly
+    /// chosen friends and/or league members — mirroring the web flow (pick a hand,
+    /// then pick friends and/or leagues, then send). Both arrays are sent even when
+    /// empty so the backend uses the explicit-selection path (never the "all
+    /// friends" fallback). Returns true on success.
+    func createChallenge(fromSessionUuid sessionUuid: UUID,
+                         invitedUserIds: [Int],
+                         invitedLeagueIds: [Int]) async -> Bool {
+        struct Body: Encodable {
+            let sessionUuid: UUID
+            let invitedUserIds: [Int]
+            let invitedLeagueIds: [Int]
+        }
+        do {
+            try await APIClient.shared.postBodyVoid(
+                "/api/v1/social/challenges",
+                body: Body(sessionUuid: sessionUuid,
+                           invitedUserIds: invitedUserIds,
+                           invitedLeagueIds: invitedLeagueIds)
+            )
+            await fetchChallenges()
+            return true
+        } catch {
+            errorMessage = "Could not create the challenge."
+            return false
+        }
+    }
+
     // MARK: - Delete / hide a challenge (DEV-346, web UX parity)
 
     /// Creator-only: permanently delete a challenge you created. The backend
