@@ -270,6 +270,33 @@ final class FriendsStore {
         }
     }
 
+    // MARK: - Delete / hide a challenge (DEV-346, web UX parity)
+
+    /// Creator-only: permanently delete a challenge you created. The backend
+    /// cascade-removes all participant records. Mirrors the web "delete challenge"
+    /// action. Optimistically removes it from the local list on success.
+    func deleteChallenge(id: Int) async {
+        do {
+            try await APIClient.shared.deleteVoid("/api/v1/social/challenges/\(id)")
+            challenges.removeAll { $0.id == id }
+        } catch {
+            errorMessage = "Could not delete the challenge."
+        }
+    }
+
+    /// Participant-only: hide a challenge you were invited to from your own list.
+    /// It stays visible to the creator and other participants. The web shows this
+    /// as "remove" for challenges you didn't create (the backend `/hide` endpoint
+    /// rejects the creator with "use delete to remove your own challenge").
+    func hideChallenge(id: Int) async {
+        do {
+            try await APIClient.shared.postVoid("/api/v1/social/challenges/\(id)/hide")
+            challenges.removeAll { $0.id == id }
+        } catch {
+            errorMessage = "Could not remove the challenge."
+        }
+    }
+
     /// Clears the challenge badge once the user has viewed the Challenges tab (DEV-302).
     func markChallengesViewed() {
         pendingChallengeCount = 0

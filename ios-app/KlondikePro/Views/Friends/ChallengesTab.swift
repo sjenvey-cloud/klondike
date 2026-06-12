@@ -7,6 +7,8 @@ struct ChallengesTab: View {
     @Environment(FriendsStore.self) private var store
 
     @State private var selectedChallenge: SocialChallenge?
+    @State private var pendingDelete: SocialChallenge?   // creator delete (DEV-346)
+    @State private var pendingHide: SocialChallenge?     // participant remove
 
     var body: some View {
         Group {
@@ -22,6 +24,21 @@ struct ChallengesTab: View {
                                 challengeCard(challenge)
                             }
                             .buttonStyle(.plain)
+                            .contextMenu {
+                                if challenge.isCreator {
+                                    Button(role: .destructive) {
+                                        pendingDelete = challenge
+                                    } label: {
+                                        Label("Delete Challenge", systemImage: "trash")
+                                    }
+                                } else {
+                                    Button(role: .destructive) {
+                                        pendingHide = challenge
+                                    } label: {
+                                        Label("Remove from My List", systemImage: "eye.slash")
+                                    }
+                                }
+                            }
                         }
                     }
                     .padding(16)
@@ -35,6 +52,34 @@ struct ChallengesTab: View {
         .sheet(item: $selectedChallenge) { challenge in
             ChallengeDetailView(challenge: challenge)
                 .environment(store)
+        }
+        .confirmationDialog(
+            "Delete Challenge?",
+            isPresented: Binding(get: { pendingDelete != nil },
+                                 set: { if !$0 { pendingDelete = nil } }),
+            presenting: pendingDelete
+        ) { c in
+            Button("Delete", role: .destructive) {
+                Task { await store.deleteChallenge(id: c.id) }
+                pendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: { _ in
+            Text("This permanently deletes the challenge for everyone, including the leaderboard. This cannot be undone.")
+        }
+        .confirmationDialog(
+            "Remove Challenge?",
+            isPresented: Binding(get: { pendingHide != nil },
+                                 set: { if !$0 { pendingHide = nil } }),
+            presenting: pendingHide
+        ) { c in
+            Button("Remove", role: .destructive) {
+                Task { await store.hideChallenge(id: c.id) }
+                pendingHide = nil
+            }
+            Button("Cancel", role: .cancel) { pendingHide = nil }
+        } message: { _ in
+            Text("This removes the challenge from your list only. The creator and other players keep it.")
         }
     }
 
@@ -106,6 +151,8 @@ struct ChallengeDetailView: View {
 
     @State private var detail: SocialChallengeDetail?
     @State private var playStore: GameStore?
+    @State private var showDeleteConfirm = false   // creator — permanent (DEV-346)
+    @State private var showRemoveConfirm = false   // participant — hide from my list
 
     var body: some View {
         NavigationStack {
@@ -140,9 +187,11 @@ struct ChallengeDetailView: View {
                         ProgressView().tint(.yellow).frame(maxWidth: .infinity).padding(.vertical, 20)
                     }
 
-                    // Creator controls (DEV-300)
+                    // Creator controls (DEV-300) + delete/remove (DEV-346)
                     if challenge.isCreator {
                         creatorControls
+                    } else {
+                        removeControl
                     }
                 }
                 .padding(16)
@@ -156,6 +205,22 @@ struct ChallengeDetailView: View {
                 }
             }
             .task { detail = await store.challengeDetail(id: challenge.id) }
+            .alert("Delete Challenge?", isPresented: $showDeleteConfirm) {
+                Button("Delete", role: .destructive) {
+                    Task { await store.deleteChallenge(id: challenge.id); dismiss() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently deletes the challenge for everyone, including the leaderboard. This cannot be undone.")
+            }
+            .alert("Remove Challenge?", isPresented: $showRemoveConfirm) {
+                Button("Remove", role: .destructive) {
+                    Task { await store.hideChallenge(id: challenge.id); dismiss() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This removes the challenge from your list only. The creator and other players keep it.")
+            }
             .fullScreenCover(item: Binding(
                 get: { playStore.map { GameStoreBox(store: $0) } },
                 set: { playStore = $0?.store }
@@ -224,6 +289,29 @@ struct ChallengeDetailView: View {
                         .background(Color.white.opacity(0.05)).clipShape(RoundedRectangle(cornerRadius: 10))
                 }
             }
+
+            // Delete (creator, permanent) — DEV-346
+            Button {
+                showDeleteConfirm = true
+            } label: {
+                Label("Delete Challenge", systemImage: "trash")
+                    .font(.subheadline.bold()).foregroundStyle(.red)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(Color.red.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    /// Participant-only: remove (hide) the challenge from my own list — DEV-346.
+    private var removeControl: some View {
+        Button {
+            showRemoveConfirm = true
+        } label: {
+            Label("Remove from My List", systemImage: "eye.slash")
+                .font(.subheadline.bold()).foregroundStyle(.red)
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(Color.red.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .padding(.top, 8)
     }

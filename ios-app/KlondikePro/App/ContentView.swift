@@ -21,7 +21,7 @@ struct ContentView: View {
                 .tabItem { Label("Home", systemImage: "house.fill") }
                 .tag(AppTab.home)
 
-            GameView(store: gameStore)
+            GameView(store: gameStore, showsResume: true)
                 .tabItem { Label("Game", systemImage: "suit.club.fill") }
                 .tag(AppTab.game)
 

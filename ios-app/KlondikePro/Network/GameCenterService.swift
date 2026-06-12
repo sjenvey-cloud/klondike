@@ -17,6 +17,23 @@ enum GameCenterError: LocalizedError {
     }
 }
 
+// MARK: - Resume guard
+
+/// Thread-safe latch ensuring a block runs at most once. GameKit's
+/// `authenticateHandler` may be invoked repeatedly (and from arbitrary threads);
+/// this prevents a double `CheckedContinuation.resume`, which would trap.
+private final class ResumeOnce: @unchecked Sendable {
+    private var done = false
+    private let lock = NSLock()
+    func run(_ body: () -> Void) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !done else { return }
+        done = true
+        body()
+    }
+}
+
 // MARK: - Service
 
 /// DEV-249: Handles Game Center authentication and identity-signature fetch.
@@ -39,19 +56,18 @@ actor GameCenterService {
     /// - Returns: A fully populated `GameCenterAuthRequest`.
     func authenticate() async throws -> GameCenterAuthRequest {
 
-        // Step 1 — show native GK auth sheet and wait for result
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            GKLocalPlayer.local.authenticateHandler = { _, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else if GKLocalPlayer.local.isAuthenticated {
-                    continuation.resume(returning: ())
-                } else {
-                    // Handler called with no error but player not authenticated
-                    // — user cancelled the sheet.
-                    continuation.resume(throwing: GameCenterError.cancelled)
-                }
-            }
+        // Step 1 — ensure the local player is authenticated.
+        //
+        // DEV-343 (link hang): only install the authenticateHandler when the player
+        // is NOT already authenticated. GameKit invokes a freshly-assigned handler
+        // only when the authentication STATE changes. If the player is already
+        // signed in — the usual case when linking from Settings after a Game Center
+        // login, or when the device is signed into Game Center at the OS level —
+        // re-assigning the handler never fires it, so the continuation suspends
+        // forever and the "Link" spinner hangs indefinitely. Skip straight to the
+        // signature fetch when we're already authenticated.
+        if !GKLocalPlayer.local.isAuthenticated {
+            try await authenticateLocalPlayer()
         }
 
         // Step 2 — fetch ECDSA identity verification signature
@@ -83,6 +99,36 @@ actor GameCenterService {
             timestamp:    timestamp,
             displayName:  player.displayName
         )
+    }
+
+    /// Installs the GameKit authenticate handler and suspends until the local
+    /// player is authenticated, cancels, or errors.
+    ///
+    /// Resumes its continuation exactly once: `authenticateHandler` can be invoked
+    /// multiple times as the authentication state changes, and resuming a
+    /// `CheckedContinuation` more than once traps. Only called when the player is
+    /// not yet authenticated (see `authenticate()` step 1).
+    private func authenticateLocalPlayer() async throws {
+        let once = ResumeOnce()
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            GKLocalPlayer.local.authenticateHandler = { viewController, error in
+                once.run {
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else if GKLocalPlayer.local.isAuthenticated {
+                        continuation.resume(returning: ())
+                    } else if viewController != nil {
+                        // GameKit wants to present its sign-in UI but there's no
+                        // authenticated player and no presenter available here.
+                        // Surface a clear error rather than hanging.
+                        continuation.resume(throwing: GameCenterError.notAuthenticated)
+                    } else {
+                        // No error, no player, no UI — user dismissed the sheet.
+                        continuation.resume(throwing: GameCenterError.cancelled)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Friend import (DEV-334)

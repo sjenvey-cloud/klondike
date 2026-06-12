@@ -13,6 +13,9 @@ struct DayDetailSheet: View {
     @Environment(ProfileStore.self) private var store
     @Environment(\.dismiss)         private var dismiss
 
+    /// The won session the user has selected to challenge friends on (DEV-344).
+    @State private var selectedSessionUuid: UUID?
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -30,7 +33,18 @@ struct DayDetailSheet: View {
                     ScrollView {
                         VStack(spacing: 0) {
                             ForEach(store.daySessions) { session in
-                                sessionRow(session)
+                                Button {
+                                    guard session.isWon else { return }
+                                    // Tap to select; tap again to deselect.
+                                    selectedSessionUuid =
+                                        (selectedSessionUuid == session.uuid) ? nil : session.uuid
+                                    store.challengeCreateSuccess = false
+                                    store.challengeCreateError   = nil
+                                } label: {
+                                    sessionRow(session, isSelected: selectedSessionUuid == session.uuid)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!session.isWon)
                                 Divider().background(Color.white.opacity(0.08))
                             }
                         }
@@ -51,12 +65,20 @@ struct DayDetailSheet: View {
                 }
             }
         }
-        .task { await store.fetchDaySessions(date: date) }
+        .task {
+            store.challengeCreateSuccess = false
+            store.challengeCreateError   = nil
+            await store.fetchDaySessions(date: date)
+            // Convenience: if there's exactly one won hand, pre-select it so the
+            // challenge button is immediately usable (DEV-344).
+            let won = store.daySessions.filter { $0.isWon }
+            if won.count == 1 { selectedSessionUuid = won.first?.uuid }
+        }
     }
 
     // MARK: - Session row
 
-    private func sessionRow(_ session: ProfileDaySession) -> some View {
+    private func sessionRow(_ session: ProfileDaySession, isSelected: Bool) -> some View {
         HStack(spacing: 14) {
             // Win/loss indicator
             ZStack {
@@ -98,38 +120,78 @@ struct DayDetailSheet: View {
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.3))
             }
+
+            // Selection indicator — only won hands can be challenged (DEV-344)
+            if session.isWon {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? .yellow : .white.opacity(0.25))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .background(isSelected ? Color.yellow.opacity(0.08) : Color.clear)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "\(session.isWon ? "Won" : "Did not finish"): \(session.moves) moves, \(formattedTime(session.timeSeconds))"
+            + (session.isWon ? (isSelected ? ", selected" : ", tap to select for a challenge") : "")
         )
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - Challenge Friends (Sprint iOS-8 placeholder)
 
     private var challengeSection: some View {
-        VStack(spacing: 12) {
+        let hasWonHand = store.daySessions.contains { $0.isWon }
+
+        return VStack(spacing: 12) {
             Divider().background(Color.white.opacity(0.1))
                 .padding(.bottom, 4)
 
-            Button {
-                // TODO: Sprint iOS-8 — create social challenge from this hand
-            } label: {
-                Label("Challenge Friends on This Hand", systemImage: "person.2.fill")
-                    .font(.headline)
+            if store.challengeCreateSuccess {
+                Label("Challenge sent to your friends!", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.green)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-            }
-            .buttonStyle(.bordered)
-            .tint(.yellow)
-            .foregroundStyle(.yellow)
-            .disabled(true)   // enabled in Sprint iOS-8
+            } else {
+                Button {
+                    guard let uuid = selectedSessionUuid else { return }
+                    Task { await store.createChallenge(fromSessionUuid: uuid) }
+                } label: {
+                    Group {
+                        if store.isCreatingChallenge {
+                            ProgressView().tint(.black)
+                        } else {
+                            Label("Challenge Friends on This Hand", systemImage: "person.2.fill")
+                                .font(.headline)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.yellow)
+                .foregroundStyle(.black)
+                .disabled(selectedSessionUuid == nil || store.isCreatingChallenge)
 
-            Text("Friend challenges coming in a future update.")
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.25))
+                if let err = store.challengeCreateError {
+                    Label(err, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.red.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                } else {
+                    Text(hasWonHand
+                         ? (selectedSessionUuid == nil
+                            ? "Select a won hand above to challenge your friends to beat it."
+                            : "Your friends will be challenged to beat this hand.")
+                         : "Win a hand on this day to challenge your friends.")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.35))
+                        .multilineTextAlignment(.center)
+                }
+            }
         }
     }
 

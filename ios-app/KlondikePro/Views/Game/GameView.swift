@@ -4,10 +4,19 @@ import SwiftUI
 struct GameView: View {
 
     let store: GameStore
+    /// When true (the main Game tab), the empty state offers to resume an
+    /// in-progress server session — matching the Home tab's resume banner
+    /// (DEV-345). Left false for reused GameViews (challenge / daily covers),
+    /// which manage their own hand and must not surface a random-game resume.
+    var showsResume: Bool = false
+
     @State private var showMenu = false
+    @State private var activeSession: ActiveSessionItem?
 
     @Environment(\.feltColor) private var feltColor
     @Environment(PreferencesStore.self) private var prefs
+    @Environment(AuthStore.self) private var authStore
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -65,6 +74,24 @@ struct GameView: View {
                 }
             }
         }
+        // DEV-345: keep the resume option in sync with the server on the Game tab.
+        .task {
+            if showsResume, store.state == nil, authStore.user != nil {
+                await checkActiveSession()
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if showsResume, phase == .active, store.state == nil, authStore.user != nil {
+                Task { await checkActiveSession() }
+            }
+        }
+        // When a game ends (state → nil), re-check so a still-active session on
+        // another device surfaces, and a just-finished hand stops offering resume.
+        .onChange(of: store.state != nil) { _, hasGame in
+            if showsResume, !hasGame, authStore.user != nil {
+                Task { await checkActiveSession() }
+            }
+        }
     }
 
     // MARK: - No-game empty state
@@ -72,6 +99,12 @@ struct GameView: View {
     private var noGameView: some View {
         VStack(spacing: 32) {
             Spacer()
+
+            // DEV-345: offer to resume an in-progress server session — parity with
+            // the Home tab's resume banner.
+            if showsResume, let active = activeSession {
+                resumeCard(active)
+            }
 
             Image(systemName: "suit.spade.fill")
                 .font(.system(size: 64))
@@ -102,6 +135,62 @@ struct GameView: View {
             Spacer()
         }
         .padding(.horizontal, 32)
+    }
+
+    // MARK: - Resume card (DEV-345)
+
+    private func resumeCard(_ session: ActiveSessionItem) -> some View {
+        let timeLabel = String(format: "%d:%02d", session.timeSeconds / 60, session.timeSeconds % 60)
+        return VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Game in Progress")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.white)
+                    Text("\(session.moves) moves · \(timeLabel) · \(session.drawMode.uppercased())")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                Spacer()
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(.yellow)
+            }
+
+            Button {
+                Task {
+                    await store.resumeGame(item: session)
+                    activeSession = nil
+                }
+            } label: {
+                Label("Resume Game", systemImage: "play.fill")
+                    .font(.subheadline.bold())
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.yellow)
+            .foregroundStyle(.black)
+        }
+        .padding(16)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.yellow.opacity(0.4)))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Game in progress: \(session.moves) moves. Resume it.")
+    }
+
+    // MARK: - Active session check (DEV-345)
+
+    private func checkActiveSession() async {
+        // DEV-252: /sessions/active returns { daily, random } — surface the random one.
+        if let response: ActiveSessionsResponse = try? await APIClient.shared.get("/api/v1/sessions/active") {
+            // Only offer resume when there's no local hand and the server session
+            // isn't one we already have loaded.
+            if store.state == nil, let random = response.random, random.uuid != store.sessionUuid {
+                activeSession = random
+            } else {
+                activeSession = nil
+            }
+        }
     }
 
     // MARK: - Dealing spinner
