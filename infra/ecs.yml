@@ -29,9 +29,8 @@ Parameters:
     Default: klondike
     NoEcho: true
 
-  DBPassword:
-    Type: String
-    NoEcho: true
+  # INFRA-1: DBPassword param removed — the password now comes from the
+  # /klondike/db/credentials secret (see the TaskDefinition Secrets block).
 
   AppBaseUrl:
     Type: String
@@ -173,14 +172,16 @@ Resources:
                 - Endpoint: !ImportValue klondike-DBEndpoint
             - Name: SPRING_DATASOURCE_USERNAME
               Value: !Ref DBUsername
-            - Name: SPRING_DATASOURCE_PASSWORD
-              Value: !Ref DBPassword
+            # INFRA-1: the DB password is now injected via Secrets (below), not a
+            # plaintext env var.
             - Name: SPRING_JPA_HIBERNATE_DDL_AUTO
               Value: validate
-            - Name: SPRING_REDIS_HOST
+            # INFRA-2: canonical Spring Boot 3 variable. application.properties reads
+            # spring.data.redis.host=${REDIS_HOST:localhost}; the old SPRING_REDIS_HOST
+            # (Boot 2 name, removed in Boot 3) was ignored, so Redis would have fallen
+            # back toward localhost. Port stays the application.properties default 6379.
+            - Name: REDIS_HOST
               Value: !ImportValue klondike-RedisEndpoint
-            - Name: SPRING_REDIS_PORT
-              Value: '6379'
             - Name: APP_BASE_URL
               Value: !Ref AppBaseUrl
             - Name: APNS_KEY_ID
@@ -192,6 +193,10 @@ Resources:
             - Name: APNS_BUNDLE_ID
               Value: com.klondikepro.app
           Secrets:
+            # INFRA-1: DB password from Secrets Manager (plain-string secret, so the
+            # ValueFrom is the bare ARN with no JSON-key suffix).
+            - Name: SPRING_DATASOURCE_PASSWORD
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/db/credentials-rG6Qw3'
             - Name: KLONDIKE_JWT_PRIVATE_KEY
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/klondike/jwt/secret-1PSTp8:privateKey::'
             - Name: KLONDIKE_JWT_PUBLIC_KEY
