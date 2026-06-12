@@ -179,7 +179,13 @@ final class AuthStore {
                 gameCenterLinkError = "Could not link Game Center. Please try again."
             }
         } catch {
-            gameCenterLinkError = "Could not link Game Center. Please try again."
+            // GameKit connectivity / not-signed-in failures surface as GKErrorDomain
+            // NSErrors ("cannot connect to Game Center"). Give an actionable hint.
+            if (error as NSError).domain == "GKErrorDomain" {
+                gameCenterLinkError = "Couldn't connect to Game Center. Check that you're online and signed in (Settings → Game Center), then try again."
+            } else {
+                gameCenterLinkError = "Could not link Game Center. Please try again."
+            }
         }
     }
 
