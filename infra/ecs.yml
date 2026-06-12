@@ -176,12 +176,15 @@ Resources:
             # plaintext env var.
             - Name: SPRING_JPA_HIBERNATE_DDL_AUTO
               Value: validate
-            # INFRA-2: canonical Spring Boot 3 variable. application.properties reads
-            # spring.data.redis.host=${REDIS_HOST:localhost}; the old SPRING_REDIS_HOST
-            # (Boot 2 name, removed in Boot 3) was ignored, so Redis would have fallen
-            # back toward localhost. Port stays the application.properties default 6379.
-            - Name: REDIS_HOST
+            # NB: the Redis connection is built by the custom RedisConfig.java (DEV-165),
+            # which reads SPRING_REDIS_HOST / SPRING_REDIS_PORT DIRECTLY via @Value — not
+            # Spring's spring.data.redis.* autoconfig. So these env names are REQUIRED
+            # exactly as-is. (INFRA-2 attempted to "modernise" these to REDIS_HOST and
+            # broke Redis → health DOWN → circuit-breaker rollback. Reverted.)
+            - Name: SPRING_REDIS_HOST
               Value: !ImportValue klondike-RedisEndpoint
+            - Name: SPRING_REDIS_PORT
+              Value: '6379'
             - Name: APP_BASE_URL
               Value: !Ref AppBaseUrl
             - Name: APNS_KEY_ID
