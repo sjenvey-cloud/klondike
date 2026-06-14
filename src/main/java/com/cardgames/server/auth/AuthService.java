@@ -227,13 +227,22 @@ public class AuthService {
             throw new GameCenterSignatureException("Failed to construct verification payload: " + e.getMessage());
         }
 
-        // 5. Verify ECDSA signature
+        // 5. Verify the signature. Apple's Game Center identity certificate carries an
+        // RSA public key, so the algorithm is SHA256withRSA — the previous hardcoded
+        // SHA256withECDSA throws InvalidKeyException against an RSA key (every link
+        // attempt failed). Derive the algorithm from the key so it's correct whichever
+        // Apple uses (RSA today; EC-safe if they ever migrate).
         try {
-            Signature sig = Signature.getInstance("SHA256withECDSA");
+            String keyAlg = publicKey.getAlgorithm();              // "RSA" or "EC"
+            String sigAlg = "EC".equals(keyAlg) ? "SHA256withECDSA" : "SHA256withRSA";
+            Signature sig = Signature.getInstance(sigAlg);
             sig.initVerify(publicKey);
             sig.update(payload);
             boolean valid = sig.verify(Base64.getDecoder().decode(req.signature()));
-            if (!valid) throw new GameCenterSignatureException("Signature verification failed");
+            if (!valid) {
+                throw new GameCenterSignatureException(
+                    "Signature verification failed (sigAlg=" + sigAlg + ", keyAlg=" + keyAlg + ")");
+            }
         } catch (GameCenterSignatureException e) {
             throw e;
         } catch (Exception e) {
