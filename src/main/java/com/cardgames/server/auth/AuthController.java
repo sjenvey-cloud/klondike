@@ -3,6 +3,8 @@ package com.cardgames.server.auth;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService authService;
 
@@ -140,7 +144,11 @@ public class AuthController {
 
     @ExceptionHandler(GameCenterSignatureException.class)
     public ResponseEntity<Map<String, String>> handleBadGkSignature(GameCenterSignatureException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        // Log the precise reason — these are otherwise invisible (the client only sees
+        // a generic failure). 422 (not 401) so the client's token-refresh-on-401 logic
+        // doesn't mistake a signature rejection for an expired access token.
+        log.warn("Game Center signature verification failed: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
             .body(Map.of("error", e.getMessage()));
     }
 
