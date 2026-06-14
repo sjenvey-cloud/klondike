@@ -326,11 +326,15 @@ final class GameStore {
         } catch {
             // Silently swallow — win already shown to user
         }
-        // DEV-341: report Game Center achievements on a genuine win. Idempotent and
-        // a no-op when Game Center isn't authenticated, so it's safe here.
+        // DEV-341/342: report Game Center achievements + submit the leaderboard score
+        // on a genuine win. Both are idempotent and no-op when GC isn't authenticated.
         if s.isWon {
             await GameCenterService.shared.reportWinAchievements(
                 moves: s.moveCount, timeSeconds: elapsedSeconds)
+            // The leaderboard tracks draw-3 fewest-moves only (matches its ID).
+            if s.drawMode == "draw3" {
+                await GameCenterService.shared.submitDraw3FewestMoves(s.moveCount)
+            }
         }
     }
 

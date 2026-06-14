@@ -154,7 +154,7 @@ actor GameCenterService {
     enum Achievement {
         static let firstWin    = "com.klondikepro.achievement.firstwin"
         static let fewestMoves = "com.klondikepro.achievement.fewestmoves"
-        static let fastTime    = "com.klondikepro.achievement.fasttime"
+        static let fastTime    = "com.klondikepro.achievement.fastesttime"
     }
 
     /// Unlock thresholds (tunable). A win always unlocks First Win; the other two
@@ -184,5 +184,28 @@ actor GameCenterService {
         a.percentComplete = 100
         a.showsCompletionBanner = true
         return a
+    }
+
+    // MARK: - Leaderboard (DEV-342)
+
+    /// App Store Connect leaderboard identifiers. Must match the IDs configured
+    /// under the app's Game Center → Leaderboards exactly.
+    enum Leaderboard {
+        /// Draw-3 "fewest moves to win a hand" — Integer score, sorted Low→High
+        /// (fewer is better) in App Store Connect.
+        static let draw3FewestMoves = "com.klondikepro.leaderboard.draw3"
+    }
+
+    /// Submits a draw-3 win's move count to the Game Center leaderboard. The
+    /// leaderboard is configured Low→High, so a smaller move count ranks higher.
+    /// No-ops silently when Game Center isn't authenticated.
+    func submitDraw3FewestMoves(_ moves: Int) async {
+        guard GKLocalPlayer.local.isAuthenticated, moves > 0 else { return }
+        try? await GKLeaderboard.submitScore(
+            moves,
+            context: 0,
+            player: GKLocalPlayer.local,
+            leaderboardIDs: [Leaderboard.draw3FewestMoves]
+        )
     }
 }
