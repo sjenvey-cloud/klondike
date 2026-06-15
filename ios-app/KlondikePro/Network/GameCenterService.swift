@@ -140,9 +140,17 @@ actor GameCenterService {
     /// - Throws: a GameKit error if the player is not authenticated or has not
     ///   granted friend-list access.
     func loadFriendTeamPlayerIDs() async throws -> [String] {
+        // The friend import may be the first Game Center touchpoint this session
+        // (e.g. an email-login user who hasn't triggered GC auth yet), so make sure
+        // the local player is authenticated before requesting the friend list.
+        if !GKLocalPlayer.local.isAuthenticated {
+            try await authenticateLocalPlayer()
+        }
         guard GKLocalPlayer.local.isAuthenticated else {
             throw GameCenterError.notAuthenticated
         }
+        // Requires the NSGKFriendListUsageDescription Info.plist key; iOS prompts the
+        // player for friend-list access on first call.
         let friends = try await GKLocalPlayer.local.loadFriends()
         return friends.map { $0.teamPlayerID }
     }

@@ -53,6 +53,9 @@ targets:
         NSCameraUsageDescription: "Used for taking a profile photo."
         NSPhotoLibraryUsageDescription: "Used for selecting a profile photo."
         NSGameCenterNetworkingMultiplayerSupportedModes: []
+        # DEV-334: required for GKLocalPlayer.loadFriends() — without it the friend
+        # list request throws and the import fails.
+        NSGKFriendListUsageDescription: "Klondike Pro uses your Game Center friends list to find friends who already play, so you can add and challenge them."
         API_BASE_URL: https://d2fbehwb6bp7kq.cloudfront.net
         # DEV-301: klondikepro://friends/invite/{token} custom URL scheme
         CFBundleURLTypes:

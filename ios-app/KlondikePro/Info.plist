@@ -37,6 +37,8 @@
 	<string>Used for taking a profile photo.</string>
 	<key>NSGameCenterNetworkingMultiplayerSupportedModes</key>
 	<array/>
+	<key>NSGKFriendListUsageDescription</key>
+	<string>Klondike Pro uses your Game Center friends list to find friends who already play, so you can add and challenge them.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used for selecting a profile photo.</string>
 	<key>UILaunchScreen</key>
