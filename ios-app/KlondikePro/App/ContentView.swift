@@ -1,18 +1,15 @@
 import SwiftUI
 
-/// Root navigation shell.
-/// iPhone (compact width): TabView with a bottom tab bar.
-/// iPad (regular width):   NavigationSplitView with a sidebar (DEV-315).
+/// Root navigation shell — a bottom TabView on every device.
 ///
-/// In a narrow window (iPad Slide Over / small Stage Manager window) the size
-/// class is compact, so it falls back to the tab bar automatically (DEV-317).
+/// (DEV-315 originally trialled a NavigationSplitView sidebar on iPad, but a
+/// persistent sidebar steals ~320pt of width that the Klondike board needs, so
+/// the tab bar is used on iPad too — full-width board, identical UX everywhere.)
 struct ContentView: View {
 
     @Environment(AuthStore.self) private var authStore
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.horizontalSizeClass) private var hSize
     @State private var selectedTab: AppTab  = .home
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var gameStore            = GameStore(userId: 0)
     @State private var dailyStore           = DailyStore()
     @State private var profileStore         = ProfileStore()
@@ -21,11 +18,12 @@ struct ContentView: View {
     @State private var friendsStore         = FriendsStore()
 
     var body: some View {
-        Group {
-            if hSize == .regular {
-                splitView
-            } else {
-                tabBar
+        TabView(selection: $selectedTab) {
+            ForEach(AppTab.allCases) { tab in
+                destination(for: tab)
+                    .tabItem { Label(tab.title, systemImage: tab.icon) }
+                    .tag(tab)
+                    .badge(tab == .social ? friendsStore.socialBadgeCount : 0)
             }
         }
         .tint(.yellow)
@@ -83,50 +81,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - iPhone tab bar (compact width)
-
-    private var tabBar: some View {
-        TabView(selection: $selectedTab) {
-            ForEach(AppTab.allCases) { tab in
-                destination(for: tab)
-                    .tabItem { Label(tab.title, systemImage: tab.icon) }
-                    .tag(tab)
-                    .badge(tab == .social ? friendsStore.socialBadgeCount : 0)
-            }
-        }
-    }
-
-    // MARK: - iPad split view (DEV-315, regular width)
-
-    private var splitView: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            List(selection: sidebarSelection) {
-                ForEach(AppTab.allCases) { tab in
-                    // NavigationLink(value:) — not a plain tagged row — is what makes
-                    // a NavigationSplitView sidebar respond to taps and drive the
-                    // detail column.
-                    NavigationLink(value: tab) {
-                        Label(tab.title, systemImage: tab.icon)
-                            .badge(tab == .social ? friendsStore.socialBadgeCount : 0)
-                    }
-                }
-            }
-            .navigationTitle("Klondike Pro")
-            .listStyle(.sidebar)
-        } detail: {
-            destination(for: selectedTab)
-                .id(selectedTab)
-        }
-        .navigationSplitViewStyle(.balanced)
-    }
-
-    /// Bridges the non-optional `selectedTab` to `List(selection:)`, which expects
-    /// an optional binding.
-    private var sidebarSelection: Binding<AppTab?> {
-        Binding(get: { selectedTab }, set: { if let v = $0 { selectedTab = v } })
-    }
-
-    // MARK: - Tab content (shared by both layouts)
+    // MARK: - Tab content
 
     @ViewBuilder
     private func destination(for tab: AppTab) -> some View {
