@@ -12,6 +12,7 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.horizontalSizeClass) private var hSize
     @State private var selectedTab: AppTab  = .home
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var gameStore            = GameStore(userId: 0)
     @State private var dailyStore           = DailyStore()
     @State private var profileStore         = ProfileStore()
@@ -98,12 +99,16 @@ struct ContentView: View {
     // MARK: - iPad split view (DEV-315, regular width)
 
     private var splitView: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             List(selection: sidebarSelection) {
                 ForEach(AppTab.allCases) { tab in
-                    Label(tab.title, systemImage: tab.icon)
-                        .tag(tab)
-                        .badge(tab == .social ? friendsStore.socialBadgeCount : 0)
+                    // NavigationLink(value:) — not a plain tagged row — is what makes
+                    // a NavigationSplitView sidebar respond to taps and drive the
+                    // detail column.
+                    NavigationLink(value: tab) {
+                        Label(tab.title, systemImage: tab.icon)
+                            .badge(tab == .social ? friendsStore.socialBadgeCount : 0)
+                    }
                 }
             }
             .navigationTitle("Klondike Pro")
