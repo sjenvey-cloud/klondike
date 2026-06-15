@@ -40,6 +40,7 @@
 		815103FF922B4FB175CBF65F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17A4EAD55DC0F7E5F38C301 /* ContentView.swift */; };
 		891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6956EDB6ED3254EA6AB2B5 /* HomeView.swift */; };
 		8D995C2EC98127A5E47BBBF5 /* ReplayBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E05BF70D324FD6B64F1FA33 /* ReplayBoardView.swift */; };
+		913EC5D975721FD48D27E6CF /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F564B7215AF14268EE53FE7B /* PrivacyInfo.xcprivacy */; };
 		93FF9D53A8F3A3FBD4E65410 /* AcceptInviteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 734142146CAA438D0800E61B /* AcceptInviteView.swift */; };
 		9A2C3EE0CC7F5636D8547790 /* SeededShuffle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E80BD7ADE0BC91094C3DC96A /* SeededShuffle.swift */; };
 		A07CBA79AF0F1BFC100C3C5D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D81F41C477341AC64871155A /* Assets.xcassets */; };
@@ -52,6 +53,7 @@
 		BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E666186D530D52E62B08E28 /* GameState.swift */; };
 		C78AE489D607225776C2B84D /* DailyWinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E187E3C12127F39A68A308F7 /* DailyWinView.swift */; };
 		CE94FBF611C29081570A04A0 /* DailyCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2953A3E7308E64EAA05071F2 /* DailyCalendarView.swift */; };
+		D6CB62BB456B5FB5C283CFFD /* MetricsReporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1624BB8A8A139C4D651570C9 /* MetricsReporter.swift */; };
 		E54F6D4D74D5946A577EAFC4 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC0A0B313941647498C4E3E /* AuthStore.swift */; };
 		E7FDCF4719FE769C0C50BE21 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE009162938676F1EB370CED /* AppEnvironment.swift */; };
 		E97D476A6AC6DCBD2E03CB4B /* KlondikeProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A83FD1B58530756EBABAE921 /* KlondikeProApp.swift */; };
@@ -80,6 +82,7 @@
 		0860FB7279BDC4BC02B0FEEE /* WinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WinView.swift; sourceTree = "<group>"; };
 		098E0B1E21F7C58E47D80C56 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
 		10B563896AA9BEE53D29F393 /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
+		1624BB8A8A139C4D651570C9 /* MetricsReporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsReporter.swift; sourceTree = "<group>"; };
 		172A33CB1603974D48FADA11 /* DailyLeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyLeaderboardView.swift; sourceTree = "<group>"; };
 		1DC0A0B313941647498C4E3E /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		20E7116A4EAEB40A0E5DC7E0 /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationManager.swift; sourceTree = "<group>"; };
@@ -131,6 +134,7 @@
 		EE2D246F07A435E209062B79 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		F055786853EEE1805565D2EE /* ProfileStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStatsView.swift; sourceTree = "<group>"; };
 		F44F3479FF0410BDF907AB0A /* KlondikePro.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KlondikePro.entitlements; sourceTree = "<group>"; };
+		F564B7215AF14268EE53FE7B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		FFB006AC5513E0020BBEDCF5 /* ProfileCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCalendarView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -178,6 +182,7 @@
 				9B678B6C4BEC0B57C9B1488F /* AppDelegate.swift */,
 				B17A4EAD55DC0F7E5F38C301 /* ContentView.swift */,
 				A83FD1B58530756EBABAE921 /* KlondikeProApp.swift */,
+				1624BB8A8A139C4D651570C9 /* MetricsReporter.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -218,6 +223,7 @@
 			children = (
 				D81F41C477341AC64871155A /* Assets.xcassets */,
 				F44F3479FF0410BDF907AB0A /* KlondikePro.entitlements */,
+				F564B7215AF14268EE53FE7B /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -451,6 +457,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A07CBA79AF0F1BFC100C3C5D /* Assets.xcassets in Resources */,
+				913EC5D975721FD48D27E6CF /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -498,6 +505,7 @@
 				7F3038B004ADDB09D4C07088 /* LeaderboardView.swift in Sources */,
 				28653064D2DA2F22B860364F /* LeagueTab.swift in Sources */,
 				FB332A855C558F67B37BDD05 /* LoginView.swift in Sources */,
+				D6CB62BB456B5FB5C283CFFD /* MetricsReporter.swift in Sources */,
 				4434CD3345FFC16751ECEC05 /* PreferencesStore.swift in Sources */,
 				7062161B2FD9EF601A969512 /* ProfileCalendarView.swift in Sources */,
 				B147C731D18BF780686F1CEA /* ProfileRecordsView.swift in Sources */,

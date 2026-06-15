@@ -32,6 +32,7 @@ targets:
           - "**/*.md"
     resources:
       - path: KlondikePro/Resources/Assets.xcassets
+      - path: KlondikePro/Resources/PrivacyInfo.xcprivacy   # DEV-323 privacy manifest
     info:
       path: KlondikePro/Info.plist
       properties:

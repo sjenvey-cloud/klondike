@@ -75,16 +75,28 @@ struct KlondikeProApp: App {
         return nil
     }
 
+    /// DEV-322: themed launch view shown during the brief on-launch auth check.
+    /// Matches the app icon's gold-spade motif on the dark felt background. No
+    /// spinner — the auth check is sub-second, and a spinner reads as "slow".
     private var splashView: some View {
-        VStack(spacing: 16) {
-            Text("🂡")
-                .font(.system(size: 80))
-            Text("Klondike Pro")
-                .font(.title.bold())
-                .foregroundStyle(.white)
-            ProgressView()
-                .tint(.yellow)
-                .padding(.top, 8)
+        VStack(spacing: 18) {
+            ZStack {
+                Circle()
+                    .fill(Color.yellow.opacity(0.12))
+                    .frame(width: 132, height: 132)
+                Image(systemName: "suit.spade.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.yellow)
+            }
+            VStack(spacing: 2) {
+                Text("Klondike")
+                    .font(.system(size: 34, weight: .heavy, design: .serif))
+                    .foregroundStyle(.white)
+                Text("PRO")
+                    .font(.system(size: 17, weight: .semibold))
+                    .tracking(8)
+                    .foregroundStyle(.yellow)
+            }
         }
     }
 }

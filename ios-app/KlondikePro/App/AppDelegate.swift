@@ -7,6 +7,14 @@ import UIKit
 final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        // DEV-327: subscribe to MetricKit early so crash/hang diagnostics from the
+        // previous run are delivered.
+        MetricsReporter.shared.start()
+        return true
+    }
+
+    func application(_ application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Task { @MainActor in
             PushNotificationManager.shared.didRegister(deviceToken: deviceToken)
