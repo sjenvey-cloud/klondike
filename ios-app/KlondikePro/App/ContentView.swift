@@ -1,12 +1,16 @@
 import SwiftUI
 
 /// Root navigation shell.
-/// iPhone: TabView with bottom tab bar.
-/// iPad:   NavigationSplitView with sidebar (added Sprint iOS-11).
+/// iPhone (compact width): TabView with a bottom tab bar.
+/// iPad (regular width):   NavigationSplitView with a sidebar (DEV-315).
+///
+/// In a narrow window (iPad Slide Over / small Stage Manager window) the size
+/// class is compact, so it falls back to the tab bar automatically (DEV-317).
 struct ContentView: View {
 
     @Environment(AuthStore.self) private var authStore
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var hSize
     @State private var selectedTab: AppTab  = .home
     @State private var gameStore            = GameStore(userId: 0)
     @State private var dailyStore           = DailyStore()
@@ -16,35 +20,12 @@ struct ContentView: View {
     @State private var friendsStore         = FriendsStore()
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            HomeView(gameStore: gameStore, selectedTab: $selectedTab)
-                .tabItem { Label("Home", systemImage: "house.fill") }
-                .tag(AppTab.home)
-
-            GameView(store: gameStore, showsResume: true)
-                .tabItem { Label("Game", systemImage: "suit.club.fill") }
-                .tag(AppTab.game)
-
-            DailyView()
-                .environment(dailyStore)
-                .tabItem { Label("Daily", systemImage: "calendar") }
-                .tag(AppTab.daily)
-
-            ProfileView()
-                .environment(profileStore)
-                .environment(authStore)
-                .environment(preferencesStore)
-                .environment(friendsStore)   // DEV-344: challenge compose needs friends + leagues
-                .tabItem { Label("Profile", systemImage: "person.fill") }
-                .tag(AppTab.profile)
-
-            FriendsView()
-                .environment(friendsStore)
-                .environment(authStore)
-                .environment(leaderboardStore)
-                .tabItem { Label("Social", systemImage: "person.2.fill") }
-                .tag(AppTab.social)
-                .badge(friendsStore.socialBadgeCount)
+        Group {
+            if hSize == .regular {
+                splitView
+            } else {
+                tabBar
+            }
         }
         .tint(.yellow)
         // Propagate PreferencesStore and derived environment values to the whole hierarchy
@@ -100,8 +81,95 @@ struct ContentView: View {
             }
         }
     }
+
+    // MARK: - iPhone tab bar (compact width)
+
+    private var tabBar: some View {
+        TabView(selection: $selectedTab) {
+            ForEach(AppTab.allCases) { tab in
+                destination(for: tab)
+                    .tabItem { Label(tab.title, systemImage: tab.icon) }
+                    .tag(tab)
+                    .badge(tab == .social ? friendsStore.socialBadgeCount : 0)
+            }
+        }
+    }
+
+    // MARK: - iPad split view (DEV-315, regular width)
+
+    private var splitView: some View {
+        NavigationSplitView {
+            List(selection: sidebarSelection) {
+                ForEach(AppTab.allCases) { tab in
+                    Label(tab.title, systemImage: tab.icon)
+                        .tag(tab)
+                        .badge(tab == .social ? friendsStore.socialBadgeCount : 0)
+                }
+            }
+            .navigationTitle("Klondike Pro")
+            .listStyle(.sidebar)
+        } detail: {
+            destination(for: selectedTab)
+                .id(selectedTab)
+        }
+        .navigationSplitViewStyle(.balanced)
+    }
+
+    /// Bridges the non-optional `selectedTab` to `List(selection:)`, which expects
+    /// an optional binding.
+    private var sidebarSelection: Binding<AppTab?> {
+        Binding(get: { selectedTab }, set: { if let v = $0 { selectedTab = v } })
+    }
+
+    // MARK: - Tab content (shared by both layouts)
+
+    @ViewBuilder
+    private func destination(for tab: AppTab) -> some View {
+        switch tab {
+        case .home:
+            HomeView(gameStore: gameStore, selectedTab: $selectedTab)
+        case .game:
+            GameView(store: gameStore, showsResume: true)
+        case .daily:
+            DailyView()
+                .environment(dailyStore)
+        case .profile:
+            ProfileView()
+                .environment(profileStore)
+                .environment(authStore)
+                .environment(preferencesStore)
+                .environment(friendsStore)   // DEV-344: challenge compose needs friends + leagues
+        case .social:
+            FriendsView()
+                .environment(friendsStore)
+                .environment(authStore)
+                .environment(leaderboardStore)
+        }
+    }
 }
 
-enum AppTab: Hashable {
+enum AppTab: String, CaseIterable, Identifiable, Hashable {
     case home, game, daily, profile, social
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .home:    return "Home"
+        case .game:    return "Game"
+        case .daily:   return "Daily"
+        case .profile: return "Profile"
+        case .social:  return "Social"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .home:    return "house.fill"
+        case .game:    return "suit.club.fill"
+        case .daily:   return "calendar"
+        case .profile: return "person.fill"
+        case .social:  return "person.2.fill"
+        }
+    }
 }
