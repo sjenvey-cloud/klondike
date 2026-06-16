@@ -6,6 +6,8 @@ struct TableauView: View {
     let columns: [[Card]]
     let cardWidth: CGFloat
     var onTap: (Int, Int) -> Void
+    /// Resolve a drag dropped on column `colIdx`; returns true if the move was made.
+    var onDropToColumn: (CardMove, Int) -> Bool = { _, _ in false }
 
     private let faceDownOffset: CGFloat = 0.15
     private let faceUpOffset: CGFloat   = 0.28
@@ -45,6 +47,10 @@ struct TableauView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(width: cardWidth, height: cardHeight)
+            .dropDestination(for: CardMove.self) { items, _ in
+                guard let move = items.first else { return false }
+                return onDropToColumn(move, colIdx)
+            }
             .accessibilityLabel("Empty column \(colIdx + 1), place a King here")
         } else {
             // VStack(spacing: 0) with constrained layout heights so that each
@@ -59,7 +65,7 @@ struct TableauView: View {
                 ForEach(Array(col.enumerated()), id: \.offset) { idx, card in
                     let isLast  = idx == col.count - 1
                     let peekH   = cardWidth * (card.isFaceUp ? faceUpOffset : faceDownOffset)
-                    CardView(
+                    let base = CardView(
                         card: card,
                         isSelected: false,
                         width: cardWidth
@@ -71,9 +77,23 @@ struct TableauView: View {
                     .onTapGesture { onTap(colIdx, idx) }
                     .accessibilityLabel(card.isFaceUp ? card.accessibilityLabel : "Face down card in column \(colIdx + 1)")
                     .accessibilityAddTraits(card.isFaceUp ? .isButton : [])
+
+                    // Face-up cards are draggable; dragging from idx carries the whole
+                    // sub-stack below it (the move resolver handles single vs stack).
+                    if card.isFaceUp {
+                        base.draggable(CardMove(source: .tableau(col: colIdx, idx: idx))) {
+                            CardView(card: card, width: cardWidth)
+                        }
+                    } else {
+                        base
+                    }
                 }
             }
             .frame(width: cardWidth, height: totalColumnHeight(col: col))
+            .dropDestination(for: CardMove.self) { items, _ in
+                guard let move = items.first else { return false }
+                return onDropToColumn(move, colIdx)
+            }
         }
     }
 

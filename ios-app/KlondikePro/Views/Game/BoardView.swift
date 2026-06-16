@@ -40,7 +40,8 @@ struct BoardView: View {
                     FoundationView(
                         foundation: store.state?.foundation ?? [nil, nil, nil, nil],
                         cardWidth: cardWidth,
-                        onTap: { slot in autoMoveFoundation(slot: slot) }
+                        onTap: { slot in autoMoveFoundation(slot: slot) },
+                        onDropToFoundation: { move, slot in resolveDrop(move, toFoundation: slot) }
                     )
                     Spacer()
                     StockWasteView(
@@ -62,7 +63,8 @@ struct BoardView: View {
                     FoundationView(
                         foundation: store.state?.foundation ?? [nil, nil, nil, nil],
                         cardWidth: cardWidth,
-                        onTap: { slot in autoMoveFoundation(slot: slot) }
+                        onTap: { slot in autoMoveFoundation(slot: slot) },
+                        onDropToFoundation: { move, slot in resolveDrop(move, toFoundation: slot) }
                     )
                 }
             }
@@ -73,7 +75,8 @@ struct BoardView: View {
                 TableauView(
                     columns: store.state?.tableau ?? Array(repeating: [], count: 7),
                     cardWidth: cardWidth,
-                    onTap: { col, idx in autoMoveTableau(col: col, idx: idx) }
+                    onTap: { col, idx in autoMoveTableau(col: col, idx: idx) },
+                    onDropToColumn: { move, col in resolveDrop(move, toColumn: col) }
                 )
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
@@ -144,5 +147,46 @@ struct BoardView: View {
             if store.moveFoundationToTableau(foundationIdx: slot, toCol: col) { Haptics.move(); return }
         }
         Haptics.invalid()   // DEV-340: foundation card can't return to any column
+    }
+
+    // MARK: - Drag-and-drop resolution (non-default moves)
+
+    /// Resolve a card/sub-stack dropped on tableau column `col`. This is what lets a
+    /// player make a specific move the left-to-right auto-move wouldn't pick — e.g.
+    /// dropping a black 5 on the right-hand red 6 of two.
+    private func resolveDrop(_ move: CardMove, toColumn col: Int) -> Bool {
+        let ok: Bool
+        switch move.source {
+        case .waste:
+            ok = store.moveWasteToTableau(col: col)
+        case .tableau(let fromCol, let fromIdx):
+            ok = fromCol == col ? false
+                                : store.moveTableau(fromCol: fromCol, fromIdx: fromIdx, toCol: col)
+        case .foundation(let slot):
+            ok = store.moveFoundationToTableau(foundationIdx: slot, toCol: col)
+        }
+        if ok { Haptics.move() } else { Haptics.invalid() }
+        return ok
+    }
+
+    /// Resolve a card dropped on a foundation slot. Foundation moves auto-route to the
+    /// card's suit, so the exact slot dropped on need not match.
+    private func resolveDrop(_ move: CardMove, toFoundation slot: Int) -> Bool {
+        let ok: Bool
+        switch move.source {
+        case .waste:
+            ok = store.moveWasteToFoundation()
+        case .tableau(let fromCol, let fromIdx):
+            // Only the bottom card of a column may go to a foundation.
+            if let st = store.state, fromIdx == st.tableau[fromCol].count - 1 {
+                ok = store.moveTableauToFoundation(col: fromCol)
+            } else {
+                ok = false
+            }
+        case .foundation:
+            ok = false   // foundation → foundation is never a move
+        }
+        if ok { Haptics.move() } else { Haptics.invalid() }
+        return ok
     }
 }

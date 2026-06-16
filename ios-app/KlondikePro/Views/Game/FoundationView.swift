@@ -6,6 +6,8 @@ struct FoundationView: View {
     let foundation: [Card?]   // 4 slots
     let cardWidth: CGFloat
     var onTap: (Int) -> Void
+    /// Resolve a drag dropped on foundation slot `slot`; true if a move was made.
+    var onDropToFoundation: (CardMove, Int) -> Bool = { _, _ in false }
 
     // Suit symbols and names in slot order (clubs, diamonds, hearts, spades)
     private let suitSymbols = ["♣", "♦", "♥", "♠"]
@@ -16,6 +18,10 @@ struct FoundationView: View {
             ForEach(0..<4, id: \.self) { index in
                 slot(index: index)
                     .onTapGesture { onTap(index) }
+                    .dropDestination(for: CardMove.self) { items, _ in
+                        guard let move = items.first else { return false }
+                        return onDropToFoundation(move, index)
+                    }
             }
         }
     }
@@ -28,6 +34,9 @@ struct FoundationView: View {
         Group {
             if let card = topCard {
                 CardView(card: card, width: cardWidth)
+                    .draggable(CardMove(source: .foundation(slot: index))) {
+                        CardView(card: card, width: cardWidth)
+                    }
             } else {
                 placeholderSlot(symbol: suitSymbols[index])
             }

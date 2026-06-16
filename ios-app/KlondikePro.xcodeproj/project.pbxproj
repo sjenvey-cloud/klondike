@@ -17,6 +17,7 @@
 		28653064D2DA2F22B860364F /* LeagueTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B23D02238356CFBD543517 /* LeagueTab.swift */; };
 		29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82365454A46200A51A0D48B4 /* Keychain.swift */; };
 		2F70FD5BBE576E4720E27CE9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B678B6C4BEC0B57C9B1488F /* AppDelegate.swift */; };
+		2FDD9ACDFCFD1353523FB998 /* CardMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24ADAC1FAF46B2E0EA54D049 /* CardMove.swift */; };
 		34CA6723F2BBA5A1FC57D1CB /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */; };
 		3594D4FB5E4F72E8310766A9 /* ChallengesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AD70B4FEBB4C3087626A4B /* ChallengesTab.swift */; };
 		37F9342212669C67DB836EDD /* ChallengeComposeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DD878BD638010540D8EF597 /* ChallengeComposeSheet.swift */; };
@@ -88,6 +89,7 @@
 		1DC0A0B313941647498C4E3E /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		20E7116A4EAEB40A0E5DC7E0 /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationManager.swift; sourceTree = "<group>"; };
 		22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
+		24ADAC1FAF46B2E0EA54D049 /* CardMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardMove.swift; sourceTree = "<group>"; };
 		2953A3E7308E64EAA05071F2 /* DailyCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCalendarView.swift; sourceTree = "<group>"; };
 		2C555469E834A3638D6EF661 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		2E05BF70D324FD6B64F1FA33 /* ReplayBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayBoardView.swift; sourceTree = "<group>"; };
@@ -261,6 +263,7 @@
 			isa = PBXGroup;
 			children = (
 				22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */,
+				24ADAC1FAF46B2E0EA54D049 /* CardMove.swift */,
 				6C9246235BCE70EC74AAC3C9 /* CardView.swift */,
 				37A05CF0FE2083FEA0A5BB61 /* FoundationView.swift */,
 				64F67D46359EB2AD9D45B287 /* GameView.swift */,
@@ -481,6 +484,7 @@
 				E54F6D4D74D5946A577EAFC4 /* AuthStore.swift in Sources */,
 				34CA6723F2BBA5A1FC57D1CB /* BoardView.swift in Sources */,
 				0AC5955F21710F4281B857D9 /* Card.swift in Sources */,
+				2FDD9ACDFCFD1353523FB998 /* CardMove.swift in Sources */,
 				41E9F93F85EA8DC164A98E38 /* CardView.swift in Sources */,
 				37F9342212669C67DB836EDD /* ChallengeComposeSheet.swift in Sources */,
 				3594D4FB5E4F72E8310766A9 /* ChallengesTab.swift in Sources */,

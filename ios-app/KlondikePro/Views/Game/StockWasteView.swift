@@ -99,6 +99,9 @@ struct StockWasteView: View {
                 }
                 CardView(card: waste[n - 1], width: cardWidth)
                     .offset(x: isDraw3 ? min(CGFloat(n - 1), 2) * fan : 0)
+                    .draggable(CardMove(source: .waste)) {
+                        CardView(card: waste[n - 1], width: cardWidth)
+                    }
             }
         }
         .frame(width: wasteSlotWidth, height: height, alignment: .leading)
