@@ -67,15 +67,16 @@ struct ProfileCalendarView: View {
             }
         }
         .task { await store.fetchCalendar() }
-        // DEV-319: popover on iPad (regular width), sheet on iPhone (compact).
-        .popover(item: Binding<SelectedDay?>(
+        // iPad usability: present the day detail as a sheet on every device. The
+        // earlier iPad popover anchored near the top of the calendar and was hidden
+        // behind it; a sheet floats a centred card over the calendar so the session
+        // list and the Challenge Friends button are clearly visible.
+        .sheet(item: Binding<SelectedDay?>(
             get: { selectedDate.map { SelectedDay(date: $0) } },
             set: { if $0 == nil { selectedDate = nil; store.clearDaySessions() } }
         )) { day in
             DayDetailSheet(date: day.date)
                 .environment(store)
-                .frame(minWidth: 320, minHeight: 380)
-                .presentationCompactAdaptation(.sheet)
         }
     }
 
