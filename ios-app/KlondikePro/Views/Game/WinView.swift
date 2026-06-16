@@ -7,10 +7,15 @@ struct WinView: View {
     let store: GameStore
     let drawMode: String
     var onNewGame: () -> Void
+    /// Only the main random Game tab can spawn a social challenge from a win
+    /// (challenge/daily contexts don't, and have no FriendsStore in scope).
+    var canChallenge: Bool = false
     @Environment(\.dismiss) private var dismiss
     @Environment(PreferencesStore.self) private var prefs
 
-    @State private var showReplay = false
+    @State private var showReplay    = false
+    @State private var showChallenge = false
+    @State private var challengeSent = false
 
     /// DEV-291: only show confetti when the win-animation preference is "confetti".
     private var showConfetti: Bool { prefs.preferences.winAnimation == "confetti" }
@@ -76,7 +81,37 @@ struct WinView: View {
                     }
                 }
 
+                // Challenge Friends (web parity) — random games only.
+                if canChallenge, store.sessionUuid != nil {
+                    if challengeSent {
+                        Label("Challenge sent!", systemImage: "checkmark.circle.fill")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.green)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .padding(.horizontal)
+                    } else {
+                        Button {
+                            showChallenge = true
+                        } label: {
+                            Label("Challenge Friends", systemImage: "person.2.fill")
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.yellow)
+                        .foregroundStyle(.yellow)
+                        .padding(.horizontal)
+                        .accessibilityLabel("Challenge friends to beat this hand")
+                    }
+                }
+
                 Button {
+                    // DEV: end the finished game so the win sheet dismisses (its
+                    // binding follows isWon) — a plain dismiss() re-presented because
+                    // the won state was still true.
+                    store.clearBoard()
                     dismiss()
                 } label: {
                     Text("Done")
@@ -90,6 +125,11 @@ struct WinView: View {
             }
 
             Spacer()
+        }
+        .sheet(isPresented: $showChallenge) {
+            if let uuid = store.sessionUuid {
+                ChallengeComposeSheet(sessionUuid: uuid) { challengeSent = true }
+            }
         }
         .overlay {
             if showConfetti {

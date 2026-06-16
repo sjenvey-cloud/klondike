@@ -50,7 +50,8 @@ struct GameView: View {
                     WinView(
                         store: store,
                         drawMode: store.state?.drawMode ?? store.lastDrawMode,
-                        onNewGame: {}
+                        onNewGame: {},
+                        canChallenge: showsResume   // main random Game tab only
                     )
                     .environment(prefs)
                 }

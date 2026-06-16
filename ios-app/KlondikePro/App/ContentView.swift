@@ -90,6 +90,7 @@ struct ContentView: View {
             HomeView(gameStore: gameStore, selectedTab: $selectedTab)
         case .game:
             GameView(store: gameStore, showsResume: true)
+                .environment(friendsStore)   // win screen → Challenge Friends compose
         case .daily:
             DailyView()
                 .environment(dailyStore)

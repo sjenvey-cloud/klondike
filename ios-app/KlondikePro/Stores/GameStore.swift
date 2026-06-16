@@ -390,6 +390,17 @@ final class GameStore {
     // MARK: - Abandon Session
 
     /// Abandons the current session on the server.
+    /// Clears a finished game from the board locally — no server call, since a won
+    /// game is already submitted via completeSession. Returns the Game tab to its
+    /// empty state so the win sheet dismisses (its binding follows `isWon`).
+    func clearBoard() {
+        stopTimer()
+        state = nil
+        sessionUuid = nil
+        handUuid = nil
+        elapsedSeconds = 0
+    }
+
     func abandonSession() async {
         guard let uuid = sessionUuid, let s = state else { return }
         stopTimer()

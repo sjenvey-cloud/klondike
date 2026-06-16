@@ -19,6 +19,7 @@
 		2F70FD5BBE576E4720E27CE9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B678B6C4BEC0B57C9B1488F /* AppDelegate.swift */; };
 		34CA6723F2BBA5A1FC57D1CB /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EED6CAA4E88CEEFD1FE2EE /* BoardView.swift */; };
 		3594D4FB5E4F72E8310766A9 /* ChallengesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AD70B4FEBB4C3087626A4B /* ChallengesTab.swift */; };
+		37F9342212669C67DB836EDD /* ChallengeComposeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DD878BD638010540D8EF597 /* ChallengeComposeSheet.swift */; };
 		3D20D85B7C25A5999717A991 /* DailyLeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172A33CB1603974D48FADA11 /* DailyLeaderboardView.swift */; };
 		3D2D5485E0F2A3A0C6ABE05D /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C555469E834A3638D6EF661 /* ProfileView.swift */; };
 		3E88FFA7E516C0E63D8354DC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2D246F07A435E209062B79 /* APIClient.swift */; };
@@ -109,6 +110,7 @@
 		6E666186D530D52E62B08E28 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
 		734142146CAA438D0800E61B /* AcceptInviteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptInviteView.swift; sourceTree = "<group>"; };
 		7995B36BFD248C14BA9A66DE /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
+		7DD878BD638010540D8EF597 /* ChallengeComposeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeComposeSheet.swift; sourceTree = "<group>"; };
 		82365454A46200A51A0D48B4 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		8B586AE464A839F50DD86EC2 /* TableauView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableauView.swift; sourceTree = "<group>"; };
 		8F9CC531152B8D3688C454FB /* FriendsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsStore.swift; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 			isa = PBXGroup;
 			children = (
 				734142146CAA438D0800E61B /* AcceptInviteView.swift */,
+				7DD878BD638010540D8EF597 /* ChallengeComposeSheet.swift */,
 				38AD70B4FEBB4C3087626A4B /* ChallengesTab.swift */,
 				B6A041D7CA1151F2D55D10D6 /* FriendsTab.swift */,
 				10B563896AA9BEE53D29F393 /* FriendsView.swift */,
@@ -479,6 +482,7 @@
 				34CA6723F2BBA5A1FC57D1CB /* BoardView.swift in Sources */,
 				0AC5955F21710F4281B857D9 /* Card.swift in Sources */,
 				41E9F93F85EA8DC164A98E38 /* CardView.swift in Sources */,
+				37F9342212669C67DB836EDD /* ChallengeComposeSheet.swift in Sources */,
 				3594D4FB5E4F72E8310766A9 /* ChallengesTab.swift in Sources */,
 				44AEDD28598CCB70E0E0A206 /* ConfettiLayer.swift in Sources */,
 				815103FF922B4FB175CBF65F /* ContentView.swift in Sources */,
