@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		052E23CB97B5D6C6B5113999 /* GameCenterLeaderboardSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB0F46B657BD51EEE60A5EB6 /* GameCenterLeaderboardSheet.swift */; };
 		0AC5955F21710F4281B857D9 /* Card.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA5F8625566E18782D12FB1 /* Card.swift */; };
 		0BB7066739E66B64E9F2DF5F /* FriendsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A041D7CA1151F2D55D10D6 /* FriendsTab.swift */; };
 		11381BD6A0654CA502614B5A /* TableauView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B586AE464A839F50DD86EC2 /* TableauView.swift */; };
@@ -141,6 +142,7 @@
 		F055786853EEE1805565D2EE /* ProfileStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStatsView.swift; sourceTree = "<group>"; };
 		F44F3479FF0410BDF907AB0A /* KlondikePro.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KlondikePro.entitlements; sourceTree = "<group>"; };
 		F564B7215AF14268EE53FE7B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		FB0F46B657BD51EEE60A5EB6 /* GameCenterLeaderboardSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterLeaderboardSheet.swift; sourceTree = "<group>"; };
 		FFB006AC5513E0020BBEDCF5 /* ProfileCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCalendarView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -268,6 +270,7 @@
 				24ADAC1FAF46B2E0EA54D049 /* CardMove.swift */,
 				6C9246235BCE70EC74AAC3C9 /* CardView.swift */,
 				37A05CF0FE2083FEA0A5BB61 /* FoundationView.swift */,
+				FB0F46B657BD51EEE60A5EB6 /* GameCenterLeaderboardSheet.swift */,
 				64F67D46359EB2AD9D45B287 /* GameView.swift */,
 				31BE7CE29DE51A25AC6FA604 /* StockWasteView.swift */,
 				8B586AE464A839F50DD86EC2 /* TableauView.swift */,
@@ -504,6 +507,7 @@
 				ADBBC2D8C6FF4631102CEB5B /* FriendsStore.swift in Sources */,
 				0BB7066739E66B64E9F2DF5F /* FriendsTab.swift in Sources */,
 				665B0AABC3A828326ACDB9F5 /* FriendsView.swift in Sources */,
+				052E23CB97B5D6C6B5113999 /* GameCenterLeaderboardSheet.swift in Sources */,
 				F0A1B9C1A830EAE525C0F516 /* GameCenterService.swift in Sources */,
 				BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */,
 				1CBE34606C20571FA47A8355 /* GameStore.swift in Sources */,

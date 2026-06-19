@@ -23,6 +23,7 @@ struct DailyWinView: View {
     @State private var animatedRank: Int  = 0
     @State private var showDetails: Bool  = false
     @State private var showReplay: Bool   = false   // DEV-307
+    @State private var showGameCenter: Bool = false
 
     var body: some View {
         ZStack {
@@ -92,6 +93,23 @@ struct DailyWinView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(.yellow)
                         .foregroundStyle(.black)
+
+                        // Native Game Center leaderboard (today's Daily Challenge).
+                        Button { showGameCenter = true } label: {
+                            Label("Game Center Leaderboard", systemImage: "rosette")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.yellow)
+                        .foregroundStyle(.yellow)
+                        .sheet(isPresented: $showGameCenter) {
+                            GameCenterLeaderboardSheet(
+                                leaderboardID: GameCenterService.Leaderboard.dailyFewestMoves
+                            )
+                            .ignoresSafeArea()
+                        }
 
                         if let onCalendar {
                             Button(action: { onCalendar() }) {
