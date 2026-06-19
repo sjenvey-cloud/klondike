@@ -15,6 +15,8 @@ struct BoardView: View {
 
     let store: GameStore
     let cardWidth: CGFloat
+    /// Horizontal margin each side (set by GameView to fill the width symmetrically).
+    var sideMargin: CGFloat = 16
 
     @Environment(PreferencesStore.self) private var prefs
 
@@ -26,14 +28,6 @@ struct BoardView: View {
     @State private var dragModel = BoardDragModel()
 
     private var stockOnRight: Bool { prefs.preferences.stockSide == "right" }
-
-    // DEV-316: the board's natural width (7 columns + inter-column gaps + the
-    // .horizontal,16 padding on each row). Used to centre the board on wide
-    // screens (iPad / landscape) instead of stretching the top row to the edges.
-    private var boardWidth: CGFloat {
-        let columnSpacing = max(2, cardWidth * 0.1)
-        return cardWidth * 7 + columnSpacing * 6 + 32
-    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -73,7 +67,7 @@ struct BoardView: View {
                     )
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, sideMargin)
 
             // Tableau
             ScrollView {
@@ -83,13 +77,12 @@ struct BoardView: View {
                     dragModel: dragModel,
                     onTap: { col, idx in autoMoveTableau(col: col, idx: idx) }
                 )
-                .padding(.horizontal, 16)
+                .padding(.horizontal, sideMargin)
                 .padding(.bottom, 24)
             }
         }
-        // DEV-316: cap the board to its natural width and centre it, so on iPad /
-        // landscape the top row doesn't stretch to the screen edges.
-        .frame(maxWidth: boardWidth)
+        // Fill the available width (GameView sizes cardWidth + sideMargin to do so);
+        // centre within the frame.
         .frame(maxWidth: .infinity)
         // Custom drag: a coordinate space the gestures + drop zones share, the lifted
         // card(s) rendered on top following the finger, and drop resolution.

@@ -17,6 +17,7 @@ struct GameView: View {
     @Environment(PreferencesStore.self) private var prefs
     @Environment(AuthStore.self) private var authStore
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var hSize
 
     var body: some View {
         ZStack {
@@ -37,11 +38,14 @@ struct GameView: View {
                         .padding(.vertical, 8)
 
                     GeometryReader { proxy in
-                        let totalSpacing: CGFloat = 16 * 2 + 6 * 2
-                        let raw = (proxy.size.width - totalSpacing) / 7
-                        // DEV-316: cap so cards don't become oversized on iPad/landscape.
-                        let cardWidth = min(max(36, raw), 104)
-                        BoardView(store: store, cardWidth: cardWidth)
+                        // Fill the width: 7 cards + 6 inter-column gaps (each
+                        // 0.1·cardWidth) + a margin each side → 7.6·cardWidth + 2·margin.
+                        // iPad gets bigger cards and a wider margin; iPhone a small
+                        // symmetric margin so the board is centred edge-to-edge.
+                        let isPad  = hSize == .regular
+                        let margin: CGFloat = isPad ? 24 : 8
+                        let cardWidth = max(36, (proxy.size.width - margin * 2) / 7.6)
+                        BoardView(store: store, cardWidth: cardWidth, sideMargin: margin)
                     }
                 }
                 .background(feltColor)
