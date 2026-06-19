@@ -10,6 +10,7 @@ struct DailyGameTab: View {
     @Environment(DailyStore.self) private var store
     @Environment(PreferencesStore.self) private var prefs
     @Environment(\.feltColor) private var feltColor
+    @Environment(\.horizontalSizeClass) private var hSize
     @State private var showMenu = false
     var onSwitchToLeaderboard: () -> Void
 
@@ -60,12 +61,12 @@ struct DailyGameTab: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
 
-                // Board
-                let totalSpacing: CGFloat = 16 * 2 + 6 * 2
-                let raw = (proxy.size.width - totalSpacing) / 7
-                // DEV-316: cap so cards don't become oversized on iPad/landscape.
-                let cardWidth = min(max(36, raw), 104)
-                BoardView(store: gameStore, cardWidth: cardWidth)
+                // Board — fill the width (matches GameView): 7 cards + 6 gaps
+                // (0.1·cardWidth) + a margin each side. Bigger cards on iPad.
+                let isPad  = hSize == .regular
+                let margin: CGFloat = isPad ? 24 : 8
+                let cardWidth = max(36, (proxy.size.width - margin * 2) / 7.6)
+                BoardView(store: gameStore, cardWidth: cardWidth, sideMargin: margin)
             }
         }
         .background(feltColor)
