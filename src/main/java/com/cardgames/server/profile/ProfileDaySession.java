@@ -16,6 +16,7 @@ import java.util.UUID;
  */
 public record ProfileDaySession(
         UUID    uuid,
+        UUID    handUuid,
         String  drawMode,
         int     moves,
         int     timeSeconds,

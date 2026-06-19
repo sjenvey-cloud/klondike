@@ -77,8 +77,10 @@ public class SocialChallengeController {
 
         if (session.getUserId() != userId)
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Session does not belong to you");
-        if (!Session.STATUS_WON.equals(session.getStatus()))
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Session must be a won session");
+        // A challenge can be created from any of the user's sessions — won or not.
+        // It invites friends to play/beat this specific hand, so the creator need
+        // not have won it (matches the profile day-detail UX where any played hand
+        // can be challenged).
 
         SocialChallenge challenge = new SocialChallenge(
             userId, session.getHandId(), session.getId(), session.getDrawMode());

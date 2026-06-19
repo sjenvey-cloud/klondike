@@ -34,15 +34,18 @@ public class ProfileController {
     private final SessionRepository      sessionRepository;
     private final AccountService         accountService;
     private final com.cardgames.server.identity.UserIdentityRepository userIdentityRepository;
+    private final com.cardgames.server.hand.HandRepository handRepository;
 
     public ProfileController(UserRepository userRepository,
                              SessionRepository sessionRepository,
                              AccountService accountService,
-                             com.cardgames.server.identity.UserIdentityRepository userIdentityRepository) {
+                             com.cardgames.server.identity.UserIdentityRepository userIdentityRepository,
+                             com.cardgames.server.hand.HandRepository handRepository) {
         this.userRepository         = userRepository;
         this.sessionRepository      = sessionRepository;
         this.accountService         = accountService;
         this.userIdentityRepository = userIdentityRepository;
+        this.handRepository         = handRepository;
     }
 
     // ── DEV-81: GET /api/v1/profile ───────────────────────────────────────
@@ -210,6 +213,10 @@ public class ProfileController {
         List<ProfileDaySession> result = byHand.values().stream()
                 .map(s -> new ProfileDaySession(
                         s.getUuid(),
+                        // handUuid lets the day detail play the hand and show its leaderboard.
+                        handRepository.findById(s.getHandId())
+                                .map(com.cardgames.server.hand.Hand::getUuid)
+                                .orElse(null),
                         s.getDrawMode(),
                         s.getMoves(),
                         s.getTimeSeconds(),
