@@ -5,9 +5,8 @@ struct FoundationView: View {
 
     let foundation: [Card?]   // 4 slots
     let cardWidth: CGFloat
+    var dragModel: BoardDragModel
     var onTap: (Int) -> Void
-    /// Resolve a drag dropped on foundation slot `slot`; true if a move was made.
-    var onDropToFoundation: (CardMove, Int) -> Bool = { _, _ in false }
 
     // Suit symbols and names in slot order (clubs, diamonds, hearts, spades)
     private let suitSymbols = ["♣", "♦", "♥", "♠"]
@@ -18,10 +17,7 @@ struct FoundationView: View {
             ForEach(0..<4, id: \.self) { index in
                 slot(index: index)
                     .onTapGesture { onTap(index) }
-                    .dropDestination(for: CardMove.self) { items, _ in
-                        guard let move = items.first else { return false }
-                        return onDropToFoundation(move, index)
-                    }
+                    .dropZone(.foundation(index))
             }
         }
     }
@@ -34,15 +30,32 @@ struct FoundationView: View {
         Group {
             if let card = topCard {
                 CardView(card: card, width: cardWidth)
-                    .draggable(CardMove(source: .foundation(slot: index))) {
-                        CardView(card: card, width: cardWidth)
-                    }
+                    .opacity(isDragging(index) ? 0 : 1)
+                    .highPriorityGesture(dragGesture(slot: index, card: card))
             } else {
                 placeholderSlot(symbol: suitSymbols[index])
             }
         }
         .accessibilityLabel(accessLabel)
         .accessibilityAddTraits(.isButton)
+    }
+
+    private func dragGesture(slot: Int, card: Card) -> some Gesture {
+        DragGesture(minimumDistance: 6, coordinateSpace: .named(BoardSpace.name))
+            .onChanged { value in
+                if !dragModel.isDragging {
+                    dragModel.begin(.foundation(slot: slot),
+                                    cards: [card], cardWidth: cardWidth, at: value.location)
+                } else {
+                    dragModel.move(to: value.location)
+                }
+            }
+            .onEnded { _ in dragModel.end() }
+    }
+
+    private func isDragging(_ slot: Int) -> Bool {
+        if case .foundation(let s)? = dragModel.source { return s == slot }
+        return false
     }
 
     private func placeholderSlot(symbol: String) -> some View {

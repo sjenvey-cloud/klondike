@@ -5,9 +5,8 @@ struct TableauView: View {
 
     let columns: [[Card]]
     let cardWidth: CGFloat
+    var dragModel: BoardDragModel
     var onTap: (Int, Int) -> Void
-    /// Resolve a drag dropped on column `colIdx`; returns true if the move was made.
-    var onDropToColumn: (CardMove, Int) -> Bool = { _, _ in false }
 
     private let faceDownOffset: CGFloat = 0.15
     private let faceUpOffset: CGFloat   = 0.28
@@ -47,10 +46,7 @@ struct TableauView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(width: cardWidth, height: cardHeight)
-            .dropDestination(for: CardMove.self) { items, _ in
-                guard let move = items.first else { return false }
-                return onDropToColumn(move, colIdx)
-            }
+            .dropZone(.column(colIdx))
             .accessibilityLabel("Empty column \(colIdx + 1), place a King here")
         } else {
             // VStack(spacing: 0) with constrained layout heights so that each
@@ -78,23 +74,44 @@ struct TableauView: View {
                     .accessibilityLabel(card.isFaceUp ? card.accessibilityLabel : "Face down card in column \(colIdx + 1)")
                     .accessibilityAddTraits(card.isFaceUp ? .isButton : [])
 
-                    // Face-up cards are draggable; dragging from idx carries the whole
-                    // sub-stack below it (the move resolver handles single vs stack).
+                    // Face-up cards drag (carrying the sub-stack from idx down). The
+                    // source hides while the lifted copy floats on top; highPriority so
+                    // the card wins over the tableau scroll.
                     if card.isFaceUp {
-                        base.draggable(CardMove(source: .tableau(col: colIdx, idx: idx))) {
-                            CardView(card: card, width: cardWidth)
-                        }
+                        base
+                            .opacity(isDragging(colIdx, idx) ? 0 : 1)
+                            .highPriorityGesture(
+                                dragGesture(col: colIdx, idx: idx, cards: Array(col[idx...]))
+                            )
                     } else {
                         base
                     }
                 }
             }
             .frame(width: cardWidth, height: totalColumnHeight(col: col))
-            .dropDestination(for: CardMove.self) { items, _ in
-                guard let move = items.first else { return false }
-                return onDropToColumn(move, colIdx)
-            }
+            .dropZone(.column(colIdx))
         }
+    }
+
+    // MARK: - Drag
+
+    private func dragGesture(col: Int, idx: Int, cards: [Card]) -> some Gesture {
+        DragGesture(minimumDistance: 6, coordinateSpace: .named(BoardSpace.name))
+            .onChanged { value in
+                if !dragModel.isDragging {
+                    dragModel.begin(.tableau(col: col, idx: idx),
+                                    cards: cards, cardWidth: cardWidth, at: value.location)
+                } else {
+                    dragModel.move(to: value.location)
+                }
+            }
+            .onEnded { _ in dragModel.end() }
+    }
+
+    /// True for the dragged card and every card beneath it in the same column.
+    private func isDragging(_ col: Int, _ idx: Int) -> Bool {
+        if case .tableau(let c, let i)? = dragModel.source { return c == col && idx >= i }
+        return false
     }
 
     // MARK: - Geometry helpers

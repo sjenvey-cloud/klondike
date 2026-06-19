@@ -22,6 +22,9 @@ struct BoardView: View {
     @State private var showAutoComplete = false
     @State private var autoOffered = false
 
+    // Custom drag (always-on-top, instant) — replaces SwiftUI .draggable.
+    @State private var dragModel = BoardDragModel()
+
     private var stockOnRight: Bool { prefs.preferences.stockSide == "right" }
 
     // DEV-316: the board's natural width (7 columns + inter-column gaps + the
@@ -40,14 +43,15 @@ struct BoardView: View {
                     FoundationView(
                         foundation: store.state?.foundation ?? [nil, nil, nil, nil],
                         cardWidth: cardWidth,
-                        onTap: { slot in autoMoveFoundation(slot: slot) },
-                        onDropToFoundation: { move, slot in resolveDrop(move, toFoundation: slot) }
+                        dragModel: dragModel,
+                        onTap: { slot in autoMoveFoundation(slot: slot) }
                     )
                     Spacer()
                     StockWasteView(
                         store: store,
                         cardWidth: cardWidth,
                         stockOnRight: true,
+                        dragModel: dragModel,
                         onWasteTap: { autoMoveWaste() },
                         onStockTap: { store.draw(); Haptics.draw() }
                     )
@@ -56,6 +60,7 @@ struct BoardView: View {
                         store: store,
                         cardWidth: cardWidth,
                         stockOnRight: false,
+                        dragModel: dragModel,
                         onWasteTap: { autoMoveWaste() },
                         onStockTap: { store.draw(); Haptics.draw() }
                     )
@@ -63,8 +68,8 @@ struct BoardView: View {
                     FoundationView(
                         foundation: store.state?.foundation ?? [nil, nil, nil, nil],
                         cardWidth: cardWidth,
-                        onTap: { slot in autoMoveFoundation(slot: slot) },
-                        onDropToFoundation: { move, slot in resolveDrop(move, toFoundation: slot) }
+                        dragModel: dragModel,
+                        onTap: { slot in autoMoveFoundation(slot: slot) }
                     )
                 }
             }
@@ -75,8 +80,8 @@ struct BoardView: View {
                 TableauView(
                     columns: store.state?.tableau ?? Array(repeating: [], count: 7),
                     cardWidth: cardWidth,
-                    onTap: { col, idx in autoMoveTableau(col: col, idx: idx) },
-                    onDropToColumn: { move, col in resolveDrop(move, toColumn: col) }
+                    dragModel: dragModel,
+                    onTap: { col, idx in autoMoveTableau(col: col, idx: idx) }
                 )
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
@@ -86,6 +91,26 @@ struct BoardView: View {
         // landscape the top row doesn't stretch to the screen edges.
         .frame(maxWidth: boardWidth)
         .frame(maxWidth: .infinity)
+        // Custom drag: a coordinate space the gestures + drop zones share, the lifted
+        // card(s) rendered on top following the finger, and drop resolution.
+        .coordinateSpace(name: BoardSpace.name)
+        .onPreferenceChange(DropZonePreferenceKey.self) { dragModel.dropZones = $0 }
+        .overlay {
+            if dragModel.isDragging {
+                DraggedStack(cards: dragModel.cards, cardWidth: dragModel.cardWidth)
+                    .position(dragModel.location)
+                    .allowsHitTesting(false)
+            }
+        }
+        .onAppear {
+            dragModel.onDrop = { src, target in
+                switch target {
+                case .column(let c):     _ = resolveDrop(CardMove(source: src), toColumn: c)
+                case .foundation(let s): _ = resolveDrop(CardMove(source: src), toFoundation: s)
+                }
+            }
+            dragModel.onMiss = { Haptics.invalid() }
+        }
         // Auto-complete modal — pops once the board is cleared and the deck is
         // down to its face-up cards. Shared canonical behaviour with the web.
         .onChange(of: store.canAutoComplete) { _, can in
@@ -188,5 +213,28 @@ struct BoardView: View {
         }
         if ok { Haptics.move() } else { Haptics.invalid() }
         return ok
+    }
+}
+
+// MARK: - Lifted card(s) overlay
+
+/// The card (or tableau sub-stack) being dragged, rendered solid and on top of the
+/// board, following the finger. Centred on the drag location.
+private struct DraggedStack: View {
+    let cards: [Card]
+    let cardWidth: CGFloat
+
+    private var step: CGFloat { cardWidth * 0.28 }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            ForEach(Array(cards.enumerated()), id: \.offset) { i, card in
+                CardView(card: card, width: cardWidth)
+                    .offset(y: CGFloat(i) * step)
+            }
+        }
+        .frame(width: cardWidth,
+               height: cardWidth * 1.4 + CGFloat(max(0, cards.count - 1)) * step)
+        .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
     }
 }

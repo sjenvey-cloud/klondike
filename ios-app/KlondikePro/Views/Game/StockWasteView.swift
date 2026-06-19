@@ -8,6 +8,7 @@ struct StockWasteView: View {
     /// When the stock pile sits on the right of the board, render the face-down
     /// draw pile on the FAR right (waste to its left) — easier to reach in play.
     var stockOnRight: Bool = false
+    var dragModel: BoardDragModel
     var onWasteTap: () -> Void
     var onStockTap: () -> Void
 
@@ -99,9 +100,8 @@ struct StockWasteView: View {
                 }
                 CardView(card: waste[n - 1], width: cardWidth)
                     .offset(x: isDraw3 ? min(CGFloat(n - 1), 2) * fan : 0)
-                    .draggable(CardMove(source: .waste)) {
-                        CardView(card: waste[n - 1], width: cardWidth)
-                    }
+                    .opacity(isDraggingWaste ? 0 : 1)
+                    .highPriorityGesture(wasteDragGesture(top: waste[n - 1]))
             }
         }
         .frame(width: wasteSlotWidth, height: height, alignment: .leading)
@@ -124,5 +124,24 @@ struct StockWasteView: View {
                     .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
             )
             .frame(width: cardWidth, height: height)
+    }
+
+    // MARK: - Drag (top waste card)
+
+    private var isDraggingWaste: Bool {
+        if case .waste? = dragModel.source { return true }
+        return false
+    }
+
+    private func wasteDragGesture(top: Card) -> some Gesture {
+        DragGesture(minimumDistance: 6, coordinateSpace: .named(BoardSpace.name))
+            .onChanged { value in
+                if !dragModel.isDragging {
+                    dragModel.begin(.waste, cards: [top], cardWidth: cardWidth, at: value.location)
+                } else {
+                    dragModel.move(to: value.location)
+                }
+            }
+            .onEnded { _ in dragModel.end() }
     }
 }
