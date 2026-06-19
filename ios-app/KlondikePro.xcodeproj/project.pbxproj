@@ -37,6 +37,7 @@
 		62DC05719C2E4CE496A24331 /* DayDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3570B70567E1C167B66EC95D /* DayDetailSheet.swift */; };
 		665B0AABC3A828326ACDB9F5 /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B563896AA9BEE53D29F393 /* FriendsView.swift */; };
 		7062161B2FD9EF601A969512 /* ProfileCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFB006AC5513E0020BBEDCF5 /* ProfileCalendarView.swift */; };
+		773730B5F31E100A71AFDE70 /* HandDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 414CEE13D412B71B446DC576 /* HandDetailView.swift */; };
 		7E1483AA0AF87F0F74DA522B /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E7116A4EAEB40A0E5DC7E0 /* PushNotificationManager.swift */; };
 		7F3038B004ADDB09D4C07088 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098E0B1E21F7C58E47D80C56 /* LeaderboardView.swift */; };
 		815103FF922B4FB175CBF65F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B17A4EAD55DC0F7E5F38C301 /* ContentView.swift */; };
@@ -101,6 +102,7 @@
 		38AD70B4FEBB4C3087626A4B /* ChallengesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengesTab.swift; sourceTree = "<group>"; };
 		39E9F9B8CEB4634D37E8D993 /* ConfettiLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiLayer.swift; sourceTree = "<group>"; };
 		3AE03AFB1F2A3D0440CFF179 /* KlondikeProTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KlondikeProTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		414CEE13D412B71B446DC576 /* HandDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandDetailView.swift; sourceTree = "<group>"; };
 		4AC46FBFAF9BED9B812DB70A /* LeaderboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardStore.swift; sourceTree = "<group>"; };
 		4ACD4D2DAFDFB0B57181CB7F /* GameCenterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameCenterService.swift; sourceTree = "<group>"; };
 		512C19ACC3F203901D591FEE /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
@@ -300,6 +302,7 @@
 			children = (
 				35A6C3E2CBE1DEBDFA65B69D /* AccountView.swift */,
 				3570B70567E1C167B66EC95D /* DayDetailSheet.swift */,
+				414CEE13D412B71B446DC576 /* HandDetailView.swift */,
 				FFB006AC5513E0020BBEDCF5 /* ProfileCalendarView.swift */,
 				A5363B86050F2A607F9998C1 /* ProfileRecordsView.swift */,
 				F055786853EEE1805565D2EE /* ProfileStatsView.swift */,
@@ -505,6 +508,7 @@
 				BE8E1E6DB0138C57B72379A8 /* GameState.swift in Sources */,
 				1CBE34606C20571FA47A8355 /* GameStore.swift in Sources */,
 				19F7B984B7563959AB7936E9 /* GameView.swift in Sources */,
+				773730B5F31E100A71AFDE70 /* HandDetailView.swift in Sources */,
 				BDDC111F396C7412E6CFC023 /* Haptics.swift in Sources */,
 				891C6DEA22CB1F244750DDF2 /* HomeView.swift in Sources */,
 				29BF386C88A13E5562F40E15 /* Keychain.swift in Sources */,

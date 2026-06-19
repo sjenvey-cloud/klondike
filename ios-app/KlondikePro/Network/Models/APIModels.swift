@@ -404,6 +404,7 @@ struct ProfileCalendarEntry: Decodable, Identifiable {
 /// Returned by GET /api/v1/profile/sessions?date=yyyy-MM-dd
 struct ProfileDaySession: Decodable, Identifiable {
     let uuid: UUID
+    let handUuid: UUID?
     let drawMode: String
     let moves: Int
     let timeSeconds: Int

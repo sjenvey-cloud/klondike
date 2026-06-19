@@ -2,22 +2,15 @@ import SwiftUI
 
 /// DEV-282 — Sheet shown when the user taps a day cell in ProfileCalendarView.
 ///
-/// Displays:
-///   • Formatted date header
-///   • Session list (from GET /api/v1/profile/sessions?date=...)
-///   • "Challenge Friends" button (available Sprint iOS-8)
+/// Lists every session played that day (won or lost). Tapping a hand opens
+/// HandDetailView with its actions: play the hand, watch the replay, challenge
+/// friends, and view the hand's leaderboard (web parity).
 struct DayDetailSheet: View {
 
     let date: String
 
     @Environment(ProfileStore.self) private var store
-    @Environment(FriendsStore.self) private var friendsStore
     @Environment(\.dismiss)         private var dismiss
-
-    /// The won session the user has selected to challenge friends on (DEV-344).
-    @State private var selectedSessionUuid: UUID?
-    @State private var showCompose       = false
-    @State private var didSendChallenge  = false
 
     var body: some View {
         NavigationStack {
@@ -36,25 +29,16 @@ struct DayDetailSheet: View {
                     ScrollView {
                         VStack(spacing: 0) {
                             ForEach(store.daySessions) { session in
-                                Button {
-                                    guard session.isWon else { return }
-                                    // Tap to select; tap again to deselect.
-                                    selectedSessionUuid =
-                                        (selectedSessionUuid == session.uuid) ? nil : session.uuid
-                                    didSendChallenge = false
+                                NavigationLink {
+                                    HandDetailView(session: session)
                                 } label: {
-                                    sessionRow(session, isSelected: selectedSessionUuid == session.uuid)
+                                    sessionRow(session)
                                 }
                                 .buttonStyle(.plain)
-                                .disabled(!session.isWon)
                                 Divider().background(Color.white.opacity(0.08))
                             }
                         }
                         .padding(.top, 8)
-
-                        // ── Challenge Friends (Sprint iOS-8) ──────────────
-                        challengeSection
-                            .padding(16)
                     }
                 }
             }
@@ -67,24 +51,12 @@ struct DayDetailSheet: View {
                 }
             }
         }
-        .task {
-            await store.fetchDaySessions(date: date)
-            // Convenience: if there's exactly one won hand, pre-select it so the
-            // challenge button is immediately usable (DEV-344).
-            let won = store.daySessions.filter { $0.isWon }
-            if won.count == 1 { selectedSessionUuid = won.first?.uuid }
-        }
-        .sheet(isPresented: $showCompose) {
-            if let uuid = selectedSessionUuid {
-                ChallengeComposeSheet(sessionUuid: uuid) { didSendChallenge = true }
-                    .environment(friendsStore)
-            }
-        }
+        .task { await store.fetchDaySessions(date: date) }
     }
 
     // MARK: - Session row
 
-    private func sessionRow(_ session: ProfileDaySession, isSelected: Bool) -> some View {
+    private func sessionRow(_ session: ProfileDaySession) -> some View {
         HStack(spacing: 14) {
             // Win/loss indicator
             ZStack {
@@ -120,71 +92,17 @@ struct DayDetailSheet: View {
 
             Spacer()
 
-            // Completion time
-            if let completedAt = session.completedAt {
-                Text(formattedTime(of: completedAt))
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.3))
-            }
-
-            // Selection indicator — only won hands can be challenged (DEV-344)
-            if session.isWon {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(isSelected ? .yellow : .white.opacity(0.25))
-            }
+            Image(systemName: "chevron.right")
+                .font(.caption.bold())
+                .foregroundStyle(.white.opacity(0.3))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(isSelected ? Color.yellow.opacity(0.08) : Color.clear)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(session.isWon ? "Won" : "Did not finish"): \(session.moves) moves, \(formattedTime(session.timeSeconds))"
-            + (session.isWon ? (isSelected ? ", selected" : ", tap to select for a challenge") : "")
+            "\(session.isWon ? "Won" : "Did not finish"): \(session.moves) moves, \(formattedTime(session.timeSeconds)). Tap for hand actions."
         )
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    // MARK: - Challenge Friends (Sprint iOS-8 placeholder)
-
-    private var challengeSection: some View {
-        let hasWonHand = store.daySessions.contains { $0.isWon }
-
-        return VStack(spacing: 12) {
-            Divider().background(Color.white.opacity(0.1))
-                .padding(.bottom, 4)
-
-            if didSendChallenge {
-                Label("Challenge sent!", systemImage: "checkmark.circle.fill")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(.green)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-            } else {
-                Button {
-                    if selectedSessionUuid != nil { showCompose = true }
-                } label: {
-                    Label("Challenge Friends on This Hand", systemImage: "person.2.fill")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.yellow)
-                .foregroundStyle(.black)
-                .disabled(selectedSessionUuid == nil)
-
-                Text(hasWonHand
-                     ? (selectedSessionUuid == nil
-                        ? "Select a won hand above, then choose who to challenge."
-                        : "Pick friends and/or leagues to challenge on the next screen.")
-                     : "Win a hand on this day to challenge your friends.")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.35))
-                    .multilineTextAlignment(.center)
-            }
-        }
     }
 
     // MARK: - Empty state
@@ -212,10 +130,5 @@ struct DayDetailSheet: View {
 
     private func formattedTime(_ seconds: Int) -> String {
         String(format: "%d:%02d", seconds / 60, seconds % 60)
-    }
-
-    private func formattedTime(of date: Date) -> String {
-        let f = DateFormatter(); f.timeStyle = .short
-        return f.string(from: date)
     }
 }
