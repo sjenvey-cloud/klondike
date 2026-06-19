@@ -357,6 +357,13 @@ private struct DailyGameMenuView: View {
     var body: some View {
         NavigationStack {
             List {
+                // Daily leaderboard for the current date (web parity).
+                NavigationLink {
+                    DailyLeaderboardView()
+                } label: {
+                    Label("Leaderboard", systemImage: "list.number")
+                }
+
                 Button {
                     gameStore.undo()
                     dismiss()

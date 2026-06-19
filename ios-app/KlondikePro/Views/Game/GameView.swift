@@ -316,6 +316,15 @@ private struct GameMenuView: View {
                     Label("New Game", systemImage: "play.fill")
                 }
 
+                // Leaderboard for the current hand (web parity).
+                if let handUuid = store.handUuid {
+                    NavigationLink {
+                        HandLeaderboardView(handUuid: handUuid)
+                    } label: {
+                        Label("Leaderboard", systemImage: "list.number")
+                    }
+                }
+
                 Button {
                     store.undo()
                     dismiss()

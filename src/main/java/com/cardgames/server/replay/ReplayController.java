@@ -59,12 +59,9 @@ public class ReplayController {
             return ResponseEntity.notFound().build();
         }
 
-        // Only replay completed (won) sessions — they have a validated turns string
-        if (!Session.STATUS_WON.equals(session.getStatus())) {
-            log.warn("getSessionReplay: session uuid={} has status={} (not won) — returning 422",
-                uuid, session.getStatus());
-            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build();
-        }
+        // Replay any of the user's recorded sessions — won or not. A did-not-finish
+        // session still has a valid turns string up to the point it was abandoned, so
+        // the profile day-detail can replay lost hands as well as wins.
 
         Hand hand = handRepo.findById(session.getHandId()).orElse(null);
         if (hand == null) {

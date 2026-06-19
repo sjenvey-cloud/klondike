@@ -532,7 +532,7 @@ struct ReplayResponse: Decodable {
     let sessionUuid: UUID
     let handUuid: UUID
     let drawMode: String
-    let moveCount: Int
+    let totalMoves: Int   // backend field name — was mis-decoded as "moveCount", failing every replay
     let moves: [ReplayMove]
     let cards: [Int]
 }
