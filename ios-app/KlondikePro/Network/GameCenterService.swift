@@ -155,65 +155,30 @@ actor GameCenterService {
         return friends.map { $0.teamPlayerID }
     }
 
-    // MARK: - Achievements (DEV-341)
+    // MARK: - Leaderboards (Daily Challenge)
 
-    /// App Store Connect achievement identifiers. Must match the IDs configured
-    /// under the app's Game Center → Achievements exactly.
-    enum Achievement {
-        static let firstWin    = "com.klondikepro.achievement.firstwin"
-        static let fewestMoves = "com.klondikepro.achievement.fewestmoves"
-        static let fastTime    = "com.klondikepro.achievement.fastesttime"
-    }
-
-    /// Unlock thresholds (tunable). A win always unlocks First Win; the other two
-    /// unlock when the win also meets the skill/speed bar.
-    private static let fewestMovesThreshold = 120   // win in ≤ 120 moves
-    private static let fastTimeThreshold     = 180   // win in ≤ 3 minutes
-
-    /// Reports Game Center achievements earned by a won game. Idempotent — Game
-    /// Center records each achievement only once, so reporting First Win on every
-    /// win is safe. No-ops silently when Game Center isn't authenticated, so it's
-    /// safe to call unconditionally from the win flow.
-    func reportWinAchievements(moves: Int, timeSeconds: Int) async {
-        guard GKLocalPlayer.local.isAuthenticated else { return }
-
-        var earned: [GKAchievement] = [completed(Achievement.firstWin)]
-        if moves > 0, moves <= Self.fewestMovesThreshold {
-            earned.append(completed(Achievement.fewestMoves))
-        }
-        if timeSeconds > 0, timeSeconds <= Self.fastTimeThreshold {
-            earned.append(completed(Achievement.fastTime))
-        }
-        try? await GKAchievement.report(earned)
-    }
-
-    private func completed(_ id: String) -> GKAchievement {
-        let a = GKAchievement(identifier: id)
-        a.percentComplete = 100
-        a.showsCompletionBanner = true
-        return a
-    }
-
-    // MARK: - Leaderboard (DEV-342)
-
-    /// App Store Connect leaderboard identifiers. Must match the IDs configured
-    /// under the app's Game Center → Leaderboards exactly.
+    /// App Store Connect recurring daily-leaderboard IDs. Both are Integer scores
+    /// sorted Low→High (fewer / faster ranks higher) and reset daily. They track
+    /// the Daily Challenge only.
     enum Leaderboard {
-        /// Draw-3 "fewest moves to win a hand" — Integer score, sorted Low→High
-        /// (fewer is better) in App Store Connect.
-        static let draw3FewestMoves = "com.klondikepro.leaderboard.draw3"
+        static let dailyFewestMoves = "com.klondikepro.leaderboard.draw3moves"
+        static let dailyFastestTime = "com.klondikepro.leaderboard.draw3time"
     }
 
-    /// Submits a draw-3 win's move count to the Game Center leaderboard. The
-    /// leaderboard is configured Low→High, so a smaller move count ranks higher.
-    /// No-ops silently when Game Center isn't authenticated.
-    func submitDraw3FewestMoves(_ moves: Int) async {
-        guard GKLocalPlayer.local.isAuthenticated, moves > 0 else { return }
-        try? await GKLeaderboard.submitScore(
-            moves,
-            context: 0,
-            player: GKLocalPlayer.local,
-            leaderboardIDs: [Leaderboard.draw3FewestMoves]
-        )
+    /// Submits a Daily Challenge win to the two recurring daily leaderboards
+    /// (fewest moves, fastest time). No-ops silently when Game Center isn't
+    /// authenticated.
+    func submitDailyResult(moves: Int, timeSeconds: Int) async {
+        guard GKLocalPlayer.local.isAuthenticated else { return }
+        if moves > 0 {
+            try? await GKLeaderboard.submitScore(
+                moves, context: 0, player: GKLocalPlayer.local,
+                leaderboardIDs: [Leaderboard.dailyFewestMoves])
+        }
+        if timeSeconds > 0 {
+            try? await GKLeaderboard.submitScore(
+                timeSeconds, context: 0, player: GKLocalPlayer.local,
+                leaderboardIDs: [Leaderboard.dailyFastestTime])
+        }
     }
 }

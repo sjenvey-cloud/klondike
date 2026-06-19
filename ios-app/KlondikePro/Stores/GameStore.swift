@@ -326,15 +326,12 @@ final class GameStore {
         } catch {
             // Silently swallow — win already shown to user
         }
-        // DEV-341/342: report Game Center achievements + submit the leaderboard score
-        // on a genuine win. Both are idempotent and no-op when GC isn't authenticated.
-        if s.isWon {
-            await GameCenterService.shared.reportWinAchievements(
+        // Game Center: the Daily Challenge feeds two recurring daily leaderboards —
+        // fewest moves and fastest time. Only daily wins count (dailyDate set);
+        // no-op when GC isn't authenticated.
+        if s.isWon, dailyDate != nil {
+            await GameCenterService.shared.submitDailyResult(
                 moves: s.moveCount, timeSeconds: elapsedSeconds)
-            // The leaderboard tracks draw-3 fewest-moves only (matches its ID).
-            if s.drawMode == "draw3" {
-                await GameCenterService.shared.submitDraw3FewestMoves(s.moveCount)
-            }
         }
     }
 
