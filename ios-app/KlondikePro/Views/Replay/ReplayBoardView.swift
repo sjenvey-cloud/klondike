@@ -141,9 +141,9 @@ struct ReplayBoardView: View {
                                cardWidth: cardWidth,
                                faceDownOffset: faceDownOffset,
                                faceUpOffset: faceUpOffset,
-                               fullHeight: height)
+                               fullHeight: height),
+            alignment: .top
         )
-        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     private func columnHeight(
