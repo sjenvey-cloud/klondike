@@ -211,13 +211,16 @@ struct GameState {
     mutating func undo() {
         guard !history.isEmpty else { return }
         let prev = history.removeLast()
-        // Restore board without clobbering the history array itself
+        // Restore the board without clobbering the history array itself.
         stock       = prev.stock
         waste       = prev.waste
         tableau     = prev.tableau
         foundation  = prev.foundation
         turns       = prev.turns
-        moveCount   = prev.moveCount
+        // Each undo counts as its own move (web parity) — increment rather than
+        // restoring the previous move count. The undone forward move is still
+        // removed from `turns` above so replay reconstructs the post-undo board.
+        moveCount  += 1
     }
 
     // MARK: - Auto-complete eligibility

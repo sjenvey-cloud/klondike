@@ -17,8 +17,12 @@ struct ReplayBoardView: View {
 
             VStack(spacing: 8) {
                 topRow(cardWidth: cardWidth)
-                tableau(cardWidth: cardWidth)
-                Spacer(minLength: 0)
+                // Long columns can exceed the screen — contain them in a ScrollView
+                // (matches the live board) so cards don't run off the bottom.
+                ScrollView {
+                    tableau(cardWidth: cardWidth)
+                        .padding(.bottom, 16)
+                }
             }
             .padding(.horizontal, 16)
         }
@@ -46,22 +50,10 @@ struct ReplayBoardView: View {
     private func stockView(cardWidth: CGFloat) -> some View {
         let height = cardWidth * 1.4
         return ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
-                .frame(width: cardWidth, height: height)
+            if let top = state.stock.first {
+                // Face-down card → renders the user's selected card back.
+                CardView(card: top, width: cardWidth)
 
-            if !state.stock.isEmpty {
-                // Show a face-down card
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(red: 0.11, green: 0.14, blue: 0.20))
-                    .frame(width: cardWidth, height: height)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .strokeBorder(Color.white.opacity(0.12), lineWidth: 1.5)
-                            .padding(4)
-                    )
-
-                // Card count badge
                 Text("\(state.stock.count)")
                     .font(.caption2.bold())
                     .foregroundStyle(.white.opacity(0.85))
@@ -69,6 +61,10 @@ struct ReplayBoardView: View {
                     .background(Color.black.opacity(0.5))
                     .clipShape(Capsule())
                     .offset(x: cardWidth * 0.3, y: -height * 0.38)
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
+                    .frame(width: cardWidth, height: height)
             }
         }
     }
@@ -77,7 +73,7 @@ struct ReplayBoardView: View {
         let height = cardWidth * 1.4
         return Group {
             if let top = state.waste.last {
-                ReplayCardView(card: top, width: cardWidth)
+                CardView(card: top, width: cardWidth)
             } else {
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
@@ -96,7 +92,7 @@ struct ReplayBoardView: View {
                 .frame(width: cardWidth, height: height)
 
             if let c = card {
-                ReplayCardView(card: c, width: cardWidth)
+                CardView(card: c, width: cardWidth)
             } else {
                 Text(suitSymbols[index])
                     .font(.system(size: cardWidth * 0.35))
@@ -133,7 +129,7 @@ struct ReplayBoardView: View {
                 let yOffset = prior.reduce(0.0) { acc, c in
                     acc + (c.isFaceUp ? faceUpOffset : faceDownOffset)
                 }
-                ReplayCardView(card: card, width: cardWidth)
+                CardView(card: card, width: cardWidth)
                     .offset(y: yOffset)
             }
         }
@@ -165,60 +161,3 @@ struct ReplayBoardView: View {
     }
 }
 
-// MARK: - ReplayCardView
-
-/// Simplified read-only card rendering for the replay board.
-private struct ReplayCardView: View {
-
-    let card: Card
-    let width: CGFloat
-
-    private var height: CGFloat { width * 1.4 }
-
-    var body: some View {
-        if card.isFaceUp {
-            faceUp
-        } else {
-            faceDown
-        }
-    }
-
-    private var faceUp: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(uiColor: .systemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
-                )
-
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(card.rank.description)
-                            .font(.system(size: max(7, width * 0.17)).bold())
-                            .foregroundStyle(card.isRed ? Color.red : Color.primary)
-                        Text(card.suit.description)
-                            .font(.system(size: max(6, width * 0.14)))
-                            .foregroundStyle(card.isRed ? Color.red : Color.primary)
-                    }
-                    Spacer()
-                }
-                Spacer()
-            }
-            .padding(3)
-        }
-        .frame(width: width, height: height)
-    }
-
-    private var faceDown: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color(red: 0.11, green: 0.14, blue: 0.20))
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: 1.5)
-                .padding(4)
-        }
-        .frame(width: width, height: height)
-    }
-}
