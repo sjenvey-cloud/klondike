@@ -1,0 +1,111 @@
+name: iOS Deploy to TestFlight
+
+# DEV-325 — archive the iOS app and upload it to TestFlight on every push to main
+# that touches the iOS app. Signing is fully automatic (cloud-managed) via an
+# App Store Connect API key, so there are no certificates/profiles to manage.
+#
+# Required GitHub repo secrets (Settings → Secrets and variables → Actions):
+#   APP_STORE_CONNECT_API_KEY_ID       – the key's ID (e.g. ABC123XYZ9)
+#   APP_STORE_CONNECT_API_ISSUER_ID    – your issuer ID (a UUID)
+#   APP_STORE_CONNECT_API_KEY_BASE64   – the .p8 file, base64-encoded:
+#                                          base64 -i AuthKey_XXXX.p8 | pbcopy
+#
+# The API key needs the "App Manager" role so Xcode can create the cloud signing
+# certificate + provisioning profile and upload the build.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios-app/**'
+      - '.github/workflows/ios-deploy.yml'
+  workflow_dispatch:   # allow manual runs from the Actions tab
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    name: Archive & Upload — TestFlight
+    runs-on: macos-15
+    env:
+      SCHEME: KlondikePro
+      TEAM_ID: KAH7N724C5            # Apple Developer Team ID (same as APNs team)
+      BUNDLE_ID: com.klondikepro.app
+      MARKETING_VERSION: "1.0"       # bump for a new public version
+      KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios-app
+        run: xcodegen generate
+
+      - name: Install App Store Connect API key
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo -n "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" \
+            | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+          # Used by xcodebuild for cloud-managed signing.
+          echo "AUTH_KEY_PATH=$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8" >> "$GITHUB_ENV"
+
+      - name: Archive
+        working-directory: ios-app
+        run: |
+          xcodebuild \
+            -project KlondikePro.xcodeproj \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/KlondikePro.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY_PATH" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$MARKETING_VERSION" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            clean archive
+
+      - name: Export .ipa
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store</string>
+            <key>destination</key><string>export</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/KlondikePro.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$AUTH_KEY_PATH" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID"
+
+      - name: Upload to TestFlight
+        run: |
+          IPA=$(ls "$RUNNER_TEMP/export"/*.ipa | head -1)
+          echo "Uploading $IPA"
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA" \
+            --apiKey "$KEY_ID" \
+            --apiIssuer "$ISSUER_ID"
