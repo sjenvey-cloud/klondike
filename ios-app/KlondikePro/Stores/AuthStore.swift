@@ -43,6 +43,9 @@ final class AuthStore {
         await APIClient.shared.setRefreshHandler { [weak self] in
             try await self?.authService.refresh()
         }
+        await APIClient.shared.setSessionExpiredHandler { [weak self] in
+            await self?.handleSessionExpired()
+        }
 
         // Restore userId — try UserDefaults first (fast path), fall back to
         // Keychain which persists across Xcode reinstalls unlike UserDefaults.
@@ -221,6 +224,34 @@ final class AuthStore {
         await APIClient.shared.setRefreshHandler { [weak self] in
             try await self?.authService.refresh()
         }
+        await APIClient.shared.setSessionExpiredHandler { [weak self] in
+            await self?.handleSessionExpired()
+        }
+    }
+
+    // MARK: - Session expiry / foreground re-validation
+
+    /// Called by APIClient when a token refresh definitively fails (refresh token
+    /// expired after a long background, etc.). Returns the app to login instead of
+    /// leaving Daily/calendar/stats silently empty.
+    func handleSessionExpired() async {
+        guard isAuthenticated else { return }
+        Keychain.clearAll()
+        await APIClient.shared.setAccessToken(nil)
+        user = nil
+        userId = nil
+        isAuthenticated = false
+        errorMessage = "Your session expired. Please sign in again."
+    }
+
+    /// On returning to the foreground after a background spell, proactively refresh
+    /// the access token so the next Daily/profile call doesn't fail on a stale token.
+    /// If the refresh token is dead, APIClient's sessionExpiredHandler bounces us to
+    /// login; otherwise we refresh the profile so stats are current.
+    func revalidateOnForeground() async {
+        guard isAuthenticated, user != nil else { return }
+        try? await APIClient.shared.refreshTokens()
+        if isAuthenticated { await fetchProfile() }
     }
 
     private func friendlyError(_ error: Error) -> String {
@@ -240,5 +271,8 @@ final class AuthStore {
 extension APIClient {
     func setRefreshHandler(_ handler: @escaping () async throws -> Void) {
         self.refreshHandler = handler
+    }
+    func setSessionExpiredHandler(_ handler: @escaping () async -> Void) {
+        self.sessionExpiredHandler = handler
     }
 }

@@ -10,6 +10,7 @@ struct ContentView: View {
     @Environment(AuthStore.self) private var authStore
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: AppTab  = .home
+    @State private var wasBackgrounded      = false
     @State private var gameStore            = GameStore(userId: 0)
     @State private var dailyStore           = DailyStore()
     @State private var profileStore         = ProfileStore()
@@ -70,13 +71,26 @@ struct ContentView: View {
         }
         // DEV-338: snapshot in-progress games to the server when the app is paused
         // (backgrounded / inactive) so they can be resumed on another device.
+        // Also re-validate the session when returning from a real background — a long
+        // suspension can expire the token, and without this Daily/calendar/stats
+        // silently fail to load until relaunch.
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .background || phase == .inactive else { return }
-            Task {
-                await gameStore.saveProgress()
-                if let dailyGame = dailyStore.gameStore {
-                    await dailyGame.saveProgress()
+            switch phase {
+            case .active:
+                if wasBackgrounded {
+                    wasBackgrounded = false
+                    Task { await authStore.revalidateOnForeground() }
                 }
+            case .background, .inactive:
+                if phase == .background { wasBackgrounded = true }
+                Task {
+                    await gameStore.saveProgress()
+                    if let dailyGame = dailyStore.gameStore {
+                        await dailyGame.saveProgress()
+                    }
+                }
+            @unknown default:
+                break
             }
         }
     }

@@ -52,6 +52,10 @@ actor APIClient {
     // Closure called when a silent refresh is needed (set by AuthStore)
     var refreshHandler: (() async throws -> Void)?
 
+    // Called when a token refresh definitively fails (refresh token expired/invalid)
+    // — the session is dead and the app must return to login. Set by AuthStore.
+    var sessionExpiredHandler: (() async -> Void)?
+
     // A single shared in-flight refresh. Concurrent callers — multiple 401 retries
     // and the launch-time background refresh — await this same task so the rotating
     // refresh-token cookie is spent exactly once (prevents the launch refresh race).
@@ -289,6 +293,9 @@ actor APIClient {
         do {
             try await task.value
         } catch {
+            // The refresh token is dead — notify the app to return to login so the
+            // failure isn't silently swallowed by callers (empty Daily/stats/etc).
+            await sessionExpiredHandler?()
             throw APIError.refreshFailed
         }
     }
