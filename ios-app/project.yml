@@ -57,6 +57,10 @@ targets:
         # DEV-334: required for GKLocalPlayer.loadFriends() — without it the friend
         # list request throws and the import fails.
         NSGKFriendListUsageDescription: "Klondike Pro uses your Game Center friends list to find friends who already play, so you can add and challenge them."
+        # Export compliance: the app only uses standard HTTPS/TLS (exempt). Declaring
+        # this auto-answers the "Missing Compliance" prompt so each TestFlight build
+        # is testable immediately without the manual encryption questionnaire.
+        ITSAppUsesNonExemptEncryption: false
         API_BASE_URL: https://d2fbehwb6bp7kq.cloudfront.net
         # DEV-301: klondikepro://friends/invite/{token} custom URL scheme
         CFBundleURLTypes:
