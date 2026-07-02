@@ -147,7 +147,9 @@ struct ProfileView: View {
             }
 
             // ── Email ────────────────────────────────────────────────────
-            if let email = store.profile?.email {
+            // Hide the Game Center virtual email (gc_<playerId>@gamecenter.apple.com) —
+            // it's a long machine-generated id, not something to show under the name.
+            if let email = store.profile?.email, !email.hasSuffix("@gamecenter.apple.com") {
                 Text(email)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.4))

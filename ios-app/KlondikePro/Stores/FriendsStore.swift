@@ -300,6 +300,21 @@ final class FriendsStore {
         }
     }
 
+    /// Creator-only: add friends to an active challenge ("add players").
+    func addParticipants(challengeId: Int, userIds: [Int]) async -> Bool {
+        struct Body: Encodable { let userIds: [Int] }
+        guard !userIds.isEmpty else { return false }
+        do {
+            try await APIClient.shared.postBodyVoid(
+                "/api/v1/social/challenges/\(challengeId)/participants",
+                body: Body(userIds: userIds))
+            return true
+        } catch {
+            errorMessage = "Could not add players."
+            return false
+        }
+    }
+
     // MARK: - Delete / hide a challenge (DEV-346, web UX parity)
 
     /// Creator-only: permanently delete a challenge you created. The backend

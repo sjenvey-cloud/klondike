@@ -153,6 +153,7 @@ struct ChallengeDetailView: View {
     @State private var playStore: GameStore?
     @State private var showDeleteConfirm = false   // creator — permanent (DEV-346)
     @State private var showRemoveConfirm = false   // participant — hide from my list
+    @State private var showAddPlayers    = false   // creator — add participants
 
     var body: some View {
         NavigationStack {
@@ -205,6 +206,12 @@ struct ChallengeDetailView: View {
                 }
             }
             .task { detail = await store.challengeDetail(id: challenge.id) }
+            .sheet(isPresented: $showAddPlayers) {
+                AddPlayersSheet(challengeId: challenge.id) {
+                    Task { detail = await store.challengeDetail(id: challenge.id) }
+                }
+                .environment(store)
+            }
             .alert("Delete Challenge?", isPresented: $showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
                     Task { await store.deleteChallenge(id: challenge.id); dismiss() }
@@ -258,7 +265,16 @@ struct ChallengeDetailView: View {
                 .foregroundStyle(isMe ? Color.yellow : Color.white)
             Spacer()
             if let moves = entry.moves {
-                Text("\(moves) moves").font(.caption).foregroundStyle(.white.opacity(0.6))
+                HStack(spacing: 6) {
+                    Text("\(moves) moves")
+                        .font(.caption).foregroundStyle(.white.opacity(0.6))
+                    if let t = entry.timeSeconds {
+                        Text("·").font(.caption).foregroundStyle(.white.opacity(0.3))
+                        Text(String(format: "%d:%02d", t / 60, t % 60))
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                }
             } else {
                 Text("not won").font(.caption).foregroundStyle(.white.opacity(0.3))
             }
@@ -271,6 +287,15 @@ struct ChallengeDetailView: View {
     private var creatorControls: some View {
         VStack(spacing: 10) {
             if challenge.status == "active" {
+                Button {
+                    showAddPlayers = true
+                } label: {
+                    Label("Add Players", systemImage: "person.badge.plus")
+                        .font(.subheadline.bold()).foregroundStyle(.yellow)
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(Color.white.opacity(0.05)).clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+
                 Button {
                     Task { await store.endChallenge(id: challenge.id); dismiss() }
                 } label: {
@@ -321,4 +346,82 @@ struct ChallengeDetailView: View {
 private struct GameStoreBox: Identifiable {
     let store: GameStore
     var id: ObjectIdentifier { ObjectIdentifier(store) }
+}
+
+// MARK: - Add players to an existing challenge
+
+/// Creator-only friend picker to add participants to an active challenge.
+private struct AddPlayersSheet: View {
+    let challengeId: Int
+    var onAdded: () -> Void
+
+    @Environment(FriendsStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selected: Set<Int> = []
+    @State private var isSending = false
+    @State private var loaded = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color(red: 0.05, green: 0.07, blue: 0.10).ignoresSafeArea()
+
+                if !loaded {
+                    ProgressView().tint(.yellow).scaleEffect(1.2)
+                } else if store.friends.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.2.slash")
+                            .font(.system(size: 40)).foregroundStyle(.white.opacity(0.2))
+                        Text("No friends to add")
+                            .font(.subheadline).foregroundStyle(.white.opacity(0.5))
+                        Text("Add friends in the Social tab first.")
+                            .font(.caption).foregroundStyle(.white.opacity(0.35))
+                    }
+                } else {
+                    List {
+                        Section("Friends") {
+                            ForEach(store.friends) { friend in
+                                Button {
+                                    if selected.contains(friend.userId) { selected.remove(friend.userId) }
+                                    else { selected.insert(friend.userId) }
+                                } label: {
+                                    HStack {
+                                        Text(friend.displayName).foregroundStyle(.white)
+                                        Spacer()
+                                        Image(systemName: selected.contains(friend.userId) ? "checkmark.circle.fill" : "circle")
+                                            .foregroundStyle(selected.contains(friend.userId) ? .yellow : .white.opacity(0.3))
+                                    }
+                                }
+                                .listRowBackground(Color.white.opacity(0.04))
+                            }
+                        }
+                    }
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .navigationTitle("Add Players")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }.foregroundStyle(.yellow)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        Task {
+                            isSending = true
+                            let ok = await store.addParticipants(challengeId: challengeId, userIds: Array(selected))
+                            isSending = false
+                            if ok { onAdded(); dismiss() }
+                        }
+                    } label: {
+                        if isSending { ProgressView().tint(.yellow) } else { Text("Add").bold() }
+                    }
+                    .foregroundStyle(selected.isEmpty || isSending ? .gray : .yellow)
+                    .disabled(selected.isEmpty || isSending)
+                }
+            }
+            .task { await store.fetchFriends(); loaded = true }
+        }
+    }
 }
