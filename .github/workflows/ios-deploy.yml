@@ -125,14 +125,19 @@ jobs:
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             clean archive
 
-      - name: Export .ipa
+      - name: Export & upload to TestFlight
         run: |
+          # Upload directly via xcodebuild (destination=upload) instead of altool —
+          # altool's deprecated App Store Connect lookup fails persistently ("Cannot
+          # determine the Apple ID from Bundle ID"). xcodebuild's uploader authenticates
+          # with the same API key and is Apple-maintained. Retry to ride out transient
+          # App Store Connect hiccups.
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
             <key>method</key><string>app-store-connect</string>
-            <key>destination</key><string>export</string>
+            <key>destination</key><string>upload</string>
             <key>signingStyle</key><string>manual</string>
             <key>teamID</key><string>${TEAM_ID}</string>
             <key>provisioningProfiles</key>
@@ -142,27 +147,19 @@ jobs:
             <key>uploadSymbols</key><true/>
           </dict></plist>
           PLIST
-          xcodebuild -exportArchive \
-            -archivePath "$RUNNER_TEMP/KlondikePro.xcarchive" \
-            -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
-
-      - name: Upload to TestFlight
-        run: |
-          IPA=$(ls "$RUNNER_TEMP/export"/*.ipa | head -1)
-          echo "Uploading $IPA"
-          # altool intermittently fails App Store Connect lookups ("Cannot determine
-          # the Apple ID from Bundle ID"). Retry a few times before giving up.
           for attempt in 1 2 3 4; do
-            if xcrun altool --upload-app \
-                 --type ios \
-                 --file "$IPA" \
-                 --apiKey "$KEY_ID" \
-                 --apiIssuer "$ISSUER_ID"; then
+            if xcodebuild -exportArchive \
+                 -archivePath "$RUNNER_TEMP/KlondikePro.xcarchive" \
+                 -exportPath "$RUNNER_TEMP/export" \
+                 -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+                 -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8" \
+                 -authenticationKeyID "$KEY_ID" \
+                 -authenticationKeyIssuerID "$ISSUER_ID"; then
               echo "Upload succeeded on attempt $attempt"
               exit 0
             fi
             echo "Upload attempt $attempt failed; retrying in 30s..."
+            rm -rf "$RUNNER_TEMP/export"
             sleep 30
           done
           echo "Upload failed after 4 attempts"
