@@ -151,8 +151,19 @@ jobs:
         run: |
           IPA=$(ls "$RUNNER_TEMP/export"/*.ipa | head -1)
           echo "Uploading $IPA"
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$IPA" \
-            --apiKey "$KEY_ID" \
-            --apiIssuer "$ISSUER_ID"
+          # altool intermittently fails App Store Connect lookups ("Cannot determine
+          # the Apple ID from Bundle ID"). Retry a few times before giving up.
+          for attempt in 1 2 3 4; do
+            if xcrun altool --upload-app \
+                 --type ios \
+                 --file "$IPA" \
+                 --apiKey "$KEY_ID" \
+                 --apiIssuer "$ISSUER_ID"; then
+              echo "Upload succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "Upload attempt $attempt failed; retrying in 30s..."
+            sleep 30
+          done
+          echo "Upload failed after 4 attempts"
+          exit 1
