@@ -314,17 +314,30 @@ final class GameStore {
     func completeSession() async {
         guard let uuid = sessionUuid, let s = state else { return }
         stopTimer()
-        do {
-            let _: CompleteSessionResponse = try await APIClient.shared.post(
-                "/api/v1/sessions/\(uuid)/complete",
-                body: CompleteSessionRequest(
-                    moves: s.moveCount,
-                    timeSeconds: elapsedSeconds,
-                    turns: s.turns
+        // A long game can outlive the 15-min access token, so the first submit may
+        // need a token refresh — and a stale connection after a long idle game can
+        // make the first attempt fail transiently. Retry a few times so a ranked
+        // result isn't lost to a blip. (The 401→refresh→retry inside APIClient still
+        // runs on each attempt.)
+        var submitted = false
+        for attempt in 0..<3 {
+            do {
+                let _: CompleteSessionResponse = try await APIClient.shared.post(
+                    "/api/v1/sessions/\(uuid)/complete",
+                    body: CompleteSessionRequest(
+                        moves: s.moveCount,
+                        timeSeconds: elapsedSeconds,
+                        turns: s.turns
+                    )
                 )
-            )
-        } catch {
-            // Silently swallow — win already shown to user
+                submitted = true
+                break
+            } catch {
+                if attempt < 2 { try? await Task.sleep(nanoseconds: 1_500_000_000) }
+            }
+        }
+        if !submitted {
+            errorMessage = "Couldn't save your result — check your connection and try again."
         }
         // Game Center: the Daily Challenge feeds two recurring daily leaderboards —
         // fewest moves and fastest time. Only daily wins count (dailyDate set);

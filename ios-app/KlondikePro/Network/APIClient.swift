@@ -293,9 +293,14 @@ actor APIClient {
         do {
             try await task.value
         } catch {
-            // The refresh token is dead — notify the app to return to login so the
-            // failure isn't silently swallowed by callers (empty Daily/stats/etc).
-            await sessionExpiredHandler?()
+            // Only a genuine auth failure — the refresh endpoint rejecting the refresh
+            // token with 401 — means the session is truly dead → return to login.
+            // Transient failures (network/timeout/5xx, e.g. a stale connection after a
+            // long game) must NOT log the user out; that would nuke a valid session and
+            // lose an in-flight result. The caller just retries.
+            if case APIError.httpError(401, _) = error {
+                await sessionExpiredHandler?()
+            }
             throw APIError.refreshFailed
         }
     }
