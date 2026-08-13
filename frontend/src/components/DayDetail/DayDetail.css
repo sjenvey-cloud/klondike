@@ -474,3 +474,6 @@
   padding: 10px;
   font-size: 14px;
 }
+
+/* Connect Requests — trailing connect cell. */
+.day-detail-lb-connect { text-align: right; white-space: nowrap; }

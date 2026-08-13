@@ -6,6 +6,7 @@ import {
   getSessionsByDate, getHandLeaderboard,
   createSocialChallenge, getFriends, getCustomLeagues,
 } from '../../services/api';
+import { ConnectButton } from '../ConnectButton/ConnectButton';
 import type { DaySession, DailyLeaderboardEntry, FriendResponse, CustomLeagueListEntry } from '../../types/api';
 import './DayDetail.css';
 
@@ -478,6 +479,7 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
                         <th>Player</th>
                         <th>Moves</th>
                         <th>Time</th>
+                        <th aria-label="Connect"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -490,6 +492,11 @@ export function DayDetail({ date, onClose }: DayDetailProps): React.JSX.Element 
                           <td>{row.displayName}</td>
                           <td>{row.moves}</td>
                           <td>{formatTime(row.timeSeconds)}</td>
+                          <td className="day-detail-lb-connect">
+                            {row.userUuid && !(user && row.userUuid === user.uuid) && (
+                              <ConnectButton userUuid={row.userUuid} />
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>

@@ -314,3 +314,6 @@
   color: var(--color-accent);
   font-weight: 600;
 }
+
+/* Connect Requests — trailing connect cell. */
+.dc-lb-connect { text-align: right; white-space: nowrap; }

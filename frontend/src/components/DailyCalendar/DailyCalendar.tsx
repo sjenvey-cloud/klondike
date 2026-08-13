@@ -6,6 +6,7 @@ import {
   getMyDailyRank,
   getDailyByDate,
 } from '../../services/api';
+import { ConnectButton } from '../ConnectButton/ConnectButton';
 import type { DailyCalendarEntry, DailyLeaderboardEntry } from '../../types/api';
 import './DailyCalendar.css';
 
@@ -199,6 +200,7 @@ export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps
                 <th>Player</th>
                 <th>Moves</th>
                 <th>Time</th>
+                <th aria-label="Connect"></th>
               </tr>
             </thead>
             <tbody>
@@ -211,6 +213,11 @@ export function DailyCalendar({ drawMode = 'draw3', onPlay }: DailyCalendarProps
                   <td>{row.displayName}</td>
                   <td>{row.moves}</td>
                   <td>{formatTime(row.timeSeconds)}</td>
+                  <td className="dc-lb-connect">
+                    {row.userUuid && !(user && row.userUuid === user.uuid) && (
+                      <ConnectButton userUuid={row.userUuid} />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

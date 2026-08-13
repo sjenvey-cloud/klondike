@@ -199,6 +199,9 @@ struct HandLeaderboardView: View {
                 .font(.caption).foregroundStyle(.white.opacity(0.6))
             Text(String(format: "%d:%02d", entry.timeSeconds / 60, entry.timeSeconds % 60))
                 .font(.system(.caption, design: .monospaced)).foregroundStyle(.white.opacity(0.45))
+            if let uuid = entry.userUuid, !isMe {
+                LeaderboardConnectButton(userUuid: uuid)
+            }
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
         .background(isMe ? Color.yellow.opacity(0.08) : Color.white.opacity(0.04))
