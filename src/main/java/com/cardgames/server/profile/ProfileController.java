@@ -72,6 +72,28 @@ public class ProfileController {
         return ResponseEntity.ok(toResponse(user));
     }
 
+    // ── Connect Requests: PUT /api/v1/profile/location ────────────────────
+    // Device region (country), sent by the client at launch; shown in the
+    // requestor's details in another user's Connect Requests list.
+
+    @Operation(summary = "Update device region")
+    @PutMapping("/location")
+    public ResponseEntity<Void> updateLocation(
+            @RequestBody java.util.Map<String, String> body,
+            Authentication auth) {
+
+        User user = resolveUser(auth);
+        String loc = body.get("location");
+        if (loc != null) {
+            loc = loc.trim();
+            if (loc.isEmpty()) loc = null;
+            else if (loc.length() > 100) loc = loc.substring(0, 100);
+        }
+        user.setLocation(loc);
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
     // ── Change password: PATCH /api/v1/profile/password ──────────────────
 
     @Operation(summary = "Change password")

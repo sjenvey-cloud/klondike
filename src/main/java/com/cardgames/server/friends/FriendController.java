@@ -31,26 +31,29 @@ public class FriendController {
     @Value("${app.base-url}")
     private String appBaseUrl;
 
-    private final FriendRepository        friendRepository;
-    private final FriendInviteRepository  inviteRepository;
-    private final FriendRequestRepository requestRepository;
-    private final UserRepository          userRepository;
-    private final SessionRepository       sessionRepository;
+    private final FriendRepository           friendRepository;
+    private final FriendInviteRepository     inviteRepository;
+    private final FriendRequestRepository    requestRepository;
+    private final FriendAcceptanceRepository acceptanceRepository;
+    private final UserRepository             userRepository;
+    private final SessionRepository          sessionRepository;
     private final com.cardgames.server.identity.UserIdentityRepository userIdentityRepository;
     private final com.cardgames.server.notifications.NotificationService notificationService;
 
     public FriendController(FriendRepository friendRepository,
                             FriendInviteRepository inviteRepository,
                             FriendRequestRepository requestRepository,
+                            FriendAcceptanceRepository acceptanceRepository,
                             UserRepository userRepository,
                             SessionRepository sessionRepository,
                             com.cardgames.server.identity.UserIdentityRepository userIdentityRepository,
                             com.cardgames.server.notifications.NotificationService notificationService) {
-        this.friendRepository  = friendRepository;
-        this.inviteRepository  = inviteRepository;
-        this.requestRepository = requestRepository;
-        this.userRepository    = userRepository;
-        this.sessionRepository = sessionRepository;
+        this.friendRepository     = friendRepository;
+        this.inviteRepository     = inviteRepository;
+        this.requestRepository    = requestRepository;
+        this.acceptanceRepository = acceptanceRepository;
+        this.userRepository       = userRepository;
+        this.sessionRepository    = sessionRepository;
         this.userIdentityRepository = userIdentityRepository;
         this.notificationService = notificationService;
     }
@@ -304,12 +307,44 @@ public class FriendController {
 
         int userId   = (Integer) auth.getPrincipal();
         int targetId = body.get("targetUserId");
+        sendRequest(userId, targetId);
+        return ResponseEntity.noContent().build();
+    }
 
+    // ── POST /api/v1/friends/requests/by-uuid — connect request from a leaderboard
+    // Leaderboard rows expose only the player's public userUuid, so the "Connect"
+    // action on a leaderboard sends here.
+
+    @Operation(summary = "Send a connect request to a player by their public UUID")
+    @PostMapping("/requests/by-uuid")
+    public ResponseEntity<Void> sendFriendRequestByUuid(
+            @RequestBody Map<String, String> body, Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        String raw = body.get("targetUserUuid");
+        if (raw == null || raw.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "targetUserUuid required");
+        }
+        UUID targetUuid;
+        try {
+            targetUuid = UUID.fromString(raw);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid targetUserUuid");
+        }
+        User target = userRepository.findByUuid(targetUuid)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        sendRequest(userId, target.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Shared send logic: idempotent, auto-accepts a reverse pending request. */
+    private void sendRequest(int userId, int targetId) {
         if (userId == targetId) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot add yourself");
         }
         if (friendRepository.findFriendship(userId, targetId).isPresent()) {
-            return ResponseEntity.noContent().build(); // already friends — idempotent
+            return; // already friends — idempotent
         }
 
         // If the target already sent us a request, auto-accept both sides
@@ -319,7 +354,9 @@ public class FriendController {
             requestRepository.delete(reverse.get());
             requestRepository.findByRequesterIdAndRequesteeId(userId, targetId)
                 .ifPresent(requestRepository::delete);
-            return ResponseEntity.noContent().build();
+            // Let the original requester know their request became a friendship.
+            acceptanceRepository.save(new FriendAcceptance(targetId, userId));
+            return;
         }
 
         // Idempotent: don't create a duplicate
@@ -331,13 +368,11 @@ public class FriendController {
                 .map(User::getDisplayName).orElse("Someone");
             notificationService.sendToUser(
                 targetId,
-                "Friend Request",
-                requesterName + " sent you a friend request",
+                "Connect Request",
+                requesterName + " wants to connect",
                 Map.of("type", "friend_request")
             );
         }
-
-        return ResponseEntity.noContent().build();
     }
 
     // ── GET /api/v1/friends/requests/received ─────────────────────────────
@@ -351,11 +386,62 @@ public class FriendController {
             .map(r -> {
                 User requester = userRepository.findById(r.getRequesterId()).orElse(null);
                 String name = requester != null ? requester.getDisplayName() : "Unknown";
-                return new FriendRequestEntry(r.getId(), r.getRequesterId(), name, r.getCreatedAt());
+                String location = requester != null ? requester.getLocation() : null;
+                long games = sessionRepository.countByUserId(r.getRequesterId());
+                return new FriendRequestEntry(
+                    r.getId(), r.getRequesterId(), name, location, games, r.getCreatedAt());
             })
             .collect(Collectors.toList());
 
         return ResponseEntity.ok(result);
+    }
+
+    // ── GET /api/v1/friends/requests/accepted ─────────────────────────────
+    // Requests the caller SENT that have been accepted but not yet seen. Shown as
+    // a brief "you're now connected" note; cleared when the caller opens Social.
+
+    @Operation(summary = "List accepted connect requests I sent (unseen)")
+    @GetMapping("/requests/accepted")
+    public ResponseEntity<List<AcceptedRequestEntry>> getAcceptedRequests(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+
+        List<AcceptedRequestEntry> result =
+            acceptanceRepository.findByRequesterIdAndSeenFalseOrderByCreatedAtDesc(userId).stream()
+                .map(a -> {
+                    User acceptor = userRepository.findById(a.getAcceptorId()).orElse(null);
+                    String name = acceptor != null ? acceptor.getDisplayName() : "Someone";
+                    String location = acceptor != null ? acceptor.getLocation() : null;
+                    return new AcceptedRequestEntry(
+                        a.getId(), a.getAcceptorId(), name, location, a.getCreatedAt());
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
+    }
+
+    // ── POST /api/v1/friends/requests/accepted/seen ───────────────────────
+    // Acknowledge all accepted notifications — clears them and the badge count.
+
+    @Operation(summary = "Mark accepted connect requests as seen")
+    @PostMapping("/requests/accepted/seen")
+    public ResponseEntity<Void> markAcceptedSeen(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+        List<FriendAcceptance> unseen =
+            acceptanceRepository.findByRequesterIdAndSeenFalseOrderByCreatedAtDesc(userId);
+        acceptanceRepository.deleteAll(unseen);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── GET /api/v1/friends/requests/badge ────────────────────────────────
+    // Single call backing the Social tab badge: pending incoming + accepted-unseen.
+
+    @Operation(summary = "Social badge counts (pending incoming + accepted-unseen)")
+    @GetMapping("/requests/badge")
+    public ResponseEntity<SocialBadgeCounts> getBadge(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+        long received = requestRepository.findByRequesteeId(userId).size();
+        long accepted = acceptanceRepository.countByRequesterIdAndSeenFalse(userId);
+        return ResponseEntity.ok(new SocialBadgeCounts(received, accepted, received + accepted));
     }
 
     // ── POST /api/v1/friends/requests/{id}/accept ─────────────────────────
@@ -376,6 +462,9 @@ public class FriendController {
             friendRepository.save(new Friend(request.getRequesterId(), userId));
         }
         requestRepository.delete(request);
+
+        // Let the original requester see that their request was accepted.
+        acceptanceRepository.save(new FriendAcceptance(request.getRequesterId(), userId));
 
         return ResponseEntity.noContent().build();
     }

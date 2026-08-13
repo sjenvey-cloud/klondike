@@ -104,6 +104,13 @@ public class User implements Serializable {
     public String getAvatarUrl()             { return avatarUrl; }
     public void   setAvatarUrl(String url)   { this.avatarUrl = url; }
 
+    // Device region (country), client-provided — shown in Connect Requests.
+    @Column(name = "location")
+    private String location;
+
+    public String getLocation()            { return location; }
+    public void   setLocation(String v)    { this.location = v; }
+
     // DEV-204: soft-delete timestamp — null means account is active
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

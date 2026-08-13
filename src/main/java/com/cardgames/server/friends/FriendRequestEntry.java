@@ -7,5 +7,7 @@ public record FriendRequestEntry(
     int           id,
     int           requesterId,
     String        requesterDisplayName,
+    String        requesterLocation,   // device region, may be null
+    long          requesterGamesPlayed,
     LocalDateTime createdAt
 ) {}

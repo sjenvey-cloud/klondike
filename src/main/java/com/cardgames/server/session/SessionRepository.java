@@ -164,6 +164,9 @@ public interface SessionRepository extends JpaRepository<Session, Integer> {
     List<Session> findDailyWinsByHandForTime(
         @Param("handId") int handId, @Param("date") LocalDate date);
 
+    // Connect Requests: total games played by a user (every session counts).
+    long countByUserId(int userId);
+
     // Debug: count sessions for a hand — all statuses, no date/ranked filter
     @Query(value = "SELECT COUNT(*) FROM sessions WHERE hand_id = :handId", nativeQuery = true)
     long countByHandId(@Param("handId") int handId);
