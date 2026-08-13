@@ -178,6 +178,11 @@ struct LeaderboardView: View {
                     .foregroundStyle(.white.opacity(0.4))
             }
             .frame(width: 52, alignment: .trailing)
+
+            // Connect — send a friend request to a player you're not already linked to
+            if let uuid = entry.userUuid, !isMe {
+                LeaderboardConnectButton(userUuid: uuid)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -235,5 +240,42 @@ struct LeaderboardView: View {
         case 3: return Color(red: 0.80, green: 0.50, blue: 0.20)  // bronze
         default: return Color.white.opacity(0.5)
         }
+    }
+}
+
+// MARK: - Connect button (leaderboards)
+
+/// A tap-to-connect button shown on leaderboard rows for players the user isn't
+/// themselves. Sends a connect request by the player's public UUID and flips to a
+/// checkmark once sent (the backend is idempotent for already-friends/requested).
+struct LeaderboardConnectButton: View {
+    let userUuid: UUID
+    @Environment(FriendsStore.self) private var friends
+    @State private var sending = false
+
+    var body: some View {
+        let sent = friends.hasSentConnect(to: userUuid)
+        Button {
+            guard !sent, !sending else { return }
+            sending = true
+            Task {
+                await friends.sendConnectRequest(toUserUuid: userUuid)
+                sending = false
+            }
+        } label: {
+            Group {
+                if sending {
+                    ProgressView().tint(.yellow)
+                } else {
+                    Image(systemName: sent ? "checkmark.circle.fill" : "person.crop.circle.badge.plus")
+                        .font(.subheadline)
+                        .foregroundStyle(sent ? Color.green : Color.yellow)
+                }
+            }
+            .frame(width: 28)
+        }
+        .buttonStyle(.plain)
+        .disabled(sent || sending)
+        .accessibilityLabel(sent ? "Connect request sent" : "Connect")
     }
 }

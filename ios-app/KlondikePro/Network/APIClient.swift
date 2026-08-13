@@ -164,6 +164,14 @@ actor APIClient {
         let _: EmptyResponse = try await perform(req, allow204: true)
     }
 
+    /// PUT with an Encodable body, no response body expected (204).
+    func putBodyVoid<Body: Encodable>(_ path: String, body: Body) async throws {
+        var req = try makeRequest(method: "PUT", path: path)
+        req.httpBody = try encoder.encode(body)
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let _: EmptyResponse = try await perform(req, allow204: true)
+    }
+
     /// DELETE with no response body.
     func deleteVoid(_ path: String) async throws {
         let req = try makeRequest(method: "DELETE", path: path)

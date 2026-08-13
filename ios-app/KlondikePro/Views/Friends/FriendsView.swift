@@ -37,6 +37,10 @@ struct FriendsView: View {
                 await store.fetchFriends()
                 await store.fetchReceivedRequests()
                 await store.fetchPendingChallengeCount()
+                // Load accepted acknowledgments, then clear the badge — viewing the
+                // Social tab is the "seen" signal that drops the counter.
+                await store.fetchAcceptedRequests()
+                await store.markAcceptedSeen()
             }
         }
         .onChange(of: selectedTab) { _, tab in

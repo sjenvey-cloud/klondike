@@ -17,7 +17,12 @@ struct FriendsTab: View {
                     importBanner(msg)
                 }
 
-                // Incoming friend requests (DEV-295)
+                // Accepted connect acknowledgments — "you're now connected"
+                if !store.acceptedRequests.isEmpty {
+                    acceptedSection
+                }
+
+                // Incoming connect requests (DEV-295)
                 if !store.receivedRequests.isEmpty {
                     requestsSection
                 }
@@ -105,17 +110,22 @@ struct FriendsTab: View {
         }
     }
 
-    // MARK: - Requests section (DEV-295)
+    // MARK: - Connect requests section (DEV-295)
 
     private var requestsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            sectionHeader("Friend Requests", count: store.receivedRequests.count)
+            sectionHeader("Connect Requests", count: store.receivedRequests.count)
             ForEach(store.receivedRequests) { req in
                 HStack(spacing: 12) {
                     avatarCircle(name: req.requesterDisplayName)
-                    Text(req.requesterDisplayName)
-                        .font(.subheadline.bold())
-                        .foregroundStyle(.white)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(req.requesterDisplayName)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.white)
+                        Text(requestSubtitle(req))
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
                     Spacer()
                     Button {
                         Task { await store.acceptRequest(req) }
@@ -134,6 +144,49 @@ struct FriendsTab: View {
                 }
                 .padding(12)
                 .background(Color.white.opacity(0.05))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        }
+    }
+
+    /// "United States · 42 games" — omits the location when unknown.
+    private func requestSubtitle(_ req: FriendRequestEntry) -> String {
+        let games = "\(req.requesterGamesPlayed) game\(req.requesterGamesPlayed == 1 ? "" : "s")"
+        if let loc = req.requesterLocation, !loc.isEmpty {
+            return "\(loc) · \(games)"
+        }
+        return games
+    }
+
+    // MARK: - Accepted acknowledgments
+
+    private var acceptedSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("Now Connected", count: store.acceptedRequests.count)
+            ForEach(store.acceptedRequests) { acc in
+                HStack(spacing: 12) {
+                    avatarCircle(name: acc.acceptorDisplayName)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(acc.acceptorDisplayName)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.white)
+                        Text(acc.acceptorLocation.map { "\($0) · accepted your request" }
+                             ?? "accepted your request")
+                            .font(.caption)
+                            .foregroundStyle(.green.opacity(0.8))
+                    }
+                    Spacer()
+                    Button {
+                        store.dismissAccepted(acc)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.caption.bold())
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    .accessibilityLabel("Dismiss")
+                }
+                .padding(12)
+                .background(Color.green.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }

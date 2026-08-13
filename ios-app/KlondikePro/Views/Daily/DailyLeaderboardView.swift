@@ -147,14 +147,23 @@ struct DailyLeaderboardView: View {
     private func leaderboardRow(_ entry: DailyLeaderboardEntry) -> some View {
         let isMe = entry.userUuid != nil && entry.userUuid == myUserUuid
 
-        return Button {
-            // DEV-307: tap row with a sessionUuid to open replay
-            if let uuid = entry.sessionUuid {
-                replayUuid = uuid
+        return HStack(spacing: 0) {
+            Button {
+                // DEV-307: tap row with a sessionUuid to open replay
+                if let uuid = entry.sessionUuid {
+                    replayUuid = uuid
+                }
+            } label: { rowContent(entry: entry, isMe: isMe) }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
+            .disabled(entry.sessionUuid == nil)
+
+            // Connect — sibling (not nested) so it doesn't conflict with the replay tap.
+            if let uuid = entry.userUuid, !isMe {
+                LeaderboardConnectButton(userUuid: uuid)
+                    .padding(.trailing, 12)
             }
-        } label: { rowContent(entry: entry, isMe: isMe) }
-        .buttonStyle(.plain)
-        .disabled(entry.sessionUuid == nil)
+        }
     }
 
     private func rowContent(entry: DailyLeaderboardEntry, isMe: Bool) -> some View {

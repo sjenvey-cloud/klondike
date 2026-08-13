@@ -270,7 +270,36 @@ struct FriendRequestEntry: Decodable, Identifiable {
     let id: Int
     let requesterId: Int
     let requesterDisplayName: String
+    let requesterLocation: String?
+    let requesterGamesPlayed: Int
     let createdAt: Date?
+}
+
+/// Matches backend AcceptedRequestEntry (GET /friends/requests/accepted) —
+/// a connect request the user sent that was accepted but not yet seen.
+struct AcceptedRequestEntry: Decodable, Identifiable {
+    let id: Int
+    let acceptorId: Int
+    let acceptorDisplayName: String
+    let acceptorLocation: String?
+    let acceptedAt: Date?
+}
+
+/// Matches backend SocialBadgeCounts (GET /friends/requests/badge).
+struct SocialBadgeCounts: Decodable {
+    let received: Int
+    let accepted: Int
+    let total: Int
+}
+
+/// Body for POST /friends/requests/by-uuid (connect from a leaderboard).
+struct ConnectRequestBody: Encodable {
+    let targetUserUuid: String
+}
+
+/// Body for PUT /profile/location.
+struct LocationBody: Encodable {
+    let location: String
 }
 
 /// Matches backend InvitePreviewResponse (GET /friends/invites/preview/{token}).

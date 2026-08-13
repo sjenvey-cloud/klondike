@@ -24,8 +24,17 @@ final class FriendsStore {
 
     private(set) var receivedRequests: [FriendRequestEntry] = []
 
-    /// Badge count for the Friends tab — incoming requests + active challenges not yet won.
-    var socialBadgeCount: Int { receivedRequests.count + pendingChallengeCount }
+    // MARK: - Connect requests (accepted acknowledgments)
+
+    /// Connect requests the user SENT that were accepted but not yet seen.
+    private(set) var acceptedRequests: [AcceptedRequestEntry] = []
+    /// Portion of the badge from accepted-unseen — zeroed the moment Social is viewed.
+    private(set) var acceptedUnseenCount = 0
+    /// UUIDs the user has sent a connect request to this session (drives leaderboard button state).
+    private var sentConnectUuids: Set<UUID> = []
+
+    /// Badge count for the Social tab — incoming requests + accepted acknowledgments + active challenges.
+    var socialBadgeCount: Int { receivedRequests.count + acceptedUnseenCount + pendingChallengeCount }
 
     // MARK: - Game Center import (DEV-334)
 
@@ -126,6 +135,64 @@ final class FriendsStore {
         } catch {
             errorMessage = "Could not send the friend request."
         }
+    }
+
+    // MARK: - Connect requests
+
+    /// Whether the user has already sent a connect request to this player this session.
+    func hasSentConnect(to uuid: UUID) -> Bool { sentConnectUuids.contains(uuid) }
+
+    /// Send a connect request to a player identified by their public UUID (from a leaderboard).
+    @discardableResult
+    func sendConnectRequest(toUserUuid uuid: UUID) async -> Bool {
+        sentConnectUuids.insert(uuid)   // optimistic — button flips to "Requested"
+        do {
+            try await APIClient.shared.postBodyVoid(
+                "/api/v1/friends/requests/by-uuid",
+                body: ConnectRequestBody(targetUserUuid: uuid.uuidString)
+            )
+            return true
+        } catch {
+            sentConnectUuids.remove(uuid)
+            errorMessage = "Could not send the connect request."
+            return false
+        }
+    }
+
+    /// Fetch connect requests the user sent that were accepted but not yet seen.
+    func fetchAcceptedRequests() async {
+        do {
+            acceptedRequests = try await APIClient.shared.get("/api/v1/friends/requests/accepted")
+            acceptedUnseenCount = acceptedRequests.count
+        } catch {
+            acceptedRequests = []
+            acceptedUnseenCount = 0
+        }
+    }
+
+    /// Mark accepted acknowledgments as seen — drops the badge immediately and clears server-side.
+    func markAcceptedSeen() async {
+        guard acceptedUnseenCount > 0 else { return }
+        acceptedUnseenCount = 0
+        do {
+            try await APIClient.shared.postVoid("/api/v1/friends/requests/accepted/seen")
+        } catch { /* best-effort; badge already cleared locally */ }
+    }
+
+    func dismissAccepted(_ entry: AcceptedRequestEntry) {
+        acceptedRequests.removeAll { $0.id == entry.id }
+    }
+
+    /// Report the device region so other players see it in their Connect Requests list.
+    func updateLocation() async {
+        guard let code = Locale.current.region?.identifier else { return }
+        let name = Locale.current.localizedString(forRegionCode: code) ?? code
+        do {
+            try await APIClient.shared.putBodyVoid(
+                "/api/v1/profile/location",
+                body: LocationBody(location: name)
+            )
+        } catch { /* non-critical */ }
     }
 
     // MARK: - Game Center import (DEV-334)

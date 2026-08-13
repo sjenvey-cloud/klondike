@@ -67,6 +67,12 @@ struct ContentView: View {
             leaderboardStore.userUuid = uuid
             if uuid != nil {
                 Task { await preferencesStore.fetchPreferences() }
+                // Report device region and prime the Social badge so incoming
+                // connect requests show without first visiting the tab.
+                Task {
+                    await friendsStore.updateLocation()
+                    await refreshSocialBadge()
+                }
             }
         }
         // DEV-338: snapshot in-progress games to the server when the app is paused
@@ -79,7 +85,10 @@ struct ContentView: View {
             case .active:
                 if wasBackgrounded {
                     wasBackgrounded = false
-                    Task { await authStore.revalidateOnForeground() }
+                    Task {
+                        await authStore.revalidateOnForeground()
+                        await refreshSocialBadge()
+                    }
                 }
             case .background, .inactive:
                 if phase == .background { wasBackgrounded = true }
@@ -95,6 +104,16 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Social badge
+
+    /// Prime the Social tab badge without marking accepted acknowledgments as seen
+    /// (only visiting the Social tab clears those).
+    private func refreshSocialBadge() async {
+        await friendsStore.fetchReceivedRequests()
+        await friendsStore.fetchAcceptedRequests()
+        await friendsStore.fetchPendingChallengeCount()
+    }
+
     // MARK: - Tab content
 
     @ViewBuilder
@@ -108,6 +127,7 @@ struct ContentView: View {
         case .daily:
             DailyView()
                 .environment(dailyStore)
+                .environment(friendsStore)   // daily leaderboard → Connect button
         case .profile:
             ProfileView()
                 .environment(profileStore)
