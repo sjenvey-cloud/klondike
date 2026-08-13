@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getGlobalLeaderboard, getGlobalRank } from '../services/api';
+import { ConnectButton } from '../components/ConnectButton/ConnectButton';
 import type { GlobalLeaderboardEntry } from '../types/api';
 import './Leaderboard.css';
 
@@ -145,6 +146,7 @@ export function Leaderboard(): React.JSX.Element {
                 <th className="lb-col-name">Player</th>
                 <th className="lb-col-num">Moves</th>
                 <th className="lb-col-num">Time</th>
+                <th className="lb-col-connect" aria-label="Connect"></th>
               </tr>
             </thead>
             <tbody>
@@ -157,6 +159,11 @@ export function Leaderboard(): React.JSX.Element {
                   <td className="lb-col-name">{row.displayName}</td>
                   <td className="lb-col-num">{row.moves}</td>
                   <td className="lb-col-num">{formatTime(row.timeSeconds)}</td>
+                  <td className="lb-col-connect">
+                    {row.userUuid && row.userUuid !== user?.uuid && (
+                      <ConnectButton userUuid={row.userUuid} />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

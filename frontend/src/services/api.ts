@@ -20,6 +20,8 @@ import type {
   SentInviteResponse,
   InvitePreviewResponse,
   FriendRequestEntry,
+  AcceptedRequestEntry,
+  SocialBadgeCounts,
   SocialChallengeListEntry,
   SocialChallengeDetail,
   PendingCountResponse,
@@ -124,6 +126,20 @@ const patch = (path: string, body: unknown): Promise<unknown> => {
     }).then(r => handleResponse(r, null));
   return fetch(BASE + path, {
     method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+  }).then(r => handleResponse(r, doFetch));
+};
+
+const put = (path: string, body: unknown): Promise<unknown> => {
+  const doFetch = () =>
+    fetch(BASE + path, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }).then(r => handleResponse(r, null));
+  return fetch(BASE + path, {
+    method: 'PUT',
     headers: authHeaders(),
     body: JSON.stringify(body),
   }).then(r => handleResponse(r, doFetch));
@@ -281,6 +297,20 @@ export const acceptFriendRequest       = (id: number): Promise<null> =>
   post(`/friends/requests/${id}/accept`, {}) as Promise<null>;
 export const declineFriendRequest      = (id: number): Promise<null> =>
   del(`/friends/requests/${id}`) as Promise<null>;
+
+// Connect requests (send from a leaderboard by the player's public UUID)
+export const sendConnectRequest        = (targetUserUuid: string): Promise<null> =>
+  post('/friends/requests/by-uuid', { targetUserUuid }) as Promise<null>;
+export const getAcceptedRequests       = (): Promise<AcceptedRequestEntry[]> =>
+  get('/friends/requests/accepted') as Promise<AcceptedRequestEntry[]>;
+export const markConnectRequestsSeen   = (): Promise<null> =>
+  post('/friends/requests/accepted/seen', {}) as Promise<null>;
+export const getSocialBadge            = (): Promise<SocialBadgeCounts> =>
+  get('/friends/requests/badge') as Promise<SocialBadgeCounts>;
+
+// Report device region so other players see it in their Connect Requests list.
+export const updateLocation            = (location: string): Promise<null> =>
+  put('/profile/location', { location }) as Promise<null>;
 
 // Custom named leagues
 export const getCustomLeagues      = (): Promise<CustomLeagueListEntry[]> =>

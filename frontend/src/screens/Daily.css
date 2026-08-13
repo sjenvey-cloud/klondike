@@ -259,3 +259,11 @@
   font-size: 0.8125rem;
   color: var(--color-text-secondary);
 }
+
+/* Connect Requests — replay + connect buttons share the trailing action cell. */
+.lb-actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}

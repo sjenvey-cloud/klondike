@@ -13,8 +13,20 @@ import { Leaderboard } from './screens/Leaderboard';
 import { Replay }      from './screens/Replay';
 import { Login } from './screens/Login';
 import { AcceptInvite } from './screens/AcceptInvite';
-import { getPendingChallengeCount } from './services/api';
+import { getPendingChallengeCount, getSocialBadge, updateLocation } from './services/api';
 import { flushPendingWin } from './hooks/useGame';
+
+/** Best-effort device region (country) for the Connect Requests list. */
+function deviceRegion(): string | null {
+  try {
+    const region = new Intl.Locale(navigator.language).region;
+    if (!region) return null;
+    const dn = new Intl.DisplayNames([navigator.language], { type: 'region' });
+    return dn.of(region) ?? region;
+  } catch {
+    return null;
+  }
+}
 
 // Ensure stores are initialised (side-effects: token refresh, prefs load, theme apply)
 import './stores/authStore';
@@ -27,6 +39,7 @@ import './index.css';
 export default function App(): React.JSX.Element {
   const { user } = useAuth();
   const [challengeCount, setChallengeCount] = useState(0);
+  const [connectCount, setConnectCount]     = useState(0);
 
   // Re-submit any win that failed to reach the server (e.g. connection dropped
   // exactly at the win moment).  Runs on auth and again whenever the browser
@@ -39,12 +52,22 @@ export default function App(): React.JSX.Element {
     return () => window.removeEventListener('online', onOnline);
   }, [user]);
 
+  // Report device region once per login (for the Connect Requests list).
+  useEffect(() => {
+    if (!user) return;
+    const region = deviceRegion();
+    if (region) updateLocation(region).catch(() => {});
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     const poll = (): void => {
       getPendingChallengeCount()
         .then(data => { if (!cancelled) setChallengeCount(data?.count ?? 0); })
+        .catch(() => {});
+      getSocialBadge()
+        .then(data => { if (!cancelled) setConnectCount(data?.total ?? 0); })
         .catch(() => {});
     };
     poll();
@@ -76,7 +99,7 @@ export default function App(): React.JSX.Element {
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </main>
-              <Nav challengeBadge={challengeCount} />
+              <Nav challengeBadge={challengeCount + connectCount} />
             </div>
           </AuthGuard>
         } />

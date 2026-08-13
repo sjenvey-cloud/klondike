@@ -247,10 +247,29 @@ export interface InvitePreviewResponse {
 export interface FriendRequestEntry {
   id: number;
   fromUserId: number;
+  requesterId?: number;
   displayName: string;
   requesterDisplayName: string;
+  requesterLocation?: string | null;
+  requesterGamesPlayed?: number;
   avatarUrl?: string | null;
   createdAt: string;
+}
+
+/** A connect request the user SENT that was accepted but not yet seen. */
+export interface AcceptedRequestEntry {
+  id: number;
+  acceptorId: number;
+  acceptorDisplayName: string;
+  acceptorLocation?: string | null;
+  acceptedAt: string;
+}
+
+/** Social badge counts: pending incoming + accepted-unseen. */
+export interface SocialBadgeCounts {
+  received: number;
+  accepted: number;
+  total: number;
 }
 
 // ── Social challenges ─────────────────────────────────────────────────────────

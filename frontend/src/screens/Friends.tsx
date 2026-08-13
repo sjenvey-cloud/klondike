@@ -8,6 +8,7 @@ import {
   getSentInvites, deleteSentInvite, previewInvite,
   sendFriendRequest, getReceivedFriendRequests,
   acceptFriendRequest, declineFriendRequest,
+  getAcceptedRequests, markConnectRequestsSeen,
   getCustomLeagues, createCustomLeague, getCustomLeagueDetail,
   getCustomLeaderboard, deleteCustomLeague, addLeagueMembers, removeLeagueMember,
   getSocialChallenges, getSocialChallengeDetail,
@@ -19,6 +20,7 @@ import type {
   FriendResponse,
   SentInviteResponse,
   FriendRequestEntry,
+  AcceptedRequestEntry,
   LeagueEntry,
   CustomLeagueListEntry,
   CustomLeagueDetail,
@@ -73,6 +75,7 @@ export function Friends(): React.JSX.Element {
   const [acceptingInvite, setAcceptingInvite]   = useState(false);
   const [inviteMsg, setInviteMsg]               = useState<string | null>(null);
   const [friendRequests, setFriendRequests]     = useState<FriendRequestEntry[]>([]);
+  const [acceptedRequests, setAcceptedRequests] = useState<AcceptedRequestEntry[]>([]);
 
   // ── Leagues tab state ──────────────────────────────────────────────
   // leagueView: 'list' | 'create' | 'detail' | 'add-members'
@@ -115,6 +118,14 @@ export function Friends(): React.JSX.Element {
     getFriends().then(r => setFriends(r?.items ?? [])).catch(() => {});
     getSentInvites().then(setSentInvites).catch(() => {});
     getReceivedFriendRequests().then(setFriendRequests).catch(() => {});
+    // Load accepted acknowledgments then clear them — opening Social is the
+    // "seen" signal that drops the accepted portion of the badge.
+    getAcceptedRequests()
+      .then(list => {
+        setAcceptedRequests(list ?? []);
+        if ((list ?? []).length > 0) markConnectRequestsSeen().catch(() => {});
+      })
+      .catch(() => {});
 
     const token = getPendingInviteToken();
     if (token) {
@@ -447,28 +458,57 @@ export function Friends(): React.JSX.Element {
             </div>
           )}
 
-          {/* Received friend requests (from league "Add Friend" flow) */}
-          {friendRequests.map(req => (
-            <div key={req.id} className="received-invite-card">
+          {/* Accepted acknowledgments — a request you sent was accepted */}
+          {acceptedRequests.map(acc => (
+            <div key={`acc-${acc.id}`} className="received-invite-card received-invite-card--accepted">
               <div className="received-invite-info">
-                <span className="received-invite-icon">👋</span>
+                <span className="received-invite-icon">🎉</span>
                 <div>
-                  <span className="received-invite-name">{req.requesterDisplayName}</span>
-                  <span className="received-invite-sub"> wants to be your friend</span>
+                  <span className="received-invite-name">{acc.acceptorDisplayName}</span>
+                  <span className="received-invite-sub">
+                    {acc.acceptorLocation ? ` (${acc.acceptorLocation}) accepted your request` : ' accepted your request'}
+                  </span>
                 </div>
               </div>
               <div className="received-invite-actions">
-                <button className="btn-primary received-invite-accept"
-                  onClick={() => handleAcceptFriendRequest(req.id, req.requesterDisplayName)}>
-                  Accept
-                </button>
                 <button className="received-invite-decline"
-                  onClick={() => handleDeclineFriendRequest(req.id)}>
-                  Decline
+                  onClick={() => setAcceptedRequests(prev => prev.filter(a => a.id !== acc.id))}>
+                  Dismiss
                 </button>
               </div>
             </div>
           ))}
+
+          {/* Connect requests (from a leaderboard or the league "Add Friend" flow) */}
+          {friendRequests.map(req => {
+            const games = req.requesterGamesPlayed ?? 0;
+            const gamesLabel = `${games} game${games === 1 ? '' : 's'}`;
+            const sub = req.requesterLocation
+              ? `${req.requesterLocation} · ${gamesLabel}`
+              : gamesLabel;
+            return (
+              <div key={req.id} className="received-invite-card">
+                <div className="received-invite-info">
+                  <span className="received-invite-icon">👋</span>
+                  <div>
+                    <span className="received-invite-name">{req.requesterDisplayName}</span>
+                    <span className="received-invite-sub"> wants to connect</span>
+                    <span className="received-invite-meta">{sub}</span>
+                  </div>
+                </div>
+                <div className="received-invite-actions">
+                  <button className="btn-primary received-invite-accept"
+                    onClick={() => handleAcceptFriendRequest(req.id, req.requesterDisplayName)}>
+                    Accept
+                  </button>
+                  <button className="received-invite-decline"
+                    onClick={() => handleDeclineFriendRequest(req.id)}>
+                    Decline
+                  </button>
+                </div>
+              </div>
+            );
+          })}
 
           {inviteMsg && <p role="status" aria-live="polite" className="invite-msg">{inviteMsg}</p>}
 

@@ -640,6 +640,20 @@
   color: var(--color-text-secondary);
 }
 
+.received-invite-meta {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+.received-invite-card--accepted {
+  border: 1px solid rgba(76, 175, 114, 0.35);
+  background: rgba(76, 175, 114, 0.08);
+}
+
 .received-invite-actions {
   display: flex;
   gap: 8px;

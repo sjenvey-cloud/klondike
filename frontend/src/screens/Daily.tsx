@@ -8,6 +8,7 @@ import { localDateString } from '../services/dateUtils';
 import { Game } from './Game';
 import { DailyCalendar } from '../components/DailyCalendar/DailyCalendar';
 import { DailyWinModal } from '../components/DailyWinModal/DailyWinModal';
+import { ConnectButton } from '../components/ConnectButton/ConnectButton';
 import './Daily.css';
 
 function formatTime(s: number | null | undefined): string {
@@ -220,7 +221,7 @@ export function Daily(): React.JSX.Element {
                   <td>{row.displayName}</td>
                   <td>{row.moves}</td>
                   <td>{formatTime(row.timeSeconds)}</td>
-                  <td>
+                  <td className="lb-actions-cell">
                     {(row as unknown as { sessionUuid?: string }).sessionUuid && (
                       <button
                         className="lb-replay-btn"
@@ -228,6 +229,9 @@ export function Daily(): React.JSX.Element {
                         title="Watch replay"
                         aria-label={`Watch ${row.displayName}'s replay`}
                       >▶</button>
+                    )}
+                    {row.userUuid && !(user && row.userUuid === user.uuid) && (
+                      <ConnectButton userUuid={row.userUuid} />
                     )}
                   </td>
                 </tr>
