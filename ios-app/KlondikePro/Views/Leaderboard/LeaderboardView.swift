@@ -10,6 +10,7 @@ import SwiftUI
 struct LeaderboardView: View {
 
     @Environment(LeaderboardStore.self) private var store
+    @Environment(FriendsStore.self)     private var friendsStore
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -27,6 +28,7 @@ struct LeaderboardView: View {
         .background(Color(red: 0.05, green: 0.07, blue: 0.10).ignoresSafeArea())
         .navigationTitle("Rankings")
         .task { await store.fetchLeaderboard() }
+        .task { await friendsStore.fetchConnections() }
         .onChange(of: store.period)   { _, _ in Task { await store.fetchLeaderboard() } }
         .onChange(of: store.drawMode) { _, _ in Task { await store.fetchLeaderboard() } }
         .onChange(of: store.sort)     { _, _ in Task { await store.fetchLeaderboard() } }
@@ -254,8 +256,17 @@ struct LeaderboardConnectButton: View {
     @State private var sending = false
 
     var body: some View {
+        // Already in the network (friend or pending) → show no icon at all.
+        if friends.isConnected(userUuid) {
+            EmptyView()
+        } else {
+            connectButton
+        }
+    }
+
+    private var connectButton: some View {
         let sent = friends.hasSentConnect(to: userUuid)
-        Button {
+        return Button {
             guard !sent, !sending else { return }
             sending = true
             Task {

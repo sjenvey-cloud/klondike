@@ -33,6 +33,10 @@ final class FriendsStore {
     /// UUIDs the user has sent a connect request to this session (drives leaderboard button state).
     private var sentConnectUuids: Set<UUID> = []
 
+    /// UUIDs the user is already linked to (friends + pending requests). Leaderboards
+    /// hide the Connect action for these so a player already in the network shows no icon.
+    private(set) var connectedUuids: Set<UUID> = []
+
     /// Badge count for the Social tab — incoming requests + accepted acknowledgments + active challenges.
     var socialBadgeCount: Int { receivedRequests.count + acceptedUnseenCount + pendingChallengeCount }
 
@@ -141,6 +145,19 @@ final class FriendsStore {
 
     /// Whether the user has already sent a connect request to this player this session.
     func hasSentConnect(to uuid: UUID) -> Bool { sentConnectUuids.contains(uuid) }
+
+    /// Whether the player is already in the network (friend or pending request).
+    func isConnected(_ uuid: UUID) -> Bool { connectedUuids.contains(uuid) }
+
+    /// Load the set of UUIDs the user is already linked to (friends + pending requests).
+    func fetchConnections() async {
+        do {
+            let uuidStrings: [String] = try await APIClient.shared.get("/api/v1/friends/connections")
+            connectedUuids = Set(uuidStrings.compactMap { UUID(uuidString: $0) })
+        } catch {
+            // Keep the last known set on failure — never regress to showing Connect on friends.
+        }
+    }
 
     /// Send a connect request to a player identified by their public UUID (from a leaderboard).
     @discardableResult

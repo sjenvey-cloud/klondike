@@ -4,7 +4,8 @@ import SwiftUI
 /// Personal rank is pinned in a banner at the top when the user has a result.
 struct DailyLeaderboardView: View {
 
-    @Environment(DailyStore.self) private var store
+    @Environment(DailyStore.self)   private var store
+    @Environment(FriendsStore.self) private var friendsStore
 
     @State private var replayUuid: UUID? = nil   // DEV-307
 
@@ -53,6 +54,7 @@ struct DailyLeaderboardView: View {
             }
         }
         .task { await loadLeaderboard() }
+        .task { await friendsStore.fetchConnections() }
         .onChange(of: store.leaderboardSort) { _, _ in
             Task { await loadLeaderboard() }
         }

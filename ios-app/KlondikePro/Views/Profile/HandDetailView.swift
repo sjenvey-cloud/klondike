@@ -146,7 +146,8 @@ struct HandLeaderboardView: View {
 
     let handUuid: UUID
 
-    @Environment(AuthStore.self) private var authStore
+    @Environment(AuthStore.self)    private var authStore
+    @Environment(FriendsStore.self) private var friendsStore
     @State private var entries: [GlobalLeaderboardEntry] = []
     @State private var loading = true
 
@@ -182,6 +183,7 @@ struct HandLeaderboardView: View {
             entries = (try? await APIClient.shared.get("/api/v1/hands/\(handUuid)/leaderboard")) ?? []
             loading = false
         }
+        .task { await friendsStore.fetchConnections() }
     }
 
     private func row(_ entry: GlobalLeaderboardEntry) -> some View {

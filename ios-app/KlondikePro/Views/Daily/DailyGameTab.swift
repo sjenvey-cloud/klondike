@@ -56,10 +56,13 @@ struct DailyGameTab: View {
                     priorBanner(date: prior, gameStore: gameStore)
                 }
 
-                // Stats bar
+                // Stats bar — extra vertical breathing room so the undo/menu buttons
+                // aren't easy to miss into the Calendar tab above or the draw pile
+                // below (tester feedback).
                 dailyStatsBar(gameStore: gameStore)
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.top, 14)
+                    .padding(.bottom, 24)
 
                 // Board — fill the width (matches GameView): 7 cards + 6 gaps
                 // (0.1·cardWidth) + a margin each side. Bigger cards on iPad.

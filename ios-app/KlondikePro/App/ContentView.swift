@@ -112,6 +112,7 @@ struct ContentView: View {
         await friendsStore.fetchReceivedRequests()
         await friendsStore.fetchAcceptedRequests()
         await friendsStore.fetchPendingChallengeCount()
+        await friendsStore.fetchConnections()
     }
 
     // MARK: - Tab content

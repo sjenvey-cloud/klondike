@@ -89,25 +89,27 @@ struct ProfileView: View {
 
                 Spacer()
 
-                // ── Settings + Gear buttons ─────────────────────────────
-                HStack(spacing: 14) {
+                // ── Game settings (gear) + Account (person) buttons ─────
+                // Gear = game settings (the expected convention); the account
+                // control uses the standard Apple account glyph, not a gear.
+                HStack(spacing: 16) {
                     Button {
                         showSettings = true
-                    } label: {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.title3)
-                            .foregroundStyle(.white.opacity(0.6))
-                    }
-                    .accessibilityLabel("App settings")
-
-                    Button {
-                        showAccount = true
                     } label: {
                         Image(systemName: "gearshape")
                             .font(.title3)
                             .foregroundStyle(.white.opacity(0.6))
                     }
-                    .accessibilityLabel("Account settings")
+                    .accessibilityLabel("Game settings")
+
+                    Button {
+                        showAccount = true
+                    } label: {
+                        Image(systemName: "person.crop.circle")
+                            .font(.title3)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .accessibilityLabel("Account")
                 }
                 .padding(.trailing, 16)
                 .padding(.top, 4)

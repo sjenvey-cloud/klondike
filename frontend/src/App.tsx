@@ -14,6 +14,7 @@ import { Replay }      from './screens/Replay';
 import { Login } from './screens/Login';
 import { AcceptInvite } from './screens/AcceptInvite';
 import { getPendingChallengeCount, getSocialBadge, updateLocation } from './services/api';
+import { loadConnections } from './components/ConnectButton/ConnectButton';
 import { flushPendingWin } from './hooks/useGame';
 
 /** Best-effort device region (country) for the Connect Requests list. */
@@ -57,6 +58,8 @@ export default function App(): React.JSX.Element {
     if (!user) return;
     const region = deviceRegion();
     if (region) updateLocation(region).catch(() => {});
+    // Prime the "already connected" set so leaderboards never show Connect on friends.
+    void loadConnections();
   }, [user]);
 
   useEffect(() => {

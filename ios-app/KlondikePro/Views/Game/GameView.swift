@@ -35,7 +35,10 @@ struct GameView: View {
                 VStack(spacing: 0) {
                     statsBar
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.top, 8)
+                        // Extra breathing room so the undo/menu buttons aren't easy to
+                        // miss into the draw pile just below (tester feedback).
+                        .padding(.bottom, 24)
 
                     GeometryReader { proxy in
                         // Fill the width: 7 cards + 6 inter-column gaps (each

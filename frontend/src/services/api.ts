@@ -307,6 +307,9 @@ export const markConnectRequestsSeen   = (): Promise<null> =>
   post('/friends/requests/accepted/seen', {}) as Promise<null>;
 export const getSocialBadge            = (): Promise<SocialBadgeCounts> =>
   get('/friends/requests/badge') as Promise<SocialBadgeCounts>;
+// UUIDs the caller is already linked to (friends + pending) — leaderboards hide Connect for these.
+export const getConnections            = (): Promise<string[]> =>
+  get('/friends/connections') as Promise<string[]>;
 
 // Report device region so other players see it in their Connect Requests list.
 export const updateLocation            = (location: string): Promise<null> =>
