@@ -88,6 +88,14 @@ public class AuthService {
 
     // ── Refresh ───────────────────────────────────────────────────────────
 
+    // A token rotated this recently is still honoured: the client likely never
+    // received the rotated cookie (lost response, backgrounding, flaky network, a
+    // recycling ECS task), so it retried with the old token. Re-issuing instead of
+    // rejecting prevents a healthy session being logged out. The window is short so a
+    // genuinely leaked, long-dead token is still refused; logout-revoked tokens have
+    // no rotated_at and never qualify.
+    private static final Duration ROTATION_GRACE = Duration.ofSeconds(60);
+
     @Transactional
     public AuthTokenPair refresh(String rawToken) {
         String tokenHash = sha256Hex(rawToken);
@@ -95,10 +103,22 @@ public class AuthService {
         RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHash)
             .orElseThrow(InvalidTokenException::new);
 
-        if (!token.isValid()) throw new InvalidTokenException();
+        if (token.isExpired()) throw new InvalidTokenException();
 
-        // Rotate: revoke old token before issuing new pair
-        token.setRevoked(true);
+        if (token.isRevoked()) {
+            // Only rotation is grace-eligible — not logout (rotatedAt is null there).
+            LocalDateTime rotatedAt = token.getRotatedAt();
+            if (rotatedAt == null || rotatedAt.isBefore(LocalDateTime.now().minus(ROTATION_GRACE))) {
+                throw new InvalidTokenException();
+            }
+            // Within grace: tolerate the lost-rotation-response retry, issue a fresh pair.
+            User user = userRepository.findById(token.getUserId())
+                .orElseThrow(InvalidTokenException::new);
+            return issueTokenPair(user);
+        }
+
+        // Normal path — rotate: revoke old token before issuing new pair.
+        token.markRotated();
         refreshTokenRepository.save(token);
 
         User user = userRepository.findById(token.getUserId())

@@ -444,6 +444,35 @@ public class FriendController {
         return ResponseEntity.ok(new SocialBadgeCounts(received, accepted, received + accepted));
     }
 
+    // ── GET /api/v1/friends/connections ───────────────────────────────────
+    // Public UUIDs the caller is already linked to — friends plus any pending
+    // request in either direction. Leaderboards use this to hide the "Connect"
+    // action for people already in the network (or already invited).
+
+    @Operation(summary = "UUIDs the caller is already connected to (friends + pending requests)")
+    @GetMapping("/connections")
+    public ResponseEntity<List<String>> getConnectionUuids(Authentication auth) {
+        int userId = (Integer) auth.getPrincipal();
+
+        java.util.Set<Integer> ids = new java.util.HashSet<>();
+        for (Friend f : friendRepository.findAllByUserId(userId)) {
+            ids.add(f.otherUserId(userId));
+        }
+        for (FriendRequest r : requestRepository.findByRequesterId(userId)) {
+            ids.add(r.getRequesteeId());
+        }
+        for (FriendRequest r : requestRepository.findByRequesteeId(userId)) {
+            ids.add(r.getRequesterId());
+        }
+        ids.remove(userId);
+
+        List<String> uuids = userRepository.findAllById(ids).stream()
+            .map(u -> u.getUuid().toString())
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(uuids);
+    }
+
     // ── POST /api/v1/friends/requests/{id}/accept ─────────────────────────
 
     @PostMapping("/requests/{id}/accept")

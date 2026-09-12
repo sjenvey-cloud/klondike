@@ -1,0 +1,12 @@
+-- Refresh-token rotation grace.
+--
+-- On refresh the old token is rotated (revoked) and a new one issued via Set-Cookie.
+-- If that response is lost (backgrounding mid-flight, flaky mobile network, an ECS
+-- task recycling, a CloudFront hiccup) the client keeps the OLD cookie and its next
+-- refresh presents a just-revoked token -> 401 -> the app logs the user out even
+-- though the session is healthy.
+--
+-- rotated_at records WHEN a token was rotated (set only on the refresh path, never on
+-- logout). A token revoked-by-rotation within a short grace window is tolerated and
+-- re-issued instead of rejected, absorbing lost-rotation-response races.
+ALTER TABLE refresh_tokens ADD COLUMN rotated_at TIMESTAMP;
