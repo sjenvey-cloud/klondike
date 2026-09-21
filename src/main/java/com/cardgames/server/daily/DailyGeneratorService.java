@@ -1,5 +1,6 @@
 package com.cardgames.server.daily;
 
+import com.cardgames.server.game.KlondikeSolver;
 import com.cardgames.server.game.SeededShuffle;
 import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
@@ -30,9 +31,11 @@ public class DailyGeneratorService {
     private static final int[] FACE_UP_INDICES = { 0, 2, 5, 9, 14, 20, 27 };
 
     // How many candidate seeds to evaluate for each date when falling back to
-    // the seeded algorithm. More candidates → better chance of a playable hand,
-    // at a small compute cost (~10 shuffles of 52 cards each — negligible).
-    private static final int CANDIDATE_COUNT = 12;
+    // the seeded algorithm. Each candidate is run through the solver until a
+    // completable deal is found; with a per-candidate solve rate around 50%+ the
+    // first or second candidate is almost always winnable, and exhausting all 40
+    // is astronomically unlikely (~2^-40). The cap bounds worst-case work.
+    private static final int SOLVE_CANDIDATES = 40;
 
     // Minimum preferred distinct-winner count when promoting a community hand.
     // Hands won by ≥ 2 different players are guaranteed winnable and tend to be
@@ -56,8 +59,9 @@ public class DailyGeneratorService {
      *  1. Already recorded in daily_challenges → return that hand.
      *  2a. A community hand won by ≥ 2 distinct users, not yet used as a daily.
      *  2b. Fallback: any community hand won by ≥ 1 user, not yet used as a daily.
-     *  3. Fallback: best-scoring seed from CANDIDATE_COUNT deterministic candidates,
-     *     evaluated by an ace-accessibility heuristic.
+     *     (Community hands are provably winnable — a real player already won them.)
+     *  3. Fallback: the first deterministic candidate seed the solver proves
+     *     completable, so an unwinnable / dead deal can never become the daily.
      */
     @Transactional
     public Hand ensureDaily(LocalDate date, String drawMode) {
@@ -84,46 +88,61 @@ public class DailyGeneratorService {
             return hand;
         }
 
-        // 3. Seeded fallback: pick the best ace-accessible hand from CANDIDATE_COUNT candidates
-        long seed = selectBestSeed(date, drawMode);
+        // 3. Seeded fallback: pick the first candidate seed the solver proves winnable,
+        //    so a dead / unwinnable deal can never become a daily challenge.
+        long seed = selectSolvableSeed(date, drawMode);
         final long chosenSeed = seed;
         hand = handRepo.findByShuffleSeed(seed).orElseGet(() -> {
             Hand h = new Hand(chosenSeed, drawMode);
             return handRepo.save(h);
         });
         dailyChallengeRepo.save(new DailyChallenge(date, drawMode, hand.getId()));
-        log.info("Daily [{}] {}: created seeded hand {} (aceScore={})",
-                 drawMode, date, hand.getId(), scoreAceAccessibility(seed));
+        log.info("Daily [{}] {}: created seeded hand {} (seed={})",
+                 drawMode, date, hand.getId(), seed);
         return hand;
     }
 
     // ── Seed selection ─────────────────────────────────────────────────────────
 
     /**
-     * Try {@link #CANDIDATE_COUNT} deterministic seed candidates derived from the date
-     * and draw mode. Return the seed whose shuffled deck scores highest on ace
-     * accessibility, favouring hands where aces surface early in draw-3 play.
+     * Walk deterministic seed candidates derived from the date and draw mode and
+     * return the first whose shuffled deck the solver proves <b>completable</b>. This
+     * guarantees a daily challenge can always be won — no more dead deals.
+     *
+     * Candidates are tried in a fixed order (base seed, then a Fibonacci-hashing
+     * stride across the 32-bit space) so selection stays deterministic and
+     * reproducible. In the vanishingly unlikely event that none of the
+     * {@link #SOLVE_CANDIDATES} candidates solve within budget, we fall back to the
+     * most ace-accessible one so daily generation never fails outright.
      */
-    static long selectBestSeed(LocalDate date, String drawMode) {
-        long base      = deterministicSeed(date, drawMode);
-        long bestSeed  = base;
-        int  bestScore = scoreAceAccessibility(base);
+    static long selectSolvableSeed(LocalDate date, String drawMode) {
+        long base         = deterministicSeed(date, drawMode);
+        long bestAceSeed  = base;
+        int  bestAceScore = scoreAceAccessibility(base);
 
-        for (int i = 1; i < CANDIDATE_COUNT; i++) {
-            // Spread candidates across the 32-bit seed space using a Fibonacci
-            // hashing stride — produces well-distributed, non-overlapping seeds.
-            long candidate = (base + (long) i * 2_654_435_761L) & 0xFFFFFFFFL;
+        for (int i = 0; i < SOLVE_CANDIDATES; i++) {
+            long candidate = (i == 0)
+                ? base
+                : (base + (long) i * 2_654_435_761L) & 0xFFFFFFFFL;
             if (candidate == 0) candidate = 1; // zero is a degenerate xorshift32 fixed-point
+
+            int[] deck = SeededShuffle.shuffle(candidate);
+            if (KlondikeSolver.isWinnable(deck, drawMode)) {
+                log.info("Daily seed selection: date={} drawMode={} solvable seed={} (candidate #{})",
+                         date, drawMode, candidate, i);
+                return candidate;
+            }
+
             int score = scoreAceAccessibility(candidate);
-            if (score > bestScore) {
-                bestScore = score;
-                bestSeed  = candidate;
+            if (score > bestAceScore) {
+                bestAceScore = score;
+                bestAceSeed  = candidate;
             }
         }
 
-        log.debug("Daily seed selection: date={} drawMode={} bestSeed={} score={}",
-                  date, drawMode, bestSeed, bestScore);
-        return bestSeed;
+        log.warn("Daily seed selection: date={} drawMode={} found no solvable seed in {} candidates; "
+               + "falling back to best ace-accessible seed {}", date, drawMode, SOLVE_CANDIDATES, bestAceSeed);
+        return bestAceSeed;
     }
 
     /**

@@ -1,0 +1,14 @@
+-- Heal the current daily challenge.
+--
+-- The seeded fallback in DailyGeneratorService previously chose a hand by an
+-- ace-accessibility heuristic that did NOT guarantee the deal was completable, so
+-- an unwinnable / dead deal could become the daily challenge. That path is now
+-- gated by a real solvability check (KlondikeSolver), but today's row was already
+-- persisted with the old selector.
+--
+-- Delete today's (and any future) daily_challenges so the next access — the lazy
+-- fallback or the midnight scheduler — regenerates them with the solver-gated
+-- selector. Past dailies are left untouched. Orphaned hand rows are harmless (the
+-- hands table is a shared library); sessions on the old hand were unwinnable
+-- attempts and carry no leaderboard value.
+DELETE FROM daily_challenges WHERE challenge_date >= CURRENT_DATE;
