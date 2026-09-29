@@ -115,16 +115,54 @@ final class DailyStore {
         handError     = nil
         defer { isLoadingHand = false }
 
+        // Serve a cached daily for today instantly so it's playable offline.
+        let today  = Self.todayString()
+        let cached = loadCachedDaily(drawMode: drawMode)
+        if let cached, cached.date == today {
+            applyCachedDaily(cached)
+        }
+
         do {
+            // Short timeout so an offline device falls back to cache quickly instead
+            // of hanging on the default 30s request timeout (the reported bug).
             let response: DailyResponse = try await APIClient.shared.get(
                 "/api/v1/daily",
-                query: ["drawMode": drawMode]
+                query: ["drawMode": drawMode],
+                timeout: 12
             )
             dailyHand             = response.hand
             dailyDate             = response.date
             userHasRankedAttempt  = response.userHasRankedAttempt
+            saveCachedDaily(CachedDaily(
+                date: response.date, drawMode: drawMode,
+                handUuid: response.hand.uuid, shuffleSeed: response.hand.shuffleSeed,
+                cards: response.hand.cards, userHasRankedAttempt: response.userHasRankedAttempt))
         } catch {
-            handError = "Could not load today's challenge. Check your connection and try again."
+            // Offline: if we already have (cached) today's hand, just play it.
+            if dailyHand == nil {
+                handError = "Today’s Daily needs a connection the first time — once loaded, it plays offline."
+            }
+        }
+    }
+
+    // MARK: - Daily offline cache
+
+    private func cacheKey(_ mode: String) -> String { "cached_daily_\(mode)" }
+
+    private func applyCachedDaily(_ c: CachedDaily) {
+        dailyHand            = DailyHand(uuid: c.handUuid, shuffleSeed: c.shuffleSeed, cards: c.cards, drawMode: c.drawMode)
+        dailyDate            = c.date
+        userHasRankedAttempt = c.userHasRankedAttempt
+    }
+
+    private func loadCachedDaily(drawMode mode: String) -> CachedDaily? {
+        guard let data = UserDefaults.standard.data(forKey: cacheKey(mode)) else { return nil }
+        return try? JSONDecoder().decode(CachedDaily.self, from: data)
+    }
+
+    private func saveCachedDaily(_ c: CachedDaily) {
+        if let data = try? JSONEncoder().encode(c) {
+            UserDefaults.standard.set(data, forKey: cacheKey(c.drawMode))
         }
     }
 

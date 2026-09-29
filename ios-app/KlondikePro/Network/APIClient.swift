@@ -119,8 +119,12 @@ actor APIClient {
     // MARK: - Public request methods
 
     /// GET and decode a Decodable response.
-    func get<T: Decodable>(_ path: String, query: [String: String] = [:]) async throws -> T {
-        let req = try makeRequest(method: "GET", path: path, query: query)
+    /// `timeout` overrides the default request timeout — used by callers (e.g. the
+    /// daily fetch) that must fail fast to fall back to a local cache when offline.
+    func get<T: Decodable>(_ path: String, query: [String: String] = [:],
+                           timeout: TimeInterval? = nil) async throws -> T {
+        var req = try makeRequest(method: "GET", path: path, query: query)
+        if let timeout { req.timeoutInterval = timeout }
         return try await perform(req)
     }
 

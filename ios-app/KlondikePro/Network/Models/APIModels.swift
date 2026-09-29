@@ -133,6 +133,41 @@ struct CreateSessionRequest: Encodable {
     let isDaily: Bool
     let dailyDate: String?
     let isRanked: Bool?
+    let clientId: UUID?   // offline-mode idempotency key (reconciles with /sessions/offline)
+
+    init(handUuid: UUID, userId: Int, isDaily: Bool, dailyDate: String?,
+         isRanked: Bool?, clientId: UUID? = nil) {
+        self.handUuid = handUuid
+        self.userId = userId
+        self.isDaily = isDaily
+        self.dailyDate = dailyDate
+        self.isRanked = isRanked
+        self.clientId = clientId
+    }
+}
+
+/// Body for POST /api/v1/sessions/offline — a game played offline, described
+/// entirely from its seed + move history so the server can reproduce and validate it.
+struct OfflineSessionRequest: Encodable {
+    let clientId: UUID
+    let seed: Int64
+    let drawMode: String
+    let isDaily: Bool
+    let dailyDate: String?
+    let status: String       // "won" | "abandoned"
+    let moves: Int
+    let timeSeconds: Int
+    let turns: String
+}
+
+/// Locally cached daily challenge so today's daily is playable offline.
+struct CachedDaily: Codable {
+    let date: String          // canonical challenge date "yyyy-MM-dd"
+    let drawMode: String
+    let handUuid: UUID
+    let shuffleSeed: Int64
+    let cards: [Int]
+    let userHasRankedAttempt: Bool
 }
 
 struct CreateSessionResponse: Decodable {

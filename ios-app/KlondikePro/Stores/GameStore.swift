@@ -28,9 +28,23 @@ final class GameStore {
     var isRankedSession: Bool = false
     var dailyDate: String? = nil
 
+    // MARK: - Offline-first identity
+
+    /// The deterministic seed of the current game (so results can be submitted from
+    /// the seed alone, with no server session, when offline).
+    private var currentSeed: Int64?
+    /// Client-generated idempotency key for the current game. nil for a resumed
+    /// session (which is submitted by its serverSessionUuid instead).
+    private var currentClientId: UUID?
+
     // MARK: - Private
 
     private var timerTask: Task<Void, Never>?
+
+    private static func randomSeed() -> Int64 {
+        // xorshift32 seeds live in [1, 2^32) — match the server's valid range.
+        Int64(UInt32.random(in: 1...UInt32.max))
+    }
 
     // MARK: - Init
 
@@ -40,51 +54,75 @@ final class GameStore {
 
     // MARK: - New Game
 
-    /// Creates a new hand on the server and starts a session.
+    /// Starts a new random game. The deal is generated locally and is instantly
+    /// playable with no network — a server hand + session is registered in the
+    /// background (for cross-device resume). Offline, that background step is simply
+    /// skipped; the result still syncs later from the seed via the offline queue.
     func newGame(drawMode: String) async {
         guard userId > 0 else {
             errorMessage = "Not signed in. Please restart the app and sign in again."
             return
         }
-        isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
-
         lastDrawMode = drawMode
 
+        let seed     = Self.randomSeed()
+        let clientId = UUID()
+
+        state           = GameState(seed: seed, drawMode: drawMode)
+        currentSeed     = seed
+        currentClientId = clientId
+        dailyDate       = nil
+        isRankedSession = false
+        handUuid        = nil
+        sessionUuid     = nil
+        elapsedSeconds  = 0
+        stopTimer()
+        startTimer()
+
+        // Best-effort server registration (enables resume when online).
+        Task { [weak self] in
+            await self?.registerServerSession(
+                seed: seed, drawMode: drawMode, clientId: clientId,
+                isDaily: false, dailyDate: nil, isRanked: false, handUuid: nil)
+        }
+    }
+
+    // MARK: - Server registration (best-effort, non-blocking)
+
+    /// Creates the server hand (if needed) + session so an in-progress game can be
+    /// resumed on another device. Failure is silent — play never depends on it, and
+    /// the result is submitted from the seed by OfflineStore regardless.
+    private func registerServerSession(
+        seed: Int64, drawMode: String, clientId: UUID,
+        isDaily: Bool, dailyDate: String?, isRanked: Bool, handUuid explicitHand: UUID?
+    ) async {
         do {
-            // Inline struct — HandResponse has no `id` field
-            struct HandCreated: Decodable {
-                let uuid: UUID
-                let shuffleSeed: Int64
-                let drawMode: String
+            let handUuidResolved: UUID
+            if let explicitHand {
+                handUuidResolved = explicitHand           // daily/challenge hand already exists server-side
+            } else {
+                struct HandCreated: Decodable { let uuid: UUID; let shuffleSeed: Int64; let drawMode: String }
+                let hand: HandCreated = try await APIClient.shared.post(
+                    "/api/v1/hands",
+                    body: CreateHandRequest(drawMode: drawMode, seed: seed))   // explicit-seed → matches our local deal
+                handUuidResolved = hand.uuid
             }
 
-            let hand: HandCreated = try await APIClient.shared.post(
-                "/api/v1/hands",
-                body: CreateHandRequest(drawMode: drawMode)
-            )
-
-            let sessionResp: CreateSessionResponse = try await APIClient.shared.post(
+            let resp: CreateSessionResponse = try await APIClient.shared.post(
                 "/api/v1/sessions",
                 body: CreateSessionRequest(
-                    handUuid: hand.uuid,
-                    userId: userId,
-                    isDaily: false,
-                    dailyDate: nil,
-                    isRanked: false
-                )
-            )
+                    handUuid: handUuidResolved, userId: userId,
+                    isDaily: isDaily, dailyDate: dailyDate, isRanked: isRanked,
+                    clientId: clientId))
 
-            let newState = GameState(seed: hand.shuffleSeed, drawMode: hand.drawMode)
-            state = newState
-            handUuid = hand.uuid
-            sessionUuid = sessionResp.session.uuid
-            elapsedSeconds = 0
-            stopTimer()
-            startTimer()
+            // Only apply to the game that's still current (the user may have moved on).
+            guard currentClientId == clientId else { return }
+            self.handUuid    = handUuidResolved
+            self.sessionUuid = resp.session.uuid
+            if isDaily { self.isRankedSession = resp.isRanked }
         } catch {
-            errorMessage = error.localizedDescription
+            // Offline / transient — ignore.
         }
     }
 
@@ -108,34 +146,28 @@ final class GameStore {
         errorMessage = nil
         defer { isLoading = false }
 
+        errorMessage = nil
         lastDrawMode = drawMode
         dailyDate = date
 
-        do {
-            let sessionResp: CreateSessionResponse = try await APIClient.shared.post(
-                "/api/v1/sessions",
-                body: CreateSessionRequest(
-                    handUuid: handUuid,
-                    userId: userId,
-                    isDaily: true,
-                    dailyDate: date,
-                    isRanked: isRanked
-                )
-            )
+        let clientId = UUID()
 
-            // Honour the server's isRanked decision — it may downgrade if the user
-            // already has a ranked win for this date and draw mode.
-            isRankedSession = sessionResp.isRanked
+        // Deal locally & immediately — playable even with no connection.
+        state           = GameState(seed: shuffleSeed, drawMode: drawMode)
+        currentSeed     = shuffleSeed
+        currentClientId = clientId
+        self.handUuid   = handUuid
+        sessionUuid     = nil
+        isRankedSession = isRanked           // provisional; server confirms in the background
+        elapsedSeconds  = 0
+        stopTimer()
+        startTimer()
 
-            let newState = GameState(seed: shuffleSeed, drawMode: drawMode)
-            state = newState
-            self.handUuid = handUuid
-            sessionUuid = sessionResp.session.uuid
-            elapsedSeconds = 0
-            stopTimer()
-            startTimer()
-        } catch {
-            errorMessage = error.localizedDescription
+        // Best-effort server registration on the known daily hand (enables resume).
+        Task { [weak self] in
+            await self?.registerServerSession(
+                seed: shuffleSeed, drawMode: drawMode, clientId: clientId,
+                isDaily: true, dailyDate: date, isRanked: isRanked, handUuid: handUuid)
         }
     }
 
@@ -166,6 +198,7 @@ final class GameStore {
                 "/api/v1/hands/\(challengeHandUuid.uuidString.lowercased())"
             )
 
+            let clientId = UUID()
             let sessionResp: CreateSessionResponse = try await APIClient.shared.post(
                 "/api/v1/sessions",
                 body: CreateSessionRequest(
@@ -173,11 +206,14 @@ final class GameStore {
                     userId: userId,
                     isDaily: false,
                     dailyDate: nil,
-                    isRanked: false
+                    isRanked: false,
+                    clientId: clientId
                 )
             )
 
             state = GameState(seed: hand.shuffleSeed, drawMode: hand.drawMode)
+            currentSeed = hand.shuffleSeed
+            currentClientId = clientId
             handUuid = hand.uuid
             sessionUuid = sessionResp.session.uuid
             elapsedSeconds = 0
@@ -203,6 +239,9 @@ final class GameStore {
         state = newState
         handUuid = item.handUuid
         sessionUuid = item.uuid
+        currentSeed = item.seed
+        currentClientId = nil          // resumed session → submitted by its serverSessionUuid
+        dailyDate = item.dailyDate
 
         // DEV-338: resume the clock from the SAVED elapsed time, not from startedAt —
         // otherwise time spent paused / on another device would be counted.
@@ -310,42 +349,44 @@ final class GameStore {
 
     // MARK: - Complete Session
 
-    /// Submits a win to the server.
+    /// Records a win. The result is written to the durable offline queue first (so it
+    /// can never be lost to a flaky/absent connection — the old "couldn't save" false
+    /// error) and synced in the background. Sync is idempotent, so a slow/lost response
+    /// is retried safely rather than surfaced as an error.
     func completeSession() async {
-        guard let uuid = sessionUuid, let s = state else { return }
+        guard let s = state else { return }
         stopTimer()
-        // A long game can outlive the 15-min access token, so the first submit may
-        // need a token refresh — and a stale connection after a long idle game can
-        // make the first attempt fail transiently. Retry a few times so a ranked
-        // result isn't lost to a blip. (The 401→refresh→retry inside APIClient still
-        // runs on each attempt.)
-        var submitted = false
-        for attempt in 0..<3 {
-            do {
-                let _: CompleteSessionResponse = try await APIClient.shared.post(
-                    "/api/v1/sessions/\(uuid)/complete",
-                    body: CompleteSessionRequest(
-                        moves: s.moveCount,
-                        timeSeconds: elapsedSeconds,
-                        turns: s.turns
-                    )
-                )
-                submitted = true
-                break
-            } catch {
-                if attempt < 2 { try? await Task.sleep(nanoseconds: 1_500_000_000) }
-            }
-        }
-        if !submitted {
-            errorMessage = "Couldn't save your result — check your connection and try again."
-        }
+
+        enqueueResult(status: "won", state: s)
+        Task { await OfflineStore.shared.flush() }
+
         // Game Center: the Daily Challenge feeds two recurring daily leaderboards —
         // fewest moves and fastest time. Only daily wins count (dailyDate set);
-        // no-op when GC isn't authenticated.
+        // no-op when GC isn't authenticated or offline.
         if s.isWon, dailyDate != nil {
             await GameCenterService.shared.submitDailyResult(
                 moves: s.moveCount, timeSeconds: elapsedSeconds)
         }
+    }
+
+    /// Build a durable PendingResult for the current game and enqueue it. Uses the
+    /// clientId when we have one (online or offline games we created), otherwise the
+    /// resumed session's serverSessionUuid.
+    private func enqueueResult(status: String, state s: GameState) {
+        guard let seed = currentSeed else { return }
+        let result = PendingResult(
+            clientId: currentClientId,
+            serverSessionUuid: currentClientId == nil ? sessionUuid : nil,
+            seed: seed,
+            drawMode: s.drawMode,
+            isDaily: dailyDate != nil,
+            dailyDate: dailyDate,
+            status: status,
+            moves: s.moveCount,
+            timeSeconds: elapsedSeconds,
+            turns: s.turns,
+            createdAt: Date())
+        OfflineStore.shared.enqueue(result)
     }
 
     // MARK: - Redeal
@@ -353,47 +394,36 @@ final class GameStore {
     /// Abandons the current session and starts a brand-new session for the
     /// same hand (same seed / draw mode), resetting the board to deal-order.
     func redeal() async {
-        guard let currentHandUuid = handUuid,
-              let currentState    = state else { return }
+        guard let currentState = state else { return }
 
-        isLoading     = true
-        errorMessage  = nil
-        defer { isLoading = false }
-
+        errorMessage = nil
         stopTimer()
 
-        // Silently abandon the active session so it doesn't dangle on the server
-        if let uuid = sessionUuid {
-            do {
-                let _: CompleteSessionResponse = try await APIClient.shared.post(
-                    "/api/v1/sessions/\(uuid)/abandon",
-                    body: AbandonSessionRequest(
-                        moves: currentState.moveCount,
-                        timeSeconds: elapsedSeconds,
-                        turns: currentState.turns
-                    )
-                )
-            } catch { /* swallow — redeal continues regardless */ }
+        // Record the abandoned attempt (durably; guarded so a fresh deal isn't logged).
+        if currentState.moveCount >= 2 {
+            enqueueResult(status: "abandoned", state: currentState)
+            Task { await OfflineStore.shared.flush() }
         }
 
-        // Open a fresh session for the same hand
-        do {
-            let sessionResp: CreateSessionResponse = try await APIClient.shared.post(
-                "/api/v1/sessions",
-                body: CreateSessionRequest(
-                    handUuid: currentHandUuid,
-                    userId: userId,
-                    isDaily: false,
-                    dailyDate: nil,
-                    isRanked: false
-                )
-            )
-            state       = GameState(seed: currentState.seed, drawMode: currentState.drawMode)
-            sessionUuid = sessionResp.session.uuid
-            elapsedSeconds = 0
-            startTimer()
-        } catch {
-            errorMessage = error.localizedDescription
+        // Fresh deal of the SAME hand (seed/draw mode) with a new identity.
+        let seed     = currentState.seed
+        let drawMode = currentState.drawMode
+        let isDaily  = dailyDate != nil
+        let date     = dailyDate
+        let existingHand = handUuid            // known for daily/challenge/online-registered games
+        let clientId = UUID()
+
+        state           = GameState(seed: seed, drawMode: drawMode)
+        currentSeed     = seed
+        currentClientId = clientId
+        sessionUuid     = nil
+        elapsedSeconds  = 0
+        startTimer()
+
+        Task { [weak self] in
+            await self?.registerServerSession(
+                seed: seed, drawMode: drawMode, clientId: clientId,
+                isDaily: isDaily, dailyDate: date, isRanked: isDaily, handUuid: existingHand)
         }
     }
 
@@ -408,27 +438,26 @@ final class GameStore {
         state = nil
         sessionUuid = nil
         handUuid = nil
+        currentSeed = nil
+        currentClientId = nil
         elapsedSeconds = 0
     }
 
+    /// Abandons the current game. The partial result is queued (durably) so it records
+    /// even offline, then the board is cleared locally. A barely-started deal isn't
+    /// recorded (matches the server's `moves >= 2` filters).
     func abandonSession() async {
-        guard let uuid = sessionUuid, let s = state else { return }
-        stopTimer()
-        do {
-            let _: CompleteSessionResponse = try await APIClient.shared.post(
-                "/api/v1/sessions/\(uuid)/abandon",
-                body: AbandonSessionRequest(
-                    moves: s.moveCount,
-                    timeSeconds: elapsedSeconds,
-                    turns: s.turns
-                )
-            )
-        } catch {
-            // Silently swallow
+        if let s = state, s.moveCount >= 2 {
+            stopTimer()
+            enqueueResult(status: "abandoned", state: s)
+            Task { await OfflineStore.shared.flush() }
         }
+        stopTimer()
         state = nil
         sessionUuid = nil
         handUuid = nil
+        currentSeed = nil
+        currentClientId = nil
         elapsedSeconds = 0
     }
 

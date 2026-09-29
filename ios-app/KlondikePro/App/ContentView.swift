@@ -73,6 +73,8 @@ struct ContentView: View {
                     await friendsStore.updateLocation()
                     await refreshSocialBadge()
                 }
+                // Flush any game results that finished while offline.
+                Task { await OfflineStore.shared.flush() }
             }
         }
         // DEV-338: snapshot in-progress games to the server when the app is paused
@@ -83,6 +85,8 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
+                // Flush queued offline results whenever we come to the foreground.
+                Task { await OfflineStore.shared.flush() }
                 if wasBackgrounded {
                     wasBackgrounded = false
                     Task {
