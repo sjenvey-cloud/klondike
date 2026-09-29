@@ -16,4 +16,7 @@ public record CreateSessionRequest(
         int userId,
         @JsonProperty("isDaily")  boolean isDaily,
         String dailyDate,
-        Boolean isRanked) {}
+        Boolean isRanked,
+        // Offline-mode idempotency key: lets the completion (POST /sessions/offline)
+        // reconcile with this pre-created session instead of creating a duplicate.
+        UUID clientId) {}

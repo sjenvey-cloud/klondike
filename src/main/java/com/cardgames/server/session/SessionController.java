@@ -108,6 +108,7 @@ public class SessionController {
         Session session = new Session(hand.getId(), body.userId());
         session.setHandUuid(hand.getUuid());
         session.setDrawMode(hand.getDrawMode());
+        if (body.clientId() != null) session.setClientId(body.clientId());
 
         boolean isRanked = true;
         if (body.isDaily() && body.dailyDate() != null) {
