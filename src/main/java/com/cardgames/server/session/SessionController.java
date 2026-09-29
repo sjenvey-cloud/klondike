@@ -2,11 +2,13 @@ package com.cardgames.server.session;
 
 import com.cardgames.server.challenges.Challenge;
 import com.cardgames.server.challenges.ChallengeRepository;
+import com.cardgames.server.daily.DailyChallengeRepository;
 import com.cardgames.server.game.GameState;
 import com.cardgames.server.game.ReplayResult;
 import com.cardgames.server.hand.Hand;
 import com.cardgames.server.hand.HandRepository;
 import com.cardgames.server.metrics.MetricsService;
+import org.springframework.dao.DataIntegrityViolationException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
@@ -39,11 +41,12 @@ public class SessionController {
 
     private static final Logger log = LoggerFactory.getLogger(SessionController.class);
 
-    @Autowired SessionRepository   sessionRepository;
-    @Autowired HandRepository      handRepository;
-    @Autowired ChallengeRepository challengeRepository;
-    @Autowired CacheManager        cacheManager;
-    @Autowired MetricsService      metricsService;
+    @Autowired SessionRepository        sessionRepository;
+    @Autowired HandRepository           handRepository;
+    @Autowired ChallengeRepository      challengeRepository;
+    @Autowired DailyChallengeRepository dailyChallengeRepo;
+    @Autowired CacheManager             cacheManager;
+    @Autowired MetricsService           metricsService;
 
     // ── DEV-202: Active session ───────────────────────────────────────────
 
@@ -263,6 +266,137 @@ public class SessionController {
         settleChallengeIfPresent(session);
 
         return new ResponseEntity<>(session, HttpStatus.OK);
+    }
+
+    // ── Offline mode: record a game played without a connection ───────────
+
+    /**
+     * POST /api/v1/sessions/offline
+     *
+     * Records a game that was played offline. Idempotent on {@code clientId}: the
+     * client keeps a durable queue and retries this call until it succeeds, so it may
+     * arrive more than once — a session already recorded for the clientId is returned
+     * unchanged. The hand is ensured from its seed, a session is created (no prior
+     * server session required), a win is replay-validated exactly like
+     * {@link #completeSession}, and daily results are anti-cheat verified against the
+     * official daily hand for that date + mode.
+     */
+    @Operation(summary = "Record a session played offline",
+               description = "Idempotent on clientId; ensures the hand from its seed, validates a win by replay, and records it.")
+    @Transactional
+    @PostMapping("/sessions/offline")
+    public ResponseEntity<CompleteSessionResponse> offlineSession(
+            @RequestBody OfflineSessionRequest body, Authentication auth) {
+
+        int userId = (Integer) auth.getPrincipal();
+        if (body == null || body.clientId() == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        // 1. Idempotency — already recorded for this clientId?
+        Session session = sessionRepository.findByClientId(body.clientId()).orElse(null);
+        if (session != null && !Session.STATUS_ACTIVE.equals(session.getStatus())) {
+            return new ResponseEntity<>(
+                new CompleteSessionResponse(true, "Already recorded", session.getMoves(), session),
+                HttpStatus.OK);
+        }
+
+        String drawMode = "draw1".equals(body.drawMode()) ? "draw1" : "draw3";
+
+        // 2. Ensure the hand exists for this seed (idempotent).
+        Hand hand = ensureHand(body.seed(), drawMode);
+        if (hand == null) return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        // 3. Daily anti-cheat: the seed must match the official daily hand for that
+        //    date + mode, else the daily/ranked flags are stripped (recorded as a
+        //    normal game) so a spoofed seed can't top the daily leaderboard.
+        boolean   isDaily   = false;
+        LocalDate dailyDate = null;
+        if (body.isDaily() && body.dailyDate() != null) {
+            LocalDate date = LocalDate.parse(body.dailyDate());
+            Hand officialDaily = dailyChallengeRepo.findByDateAndMode(date, drawMode)
+                .flatMap(dc -> handRepository.findById(dc.getHandId()))
+                .orElse(null);
+            if (officialDaily != null && officialDaily.getId() == hand.getId()) {
+                isDaily   = true;
+                dailyDate = date;
+            }
+        }
+
+        // 4. Reuse the placeholder session (if any) or create a fresh one, keyed by clientId.
+        if (session == null) session = new Session(hand.getId(), userId);
+        session.setClientId(body.clientId());
+        session.setHandUuid(hand.getUuid());
+        session.setDrawMode(drawMode);
+        session.setIsDaily(isDaily);
+        session.setDailyDate(dailyDate);
+        session.setIsRanked(true);   // matches createSession (non-daily sessions are ranked too)
+        session.setStatus(Session.STATUS_ACTIVE);
+        session.setMoves(body.moves());
+        session.setTimeSeconds(body.timeSeconds());
+
+        boolean won = "won".equalsIgnoreCase(body.status());
+
+        if (won) {
+            GameState state = new GameState(hand.getShuffleSeed(), drawMode);
+            ReplayResult result = state.replay(body.turns());
+            if (result.isValid() && !state.isWon()) {
+                result = new ReplayResult(false,
+                    "Claimed win but replay did not reach a won state", result.getMoveCount());
+            }
+            if (!result.isValid()) {
+                return new ResponseEntity<>(
+                    new CompleteSessionResponse(false, result.getMessage(), result.getMoveCount(), session),
+                    HttpStatus.UNPROCESSABLE_ENTITY);
+            }
+        }
+
+        // Persist as ACTIVE first so the row has an id and is NOT yet in the ranked
+        // index, then demote prior abandoned ranked rows, then flip to the terminal
+        // status — the same flush-ordering discipline as completeSession/abandon.
+        session.setTurns(body.turns());
+        sessionRepository.save(session);
+
+        if (isDaily && session.isRanked()) {
+            sessionRepository.demoteAbandonedRankedSessions(userId, dailyDate, drawMode, session.getId());
+        }
+
+        if (won) {
+            session.setStatus(Session.STATUS_WON);
+            session.setCompletedAt(LocalDateTime.now());
+            sessionRepository.save(session);
+            metricsService.recordSessionCompleted();
+            if (isDaily && session.isRanked()) {
+                evictLeaderboard(dailyDate.toString(), drawMode);
+            }
+            settleChallengeIfPresent(session);
+        } else {
+            String turns = (body.turns() != null && !body.turns().isBlank())
+                ? (body.turns().endsWith("abandon") ? body.turns() : body.turns() + ",abandon")
+                : "abandon";
+            session.setStatus(Session.STATUS_ABANDONED);
+            session.setTurns(turns);
+            session.setCompletedAt(LocalDateTime.now());
+            sessionRepository.save(session);
+            settleChallengeIfPresent(session);
+        }
+
+        log.info("offlineSession: recorded {} — clientId={} handId={} userId={} isDaily={} dailyDate={} moves={} time={}",
+            session.getStatus(), body.clientId(), hand.getId(), userId, isDaily, dailyDate, body.moves(), body.timeSeconds());
+
+        return new ResponseEntity<>(
+            new CompleteSessionResponse(true, "OK", body.moves(), session), HttpStatus.OK);
+    }
+
+    /** Idempotently return (or create) the hand for a given seed + draw mode. */
+    private Hand ensureHand(long seed, String drawMode) {
+        Hand hand = handRepository.findByShuffleSeed(seed).orElse(null);
+        if (hand != null) return hand;
+        try {
+            return handRepository.save(new Hand(seed, drawMode));
+        } catch (DataIntegrityViolationException e) {
+            return handRepository.findByShuffleSeed(seed).orElse(null);
+        }
     }
 
     // ── DEV-338: Save in-progress state for cross-device resume ───────────

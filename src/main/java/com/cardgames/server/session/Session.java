@@ -65,6 +65,10 @@ public class Session {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    // Offline-mode idempotency key (null for online-created sessions).
+    @Column(name = "client_id", columnDefinition = "uuid")
+    private UUID clientId;
+
     public Session() {}
 
     public Session(int handId, int userId) {
@@ -111,4 +115,7 @@ public class Session {
     public void setDailyDate(LocalDate d)       { this.dailyDate = d; }
     public void setIsRanked(boolean r)          { this.isRanked = r; }
     public void setCompletedAt(LocalDateTime t) { this.completedAt = t; }
+
+    @JsonIgnore public UUID getClientId()       { return clientId; }
+    public void setClientId(UUID c)             { this.clientId = c; }
 }
