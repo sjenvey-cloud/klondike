@@ -32,6 +32,9 @@ final class PreferencesStore {
         } catch {
             // Keep defaults — preferences are cosmetic; errors are silent.
         }
+        // Cache the selected style's faces so they stay legible offline.
+        let style = preferences.cardStyle
+        Task { await CardImageCache.shared.prewarm(style: style) }
     }
 
     // MARK: - Patch helpers (optimistic update: mutate locally first, then sync)
@@ -49,6 +52,8 @@ final class PreferencesStore {
     /// Card face artwork style — "classic" | "modern" | "fantasy" (shared with web).
     func setCardStyle(_ value: String) async {
         preferences.cardStyle = value
+        // Pre-download the new style's faces so switching works offline too.
+        Task { await CardImageCache.shared.prewarm(style: value) }
         await patch(.init(cardStyle: value))
     }
 

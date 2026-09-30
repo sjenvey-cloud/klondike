@@ -33,7 +33,13 @@ struct CardView: View {
     /// is always legible.
     private var faceUpView: some View {
         ZStack {
-            if let url = CardArt.faceURL(for: card, style: cardStyle) {
+            if let cached = CardImageCache.shared.image(style: cardStyle, code: card.imageCode) {
+                // Offline-safe: the pre-warmed face for the selected style.
+                Image(uiImage: cached)
+                    .resizable()
+                    .scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            } else if let url = CardArt.faceURL(for: card, style: cardStyle) {
                 AsyncImage(url: url, transaction: Transaction(animation: .none)) { phase in
                     switch phase {
                     case .success(let image):

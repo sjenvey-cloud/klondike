@@ -134,7 +134,7 @@ struct StockWasteView: View {
     }
 
     private func wasteDragGesture(top: Card) -> some Gesture {
-        DragGesture(minimumDistance: 6, coordinateSpace: .named(BoardSpace.name))
+        DragGesture(minimumDistance: 6, coordinateSpace: .global)
             .onChanged { value in
                 if !dragModel.isDragging {
                     dragModel.begin(.waste, cards: [top], cardWidth: cardWidth, at: value.location)

@@ -84,15 +84,20 @@ struct BoardView: View {
         // Fill the available width (GameView sizes cardWidth + sideMargin to do so);
         // centre within the frame.
         .frame(maxWidth: .infinity)
-        // Custom drag: a coordinate space the gestures + drop zones share, the lifted
-        // card(s) rendered on top following the finger, and drop resolution.
-        .coordinateSpace(name: BoardSpace.name)
+        // Custom drag: gestures + drop zones are measured in GLOBAL (screen) space so
+        // hit-testing is correct even when the tableau scrolls (Daily board). The
+        // lifted card(s) render on top following the finger — converted from global
+        // back into this view's local space via the overlay's own frame.
         .onPreferenceChange(DropZonePreferenceKey.self) { dragModel.dropZones = $0 }
         .overlay {
             if dragModel.isDragging {
-                DraggedStack(cards: dragModel.cards, cardWidth: dragModel.cardWidth)
-                    .position(dragModel.location)
-                    .allowsHitTesting(false)
+                GeometryReader { proxy in
+                    let origin = proxy.frame(in: .global).origin
+                    DraggedStack(cards: dragModel.cards, cardWidth: dragModel.cardWidth)
+                        .position(x: dragModel.location.x - origin.x,
+                                  y: dragModel.location.y - origin.y)
+                        .allowsHitTesting(false)
+                }
             }
         }
         .onAppear {

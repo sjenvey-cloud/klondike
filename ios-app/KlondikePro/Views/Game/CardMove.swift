@@ -32,13 +32,17 @@ struct DropZonePreferenceKey: PreferenceKey {
 }
 
 extension View {
-    /// Reports this view's frame (in board space) as a drop zone for `target`.
+    /// Reports this view's frame as a drop zone for `target`, in GLOBAL (screen)
+    /// coordinates. Global is used — rather than a named board space — so drop
+    /// detection stays correct even when the tableau sits inside a scrollable
+    /// ScrollView (the shorter Daily board), where named-space frames for content
+    /// inside the scroll view don't line up with the finger location.
     func dropZone(_ target: DropTarget) -> some View {
         background(
             GeometryReader { geo in
                 Color.clear.preference(
                     key: DropZonePreferenceKey.self,
-                    value: [target: geo.frame(in: .named(BoardSpace.name))]
+                    value: [target: geo.frame(in: .global)]
                 )
             }
         )

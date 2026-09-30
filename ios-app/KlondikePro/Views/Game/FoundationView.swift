@@ -41,7 +41,7 @@ struct FoundationView: View {
     }
 
     private func dragGesture(slot: Int, card: Card) -> some Gesture {
-        DragGesture(minimumDistance: 6, coordinateSpace: .named(BoardSpace.name))
+        DragGesture(minimumDistance: 6, coordinateSpace: .global)
             .onChanged { value in
                 if !dragModel.isDragging {
                     dragModel.begin(.foundation(slot: slot),

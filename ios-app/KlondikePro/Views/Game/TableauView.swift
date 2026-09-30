@@ -96,7 +96,7 @@ struct TableauView: View {
     // MARK: - Drag
 
     private func dragGesture(col: Int, idx: Int, cards: [Card]) -> some Gesture {
-        DragGesture(minimumDistance: 6, coordinateSpace: .named(BoardSpace.name))
+        DragGesture(minimumDistance: 6, coordinateSpace: .global)
             .onChanged { value in
                 if !dragModel.isDragging {
                     dragModel.begin(.tableau(col: col, idx: idx),
